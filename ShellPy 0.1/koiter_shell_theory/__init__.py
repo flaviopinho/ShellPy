@@ -1,2 +1,0 @@
-from .fast_koiter_strain_energy import fast_koiter_quadratic_strain_energy, fast_koiter_strain_energy
-from .koiter_strain_tensor import koiter_linear_strain_components, koiter_nonlinear_strain_components_total
