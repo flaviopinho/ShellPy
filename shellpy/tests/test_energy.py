@@ -1,13 +1,13 @@
-from displacement_expansion import pinned
-from expansions.eigen_function_expansion import EigenFunctionExpansion
-from mid_surface_domain import RectangularMidSurfaceDomain
+from shellpy import pinned
+from shellpy.expansions.eigen_function_expansion import EigenFunctionExpansion
+from shellpy import RectangularMidSurfaceDomain
 import sympy as sym
-from koiter_shell_theory import fast_koiter_quadratic_strain_energy, fast_koiter_strain_energy
+from shellpy.koiter_shell_theory import fast_koiter_quadratic_strain_energy, fast_koiter_strain_energy
 
-from material import LinearElasticMaterial
-from midsurface_geometry import MidSurfaceGeometry, xi1_, xi2_
-from shell import Shell
-from thickness import ConstantThickness
+from shellpy import LinearElasticMaterial
+from shellpy import MidSurfaceGeometry, xi1_, xi2_
+from shellpy import Shell
+from shellpy import ConstantThickness
 
 if __name__ == "__main__":
 

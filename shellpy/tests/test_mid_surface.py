@@ -1,6 +1,6 @@
 import numpy as np
 import scienceplots
-from midsurface_geometry import MidSurfaceGeometry, xi1_, xi2_
+from shellpy import MidSurfaceGeometry, xi1_, xi2_
 import sympy as sym
 import matplotlib.pyplot as plt
 

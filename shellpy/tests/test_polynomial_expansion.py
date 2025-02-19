@@ -1,8 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-from expansions.polinomial_expansion import GenericPolynomialSeries
-from mid_surface_domain import RectangularMidSurfaceDomain
+from shellpy.expansions.polinomial_expansion import GenericPolynomialSeries
+from shellpy import RectangularMidSurfaceDomain
 
 if __name__ == "__main__":
 

@@ -1,5 +1,5 @@
 import numpy as np
-from multiindex import MultiIndex
+from shellpy.multiindex import MultiIndex
 
 if __name__ == "__main__":
 

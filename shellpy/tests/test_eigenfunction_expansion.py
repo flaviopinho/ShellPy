@@ -1,8 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-from expansions.eigen_function_expansion import EigenFunctionExpansion
-from mid_surface_domain import RectangularMidSurfaceDomain
+from shellpy.expansions.eigen_function_expansion import EigenFunctionExpansion
+from shellpy import RectangularMidSurfaceDomain
 
 if __name__ == "__main__":
     a = 3

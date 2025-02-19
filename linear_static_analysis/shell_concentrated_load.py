@@ -3,18 +3,18 @@ import sympy as sym
 import numpy as np
 import matplotlib.pyplot as plt
 
-from expansions.eigen_function_expansion import EigenFunctionExpansion
-from expansions.polinomial_expansion import GenericPolynomialSeries
-from mid_surface_domain import RectangularMidSurfaceDomain
-from tensor_derivatives import tensor_derivative
-from koiter_shell_theory.fast_koiter_strain_energy import fast_koiter_quadratic_strain_energy
-from koiter_shell_theory.koiter_load_energy import koiter_load_energy
-from shell_loads.shell_conservative_load import PressureLoad, ConcentratedForce
-from displacement_expansion import simply_supported
-from material import LinearElasticMaterial
-from shell import Shell
-from thickness import ConstantThickness
-from midsurface_geometry import MidSurfaceGeometry, xi1_, xi2_
+from shellpy.expansions.eigen_function_expansion import EigenFunctionExpansion
+from shellpy.expansions.polinomial_expansion import GenericPolynomialSeries
+from shellpy import RectangularMidSurfaceDomain
+from shellpy.tensor_derivatives import tensor_derivative
+from shellpy.koiter_shell_theory.fast_koiter_strain_energy import fast_koiter_quadratic_strain_energy
+from shellpy.koiter_shell_theory.koiter_load_energy import koiter_load_energy
+from shellpy.shell_loads.shell_conservative_load import PressureLoad, ConcentratedForce
+from shellpy import simply_supported
+from shellpy import LinearElasticMaterial
+from shellpy import Shell
+from shellpy import ConstantThickness
+from shellpy import MidSurfaceGeometry, xi1_, xi2_
 
 if __name__ == "__main__":
     n_integral_default = 20

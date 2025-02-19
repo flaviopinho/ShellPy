@@ -1,8 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-from expansions.enriched_cosine_expansion import EnrichedCosineExpansion
-from mid_surface_domain import RectangularMidSurfaceDomain
+from shellpy.expansions.enriched_cosine_expansion import EnrichedCosineExpansion
+from shellpy import RectangularMidSurfaceDomain
 
 if __name__ == "__main__":
     a = 3

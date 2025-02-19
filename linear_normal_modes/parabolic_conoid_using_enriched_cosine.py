@@ -9,16 +9,16 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.linalg import eig
 
-from displacement_expansion import pinned, fully_clamped
-from expansions.enriched_cosine_expansion import EnrichedCosineExpansion
-from koiter_shell_theory import fast_koiter_quadratic_strain_energy
-from koiter_shell_theory.fast_koiter_kinetic_energy import fast_koiter_kinetic_energy
-from material import LinearElasticMaterial
-from mid_surface_domain import RectangularMidSurfaceDomain
-from midsurface_geometry import xi1_, xi2_, MidSurfaceGeometry
-from shell import Shell
-from tensor_derivatives import tensor_derivative
-from thickness import ConstantThickness
+from shellpy import pinned, fully_clamped
+from shellpy.expansions.enriched_cosine_expansion import EnrichedCosineExpansion
+from shellpy.koiter_shell_theory import fast_koiter_quadratic_strain_energy
+from shellpy.koiter_shell_theory.fast_koiter_kinetic_energy import fast_koiter_kinetic_energy
+from shellpy import LinearElasticMaterial
+from shellpy import RectangularMidSurfaceDomain
+from shellpy import xi1_, xi2_, MidSurfaceGeometry
+from shellpy import Shell
+from shellpy.tensor_derivatives import tensor_derivative
+from shellpy import ConstantThickness
 
 # Main execution block
 if __name__ == "__main__":

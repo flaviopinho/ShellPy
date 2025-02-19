@@ -1,20 +1,27 @@
+"""
+This example analyzes the nonlinear behavior of a doubly curved shell
+(a non shallow spherical panel) under a pressure load.  This shell has been
+previously studied by Pinho et al. (DOI: 10.1016/j.engstruct.2021.113674).
+This script determines the nonlinear static response.
+"""
+
 import sys
 import matplotlib.pyplot as plt
 import sympy as sym
 import numpy as np
 
-from displacement_expansion import simply_supported, pinned
-from expansions.eigen_function_expansion import EigenFunctionExpansion
-from expansions.polinomial_expansion import GenericPolynomialSeries
-from mid_surface_domain import RectangularMidSurfaceDomain
-from koiter_shell_theory import fast_koiter_strain_energy
-from tensor_derivatives import tensor_derivative
-from koiter_shell_theory.koiter_load_energy import koiter_load_energy
-from shell_loads.shell_conservative_load import ConcentratedForce, PressureLoad
-from material import LinearElasticMaterial
-from shell import Shell
-from thickness import ConstantThickness
-from midsurface_geometry import MidSurfaceGeometry, xi1_, xi2_
+from shellpy import simply_supported, pinned
+from shellpy.expansions.eigen_function_expansion import EigenFunctionExpansion
+from shellpy.expansions.polinomial_expansion import GenericPolynomialSeries
+from shellpy import RectangularMidSurfaceDomain
+from shellpy.koiter_shell_theory import fast_koiter_strain_energy
+from shellpy.tensor_derivatives import tensor_derivative
+from shellpy.koiter_shell_theory.koiter_load_energy import koiter_load_energy
+from shellpy.shell_loads.shell_conservative_load import ConcentratedForce, PressureLoad
+from shellpy import LinearElasticMaterial
+from shellpy import Shell
+from shellpy import ConstantThickness
+from shellpy import MidSurfaceGeometry, xi1_, xi2_
 
 sys.path.append('../../ContinuationPy/ContinuationPy')
 import continuation

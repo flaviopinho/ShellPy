@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-from expansions.enriched_cosine_expansion import EnrichedCosineExpansion
+from shellpy.expansions.enriched_cosine_expansion import EnrichedCosineExpansion
 
 if __name__ == "__main__":
     a = 2

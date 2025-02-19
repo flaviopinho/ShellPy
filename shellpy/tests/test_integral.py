@@ -1,7 +1,7 @@
 import numpy as np
 
-from double_integral_booles_rule import double_integral_booles_rule
-from mid_surface_domain import RectangularMidSurfaceDomain
+from shellpy import double_integral_booles_rule
+from shellpy import RectangularMidSurfaceDomain
 
 
 def func(xi1, xi2):

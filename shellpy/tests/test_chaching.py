@@ -2,9 +2,9 @@ import time
 import sympy as sym
 import numpy as np
 
-from expansions.eigen_function_expansion import EigenFunctionExpansion
-from mid_surface_domain import RectangularMidSurfaceDomain
-from midsurface_geometry import xi1_, xi2_, MidSurfaceGeometry
+from shellpy.expansions.eigen_function_expansion import EigenFunctionExpansion
+from shellpy import RectangularMidSurfaceDomain
+from shellpy import xi1_, xi2_, MidSurfaceGeometry
 
 """
 This script is designed to test the performance of certain computational functions by measuring their execution 

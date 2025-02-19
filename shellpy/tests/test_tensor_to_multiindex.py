@@ -1,8 +1,8 @@
 import time
 import numpy as np
 
-from multiindex import MultiIndex
-from tensor_derivatives import tensor_derivative
+from shellpy.multiindex import MultiIndex
+from shellpy.tensor_derivatives import tensor_derivative
 
 if __name__ == "__main__":
     rank = 4

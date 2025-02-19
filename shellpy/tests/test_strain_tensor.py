@@ -1,11 +1,11 @@
 import sympy as sym
 import numpy as np
 
-from expansions.eigen_function_expansion import EigenFunctionExpansion
-from koiter_shell_theory.koiter_strain_tensor import koiter_linear_strain_components, \
+from shellpy.expansions.eigen_function_expansion import EigenFunctionExpansion
+from shellpy.koiter_shell_theory.koiter_strain_tensor import koiter_linear_strain_components, \
     koiter_nonlinear_strain_components_total
-from mid_surface_domain import RectangularMidSurfaceDomain
-from midsurface_geometry import MidSurfaceGeometry, xi1_, xi2_
+from shellpy import RectangularMidSurfaceDomain
+from shellpy import MidSurfaceGeometry, xi1_, xi2_
 
 if __name__ == "__main__":
     R = 0.1

@@ -1,6 +1,6 @@
 import numpy as np
-from material import LinearElasticMaterial
-from midsurface_geometry import MidSurfaceGeometry, xi1_, xi2_
+from shellpy import LinearElasticMaterial
+from shellpy import MidSurfaceGeometry, xi1_, xi2_
 import sympy as sym
 
 if __name__ == "__main__":
