@@ -1,7 +1,6 @@
 import numpy as np
 
 from shellpy import double_integral_booles_rule
-from shellpy import RectangularMidSurfaceDomain
 
 
 def func(xi1, xi2):
@@ -12,10 +11,8 @@ def func2(xi1, xi2):
 
 
 if __name__ == "__main__":
-    rect = RectangularMidSurfaceDomain(-2, 2, -2, 2);
-    integral_result = double_integral_booles_rule(func, rect, 10)
+    integral_result = double_integral_booles_rule(func, (-2, 2), (-2, 2), 10, 10)
     print("integral result = ", integral_result)
 
-    rect = RectangularMidSurfaceDomain(0, 5, 0, 3)
-    integral_result = double_integral_booles_rule(func2, rect, 100)
+    integral_result = double_integral_booles_rule(func2, (0, 5), (0, 3), 100, 100)
     print("integral result = ", integral_result)

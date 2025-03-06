@@ -5,5 +5,5 @@ from .material import *
 from .shell import *
 from .thickness import *
 from .midsurface_geometry import *
-from .double_integral_booles_rule import *
+from .integral_booles_rule import *
 from .displacement_covariant_derivative import *

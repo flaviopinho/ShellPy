@@ -24,7 +24,7 @@ def fast_koiter_strain_energy(shell: Shell, integral_weights=boole_weights_doubl
     """
 
     # Get integration points and weights for the double integral over the mid-surface domain
-    xi1, xi2, W = integral_weights(shell.mid_surface_domain)
+    xi1, xi2, W = integral_weights(shell.mid_surface_domain.edges["xi1"], shell.mid_surface_domain.edges["xi2"])
 
     # Shape of xi1 (discretized domain in terms of xi1 and xi2)
     n = np.shape(xi1)
@@ -32,28 +32,46 @@ def fast_koiter_strain_energy(shell: Shell, integral_weights=boole_weights_doubl
     # Number of degrees of freedom (dof) for the displacement expansion
     n_dof = shell.displacement_expansion.number_of_degrees_of_freedom()
 
-    # Initialize arrays for linear strain components (gamma_lin) and their associated quantities (rho_lin)
-    gamma_lin = np.zeros((n_dof, 2, 2, n[0], n[1]))
-    rho_lin = np.zeros((n_dof, 2, 2, n[0], n[1]))
-
     # Compute the contravariant metric tensor components and sqrt(G) for the shell geometry
     G = shell.mid_surface_geometry.metric_tensor_contravariant_components(xi1, xi2)
     sqrtG = shell.mid_surface_geometry.sqrtG(xi1, xi2)
 
+    gaussian_curvature = shell.mid_surface_geometry.gaussian_curvature(xi1, xi2)
+
+    trace_K = 2 * shell.mid_surface_geometry.mean_curvature(xi1, xi2)
+
     # Calculate the constitutive tensor C for the thin shell material
-    C = shell.material.thin_shell_constitutive_tensor(G)
+    C = shell.material.plane_stress_constitutive_tensor_for_koiter_theory(G)
 
     # Get the thickness of the shell at each point in the domain
     h = shell.thickness(xi1, xi2)
 
+    W1 = (h / 2 * np.ones(np.shape(xi1)) + h ** 3 / 24 * gaussian_curvature) * sqrtG * W
+
+    W2 = (h ** 3 / 24 * np.ones(np.shape(xi1)) + h ** 5 / 160 * gaussian_curvature) * sqrtG * W
+
+    W3 = (h ** 3 / 24 * trace_K) * sqrtG * W
+
+    # Initialize arrays for linear strain components (gamma_lin) and their associated quantities (rho_lin)
+    epsilon0_lin = np.zeros((n_dof, 2, 2, n[0], n[1]))
+    epsilon1_lin = np.zeros((n_dof, 2, 2, n[0], n[1]))
+
+    sigma0_lin = np.zeros((n_dof, 2, 2, n[0], n[1]))
+    sigma1_lin = np.zeros((n_dof, 2, 2, n[0], n[1]))
+
     # Loop through the degrees of freedom to compute linear strain components for each dof
     for i in range(n_dof):
-        gamma_lin[i], rho_lin[i] = koiter_linear_strain_components(shell.mid_surface_geometry,
+        epsilon0_lin[i], epsilon1_lin[i] = koiter_linear_strain_components(shell.mid_surface_geometry,
                                                                    shell.displacement_expansion, i, xi1, xi2)
+
+        sigma0_lin[i] = np.einsum('abcdxy,cdxy->abxy', C, epsilon0_lin[i])
+        sigma1_lin[i] = np.einsum('abcdxy,cdxy->abxy', C, epsilon1_lin[i])
+
         print(f'Calculating linear components {i} of {n_dof}')
 
     # Initialize array for nonlinear strain components
-    gamma_nonlin = np.zeros((n_dof, n_dof, 2, 2, n[0], n[1]))
+    epsilon0_nonlin = np.zeros((n_dof, n_dof, 2, 2, n[0], n[1]))
+    sigma0_nonlin = np.zeros((n_dof, n_dof, 2, 2, n[0], n[1]))
 
     # Loop through the degrees of freedom to compute nonlinear strain components
     for i in range(n_dof):
@@ -61,33 +79,36 @@ def fast_koiter_strain_energy(shell: Shell, integral_weights=boole_weights_doubl
             gamma_ij = koiter_nonlinear_strain_components_total(shell.mid_surface_geometry,
                                                                 shell.displacement_expansion,
                                                                 i, j, xi1, xi2)
-            gamma_nonlin[i, j] = gamma_ij
-            gamma_nonlin[j, i] = gamma_ij  # Exploit symmetry
+            epsilon0_nonlin[i, j] = gamma_ij
+            epsilon0_nonlin[j, i] = gamma_ij  # Exploit symmetry
+
+            sigma0_nonlin[i, j] = np.einsum('abcdxy,cdxy->abxy', C, epsilon0_nonlin[i, j])
+            sigma0_nonlin[j, i] = sigma0_nonlin[i, j]
+
+
             print(f'Calculating nonlinear components ({i}, {j}) of ({n_dof}, {n_dof})')
 
     # Calculate the quadratic strain energy functional
     print('Calculating quadratic strain energy functional...')
     start = time()
-    quadratic_energy_tensor = (h / 2) * np.einsum('abolxy, mabxy, nolxy, xy, xy->mn', C, gamma_lin, gamma_lin, sqrtG, W,
-                                                  optimize=True)
-    quadratic_energy_tensor += (h ** 3 / 24) * np.einsum('abolxy, mabxy, nolxy, xy, xy->mn', C, rho_lin, rho_lin, sqrtG,
-                                                         W, optimize=True)
+    quadratic_energy_tensor = np.einsum('mabxy, nabxy, xy->mn', sigma0_lin, epsilon0_lin, W1, optimize=True)
+    quadratic_energy_tensor += np.einsum('mabxy, nabxy, xy->mn', sigma1_lin, epsilon1_lin, W2, optimize=True)
+    quadratic_energy_tensor += 2 * np.einsum('mabxy, nabxy, xy->mn', sigma0_lin, epsilon1_lin, W3, optimize=True)
     stop = time()
     print('time= ', stop - start)
 
     # Calculate the cubic strain energy functional
     print('Calculating cubic strain energy functional...')
     start = time()
-    cubic_energy_tensor = 2 * (h / 2) * np.einsum('abcdxy, mabxy, nocdxy, xy, xy->mno', C, gamma_lin, gamma_nonlin,
-                                                  sqrtG, W, optimize=True)
+    cubic_energy_tensor = 2 * np.einsum('mabxy, noabxy, xy->mno', sigma0_lin, epsilon0_nonlin, W1, optimize=True)
+    cubic_energy_tensor += 2 * np.einsum('mabxy, noabxy, xy->mno', sigma1_lin, epsilon0_nonlin, W3, optimize=True)
     stop = time()
     print('time= ', stop - start)
 
     # Calculate the quartic strain energy functional
     print('Calculating quartic strain energy functional...')
     start = time()
-    quartic_energy_tensor = (h / 2) * np.einsum('abcdxy, mnabxy, opcdxy, xy, xy->mnop', C, gamma_nonlin, gamma_nonlin,
-                                                sqrtG, W, optimize=True)
+    quartic_energy_tensor = np.einsum('mnabxy, opabxy, xy->mnop', sigma0_nonlin, epsilon0_nonlin, W1, optimize=True)
     stop = time()
     print('time= ', stop - start)
 
@@ -110,7 +131,7 @@ def fast_koiter_quadratic_strain_energy(shell: Shell, integral_weights=boole_wei
     """
 
     # Get integration points and weights for the double integral over the mid-surface domain
-    xi1, xi2, W = integral_weights(shell.mid_surface_domain)
+    xi1, xi2, W = integral_weights(shell.mid_surface_domain.edges["xi1"], shell.mid_surface_domain.edges["xi2"])
 
     # Shape of xi1 (discretized domain in terms of xi1 and xi2)
     n = np.shape(xi1)
@@ -119,29 +140,49 @@ def fast_koiter_quadratic_strain_energy(shell: Shell, integral_weights=boole_wei
     n_dof = shell.displacement_expansion.number_of_degrees_of_freedom()
 
     # Initialize arrays for linear strain components (gamma_lin) and their associated quantities (rho_lin)
-    gamma_lin = np.zeros((n_dof, 2, 2, n[0], n[1]))
-    rho_lin = np.zeros((n_dof, 2, 2, n[0], n[1]))
+    epsilon0_lin = np.zeros((n_dof, 2, 2) + n)
+    epsilon1_lin = np.zeros((n_dof, 2, 2) + n)
+    sigma0_lin = np.zeros((n_dof, 2, 2) + n)
+    sigma1_lin = np.zeros((n_dof, 2, 2) + n)
 
     # Compute the contravariant metric tensor components and sqrt(G) for the shell geometry
     G = shell.mid_surface_geometry.metric_tensor_contravariant_components(xi1, xi2)
     sqrtG = shell.mid_surface_geometry.sqrtG(xi1, xi2)
 
+    gaussian_curvature = shell.mid_surface_geometry.gaussian_curvature(xi1, xi2)
+
+    trace_K = 2 * shell.mid_surface_geometry.mean_curvature(xi1, xi2)
+
     # Calculate the constitutive tensor C for the thin shell material
-    C = shell.material.thin_shell_constitutive_tensor(G)
+    C = shell.material.plane_stress_constitutive_tensor_for_koiter_theory(G)
 
     # Get the thickness of the shell at each point in the domain
     h = shell.thickness(xi1, xi2)
 
+    W1 = (h / 2 * np.ones(np.shape(xi1)) + h ** 3 / 24 * gaussian_curvature) * sqrtG * W
+
+    W2 = (h ** 3 / 24 * np.ones(np.shape(xi1)) + h ** 5 / 160 * gaussian_curvature) * sqrtG * W
+
+    W3 = (h ** 3 / 24 * trace_K) * sqrtG * W
+
     # Loop through the degrees of freedom to compute linear strain components for each dof
     for i in range(n_dof):
-        gamma_lin[i], rho_lin[i] = koiter_linear_strain_components(shell.mid_surface_geometry,
-                                                                   shell.displacement_expansion, i, xi1, xi2)
+        epsilon0_lin[i], epsilon1_lin[i] = koiter_linear_strain_components(shell.mid_surface_geometry,
+                                                                           shell.displacement_expansion, i, xi1, xi2)
+
+        sigma0_lin[i] = np.einsum('abcdxy,cdxy->abxy', C, epsilon0_lin[i])
+        sigma1_lin[i] = np.einsum('abcdxy,cdxy->abxy', C, epsilon1_lin[i])
+
+        print(f'Calculating linear components {i} of {n_dof}')
 
     # Calculate the quadratic strain energy functional
-    quadratic_energy_tensor = (h / 2) * np.einsum('abolxy, mabxy, nolxy, xy, xy->mn', C, gamma_lin, gamma_lin, sqrtG, W,
-                                                  optimize=True)
-    quadratic_energy_tensor += (h ** 3 / 24) * np.einsum('abolxy, mabxy, nolxy, xy, xy->mn', C, rho_lin, rho_lin, sqrtG,
-                                                         W, optimize=True)
+    print('Calculating quadratic strain energy functional...')
+    start = time()
+    quadratic_energy_tensor = np.einsum('mabxy, nabxy, xy->mn', sigma0_lin, epsilon0_lin, W1, optimize=True)
+    quadratic_energy_tensor += np.einsum('mabxy, nabxy, xy->mn', sigma1_lin, epsilon1_lin, W2, optimize=True)
+    quadratic_energy_tensor += 2 * np.einsum('mabxy, nabxy, xy->mn', sigma0_lin, epsilon1_lin, W3, optimize=True)
+    stop = time()
+    print('time= ', stop - start)
 
     # Return the quadratic strain energy tensor
     return quadratic_energy_tensor

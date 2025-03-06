@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 import sympy as sym
 import numpy as np
 
+from nonlinear_static_analysis.residue_jacobian_stability import shell_residue, shell_jacobian, shell_stability
 # Import custom modules related to shell analysis
 from shellpy.displacement_expansion import simply_supported  # Defines simply supported boundary conditions
 from shellpy.expansions.eigen_function_expansion import EigenFunctionExpansion # Eigenfunction expansion for displacements
@@ -32,104 +33,7 @@ sys.path.append('../../ContinuationPy/ContinuationPy')
 import continuation # Imports the continuation library for solving nonlinear equations.
 
 
-def amabili_shallow_shell_residue(F_int, F_ext, x, *args):
-    """
-    Calculates the residual for the nonlinear equilibrium equations.
-
-    Args:
-        F_int: Internal force vector (from strain energy).
-        F_ext: External force vector.
-        x: Vector of unknowns, containing displacement coefficients (u) and load parameter (p).
-        *args: Additional arguments (not used here).
-
-    Returns:
-        The residual vector.
-    """
-    u = x[:-1]  # Extract displacement coefficients from x
-    p = x[-1]   # Extract load parameter from x
-    # Calculate the total internal force vector, accounting for nonlinear terms.
-    F_int_tot = np.einsum('ij, j->i', F_int[0], u) + \
-                np.einsum('ijk, j, k->i', F_int[1], u, u) + \
-                np.einsum('ijkl, j, k, l->i', F_int[2], u, u, u)
-    return F_int_tot + F_ext * p # Return the residual: F_int_tot + p*F_ext = 0 at equilibrium
-
-
-def amabili_shallow_shell_jacobian(J_int, F_ext, x, *args):
-    """
-    Calculates the Jacobian of the residual with respect to the unknowns.
-
-    Args:
-        J_int: Jacobian of the internal force vector with respect to displacements.
-        F_ext: External force vector.
-        x: Vector of unknowns (displacement coefficients and load parameter).
-        *args: Additional arguments (not used here).
-
-    Returns:
-        The Jacobian matrix.
-    """
-    u = x[:-1]  # Extract displacement coefficients
-    # p = x[-1]  # Load parameter (not directly used in Jacobian calculation here)
-    J_int_tot = J_int[0] + \
-                np.einsum('ijk, k->ij', J_int[1], u) + \
-                np.einsum('ijkl, k, l->ij', J_int[2], u, u)
-
-    return np.hstack((J_int_tot, F_ext[:, np.newaxis])) # Combine internal Jacobian and external force vector
-                                                          # to form the complete Jacobian.
-
-
-def amabili_shallow_shell_stability(u, J, model, *args):
-    """
-    Analyzes the stability of the shell at a given solution point.
-
-    Args:
-        u: Displacement coefficients.
-        J: Jacobian matrix of the residual equations.
-        model: Dictionary containing model parameters (including 'n' for the number of degrees of freedom).
-        *args: Additional arguments (not used here).
-
-    Returns:
-        stability: The maximum real part of the eigenvalues of the Jacobian (Jx).
-        tipo: String indicating the type of bifurcation ('H' for Hopf, 'SN' for Saddle-Node,
-              'PR' for Regular Point, 'BC' for Complex Bifurcation).
-    """
-    # Extract the Jx submatrix, corresponding to the degrees of freedom.  This assumes
-    # the Jacobian is structured such that the top-left n x n block corresponds to the
-    # displacement degrees of freedom.
-    Jx = -J[:model['n'], :model['n']]
-
-    # Calculate the eigenvalues of Jx. These eigenvalues determine the stability
-    # of the equilibrium point.
-    eigen_values = np.linalg.eigvals(Jx)
-
-    # Separate the real and imaginary parts of the eigenvalues.
-    real_part = np.real(eigen_values)
-    imaginary_part = np.imag(eigen_values)
-
-    # The stability is determined by the maximum real part of the eigenvalues.
-    # A positive maximum real part indicates instability.
-    stability = np.max(real_part)
-
-    tipo = None  # Initialize the bifurcation type.
-
-    # Determine the type of bifurcation based on the eigenvalues.
-    index_real_positivo = real_part > 0  # Indices of eigenvalues with positive real parts.
-    index_real_negativo = real_part < 0  # Indices of eigenvalues with negative real parts.
-    num_real_positivo = np.sum(index_real_positivo) # Number of eigenvalues with positive real parts.
-    num_real_negativo = np.sum(index_real_negativo) # Number of eigenvalues with negative real parts.
-
-    if num_real_positivo == 2 and np.any(imaginary_part[index_real_positivo] != 0):
-        tipo = 'H'  # Hopf bifurcation: Two complex conjugate eigenvalues cross the imaginary axis.
-    elif num_real_positivo == 1 and num_real_negativo >= 0:
-        tipo = 'SN'  # Saddle-Node bifurcation: A single real eigenvalue crosses zero.
-    elif num_real_positivo == 0 and num_real_negativo >= 0:
-        tipo = 'PR'  # Regular Point: All eigenvalues have negative real parts (stable).
-    else:
-        tipo = 'BC'  # Complex Bifurcation:  Other cases (more complex eigenvalue configurations).
-
-    return stability, tipo
-
-
-def amabili_output_results(shell, xi1, xi2, x, *args):
+def shallow_spherical_panel_output_results(shell, xi1, xi2, x, *args):
     """
     Processes and outputs results, including plotting the deformed shell.
 
@@ -162,7 +66,7 @@ def amabili_output_results(shell, xi1, xi2, x, *args):
     # Plot the deformed shell.
     plot_shell(shell, u)
 
-    return p, U[2], "F", "u_3(a/4,b/4)"  # Return load parameter, center displacement, and labels.
+    return p, U[2]/shell.thickness(), "F", "u_3(a/4,b/4)/h"  # Return load parameter, center displacement, and labels.
 
 
 def plot_shell(shell, u):
@@ -176,10 +80,13 @@ def plot_shell(shell, u):
     # Create meshgrid of xi1 and xi2 coordinates for plotting.
     xi1 = np.linspace(*shell.mid_surface_domain.edges["xi1"], 30)
     xi2 = np.linspace(*shell.mid_surface_domain.edges["xi2"], 30)
-    x, y = np.meshgrid(xi1, xi2, indexing='xy')
+    x, y = np.meshgrid(xi1, xi2, indexing='ij')
+
+    reciprocal_base = shell.mid_surface_geometry.reciprocal_base(x, y)
 
     # Calculate the deformed shape (mode) using the displacement expansion.
-    mode = shell.displacement_expansion(u, x, y)  # Compute mode shape
+    mode1 = shell.displacement_expansion(u, x, y) * h  # Compute mode shape
+    mode = reciprocal_base[0] * mode1[0] + reciprocal_base[1] * mode1[1] + reciprocal_base[2] * mode1[2]
 
     # Calculate the original (undeformed) mid-surface geometry.
     z = shell.mid_surface_geometry(x, y)  # Compute deformed geometry
@@ -245,14 +152,14 @@ if __name__ == "__main__":
 
     # Define mode mappings for the displacement field expansion
     mapping = []
-    modes_xi1 = [2, 3, 6, 7, 10, 11]
+    modes_xi1 = [2+2, 3+2, 6+2, 7+2, 10+2, 11+2]
     modes_xi2 = [1, 3, 5, 7, 9, 11]
     for i in range(expansion_size["u1"][0]):
         for j in range(expansion_size["u1"][1]):
             mapping.append(("u1", modes_xi1[i], modes_xi2[j]))
 
     modes_xi1 = [1, 3, 5, 7, 9, 11]
-    modes_xi2 = [2, 3, 6, 7, 10, 11]
+    modes_xi2 = [2+2, 3+2, 6+2, 7+2, 10+2, 11+2]
     for i in range(expansion_size["u2"][0]):
         for j in range(expansion_size["u2"][1]):
             mapping.append(("u2", modes_xi1[i], modes_xi2[j]))
@@ -299,10 +206,10 @@ if __name__ == "__main__":
     J4_int = tensor_derivative(F4_int, 1)
 
     # Define functions for residual, Jacobian, stability, and output
-    residue = lambda u, *args: amabili_shallow_shell_residue((F2_int, F3_int, F4_int), F_ext, u, *args)
-    jacobian = lambda u, *args: amabili_shallow_shell_jacobian((J2_int, J3_int, J4_int), F_ext, u, *args)
-    stability = amabili_shallow_shell_stability
-    output = lambda u, *args: amabili_output_results(shell, a / 2, b / 2, u, *args)
+    residue = lambda u, *args: shell_residue((F2_int, F3_int, F4_int), F_ext, u, *args)
+    jacobian = lambda u, *args: shell_jacobian((J2_int, J3_int, J4_int), F_ext, u, *args)
+    stability = shell_stability
+    output = lambda u, *args: shallow_spherical_panel_output_results(shell, a / 2, b / 2, u, *args)
 
     # Define boundaries for continuation process
     boundary_continuation = np.zeros((n + p, 2))

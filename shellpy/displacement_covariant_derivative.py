@@ -23,6 +23,12 @@ def displacement_covariant_derivatives(mid_surface_geometry: MidSurfaceGeometry,
              - ddcu: The second covariant derivative of the displacement.
     """
 
+    # C^i_{j alpha}: The Christoffel symbols of the second kind, representing the connection coefficients
+    C = mid_surface_geometry.christoffel_symbols(xi1, xi2)
+
+    # C^i_{j alpha}_{,beta}: The first derivative of the Christoffel symbols with respect to the curvilinear coordinates
+    dC = mid_surface_geometry.christoffel_symbols_first_derivative(xi1, xi2)
+
     # u_i: The displacement associated with the shape function i at coordinates (xi1, xi2)
     u = displacement_expansion.shape_function(i, xi1, xi2)
 
@@ -32,11 +38,13 @@ def displacement_covariant_derivatives(mid_surface_geometry: MidSurfaceGeometry,
     # u_{i,alpha beta}: The second derivatives of the displacement u with respect to the curvilinear coordinates
     ddu = displacement_expansion.shape_function_second_derivatives(i, xi1, xi2)
 
-    # C^i_{j alpha}: The Christoffel symbols of the second kind, representing the connection coefficients
-    C = mid_surface_geometry.christoffel_symbols(xi1, xi2)
-
-    # C^i_{j alpha}_{,beta}: The first derivative of the Christoffel symbols with respect to the curvilinear coordinates
-    dC = mid_surface_geometry.christoffel_symbols_first_derivative(xi1, xi2)
+    if displacement_expansion.number_of_fields() == 6:
+        v = u[1]
+        u = u[0]
+        dv = du[1]
+        du = du[0]
+        ddv = ddu[1]
+        ddu = ddu[0]
 
     # u_{i|alpha}: The covariant derivative of the displacement u_i with respect to xi_alpha.
     # The formula used here subtracts the Christoffel symbols contribution to the derivative.
@@ -48,4 +56,16 @@ def displacement_covariant_derivatives(mid_surface_geometry: MidSurfaceGeometry,
         'jib..., ja...->iab...', C, dcu)
 
     # Return the covariant derivatives
-    return dcu, ddcu
+    if displacement_expansion.number_of_fields() == 3:
+        return dcu, ddcu
+    else:
+        # u_{i|alpha}: The covariant derivative of the displacement u_i with respect to xi_alpha.
+        # The formula used here subtracts the Christoffel symbols contribution to the derivative.
+        dcv = dv - np.einsum('jia..., j...->ia...', C, v)
+
+        # u_{i|alpha beta}: The second covariant derivative of the displacement u_i with respect to xi_alpha and xi_beta.
+        # The formula accounts for several terms involving the Christoffel symbols and their derivatives.
+        ddcv = ddv - np.einsum('jia..., jb...->iab...', C, dv) - np.einsum('jiab..., j...->iab...', dC, v) - np.einsum(
+            'jib..., ja...->iab...', C, dcv)
+
+        return dcu, ddcu, dcv, ddcv

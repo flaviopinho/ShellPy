@@ -22,7 +22,7 @@ def fast_koiter_kinetic_energy(shell: Shell, integral_weights=boole_weights_doub
 
     # Get the weights (xi1, xi2) and corresponding weights (W) for the double integral
     # The weights are used in numerical integration for the domain of the shell's mid-surface
-    xi1, xi2, W = integral_weights(shell.mid_surface_domain)
+    xi1, xi2, W = integral_weights(shell.mid_surface_domain.edges["xi1"], shell.mid_surface_domain.edges["xi2"])
 
     # Get the shape of xi1 (which represents a discretized domain in terms of xi1 and xi2)
     n = np.shape(xi1)
@@ -55,7 +55,7 @@ def fast_koiter_kinetic_energy(shell: Shell, integral_weights=boole_weights_doub
     sqrtG = shell.mid_surface_geometry.sqrtG(xi1, xi2)
 
     # Calculate the constitutive tensor C for the thin shell material
-    C = shell.material.thin_shell_constitutive_tensor(G)
+    C = shell.material.plane_stress_constitutive_tensor_for_koiter_theory(G)
 
     # Get the thickness of the shell at each point in the domain
     h = shell.thickness(xi1, xi2)

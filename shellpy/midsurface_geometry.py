@@ -101,6 +101,10 @@ class MidSurfaceGeometry:
         # Compute metric tensor components
         metric_tensor_covariant_components_ = sym.matrices.zeros(2, 2)
         metric_tensor_contravariant_components_ = sym.matrices.zeros(2, 2)
+
+        metric_tensor_covariant_components_extended_ = sym.matrices.zeros(3, 3)
+        metric_tensor_contravariant_components_extended_ = sym.matrices.zeros(3, 3)
+
         curvature_tensor_covariant_components_ = sym.matrices.zeros(2, 2)
         curvature_tensor_mixed_components_ = sym.matrices.zeros(2, 2)
 
@@ -113,6 +117,7 @@ class MidSurfaceGeometry:
                     natural_base_first_derivative_[(2, beta)])
                 curvature_tensor_mixed_components_[alpha, beta] = zero + reciprocal_base_[alpha].dot(
                     natural_base_first_derivative_[(2, beta)])
+
 
         # Store numerical functions for fast evaluation
         self._metric_tensor_covariant_components = sym.lambdify((xi1_, xi2_),
@@ -207,6 +212,28 @@ class MidSurfaceGeometry:
         return self._metric_tensor_contravariant_components(xi1, xi2)
 
     @cache_method
+    def metric_tensor_covariant_components_extended(self, xi1, xi2):
+        """
+        Computes the covariant components of the metric tensor.
+        These components describe the inner product of the natural basis vectors.
+        """
+        G = np.zeros((3, 3) + np.shape(xi1))
+        G[0:2,0:2] = self._metric_tensor_covariant_components(xi1, xi2)
+        G[2, 2] = 1
+        return G
+
+    @cache_method
+    def metric_tensor_contravariant_components_extended(self, xi1, xi2):
+        """
+        Computes the contravariant components of the metric tensor.
+        These components are the inverse of the covariant metric tensor.
+        """
+        G = np.zeros((3, 3) + np.shape(xi1))
+        G[0:2,0:2] = self._metric_tensor_contravariant_components(xi1, xi2)
+        G[2, 2] = 1
+        return G
+
+    @cache_method
     def curvature_tensor_covariant_components(self, xi1, xi2):
         """
         Computes the covariant components of the curvature tensor.
@@ -238,6 +265,75 @@ class MidSurfaceGeometry:
         """
         return self._christoffel_symbols_first_derivative(xi1, xi2)
 
+    @cache_method
+    def gaussian_curvature(self, xi1, xi2):
+        curvature = self.curvature_tensor_covariant_components(xi1, xi2)
+        shape = list(range(curvature.ndim))
+
+        _gaussian_curvature = np.linalg.det(curvature.transpose(shape[2:] + shape[0:2]))
+
+        return _gaussian_curvature
+
+    def mean_curvature(self, xi1, xi2):
+        curvature = self.curvature_tensor_covariant_components(xi1, xi2)
+
+        _mean_curvature = 0.5 * np.einsum('aa...->...', curvature)
+
+        return _mean_curvature
+
+    @cache_method
+    def shifter_tensor(self, xi1, xi2, xi3):
+        delta = np.eye(2, 2)
+        curvature = self.curvature_tensor_mixed_components(xi1, xi2)
+        result = np.einsum('abxy,z->abxyz', curvature, xi3)
+
+        delta_expanded = np.einsum('ab, ...->ab...', delta, np.ones(np.shape(xi1)+np.shape(xi3)))
+
+        return result + delta_expanded
+
+    @cache_method
+    def shifter_tensor_inverse(self, xi1, xi2, xi3):
+        shifter = self.shifter_tensor(xi1, xi2, xi3)  # Obtém o tensor shifter
+        shape = list(range(shifter.ndim))
+
+        a = shape[0]
+        b = shape[1]
+
+        shape[0] = shape[-2]
+        shape[1] = shape[-1]
+
+        shape[-2] = a
+        shape[-1] = b
+
+        shifter_inv = np.linalg.inv(shifter.transpose(shape)).transpose(shape)
+
+        return shifter_inv
+
+    @cache_method
+    def shifter_tensor_inverse_cubic_approximation(self, xi1, xi2, xi3):
+        curvature = self.curvature_tensor_mixed_components(xi1, xi2)
+
+        delta = np.eye(2, 2)
+        delta_expanded = np.einsum('ab,...->ab...', delta, np.ones(np.shape(xi1)+np.shape(xi3)))
+
+        curvature = self.curvature_tensor_mixed_components(xi1, xi2)
+        aux1 = np.einsum('...,z->...z', curvature, xi3)
+        aux2 = np.einsum('ag...z, gb..., z->ab...z', aux1, curvature, xi3)
+        aux3 = np.einsum('ao...z, ob..., z->ab...z', aux2, curvature, xi3)
+
+        return delta_expanded - aux1 + aux2 - aux3
+
+    @cache_method
+    def determinant_shifter_tensor(self, xi1, xi2, xi3):
+        trace_K = 2 * self.mean_curvature(xi1, xi2)
+        gaussian_curvature = self.gaussian_curvature(xi1, xi2)
+        shifter_det = (np.ones(np.shape(xi1) + np.shape(xi3)) +
+                       np.einsum('xy, z->xyz', trace_K, xi3) +
+                       np.einsum('xy, z->xyz', gaussian_curvature, xi3 ** 2))
+
+        return shifter_det
+
+
     def __call__(self, xi1, xi2):
         """
         Allows the instance of MidSurfaceGeometry to be called as a function.
@@ -254,10 +350,10 @@ class MidSurfaceGeometry:
         return self._position_vector(xi1, xi2)
 
     def _natural_base(self, xi1, xi2):
-        return self._M1(xi1, xi2), self._M2(xi1, xi2), self._M3(xi1, xi2)
+        return self._M1(xi1, xi2).squeeze(), self._M2(xi1, xi2).squeeze(), self._M3(xi1, xi2).squeeze()
 
     def _reciprocal_base(self, xi1, xi2):
-        return self._MR1(xi1, xi2), self._MR2(xi1, xi2), self._MR3(xi1, xi2)
+        return self._MR1(xi1, xi2).squeeze(), self._MR2(xi1, xi2).squeeze(), self._MR3(xi1, xi2).squeeze()
 
     def _christoffel_symbols(self, xi1, xi2):
         return np.array(self._chris1(xi1, xi2)).reshape((3, 3, 2) + np.shape(xi1))

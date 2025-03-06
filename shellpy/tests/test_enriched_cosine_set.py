@@ -7,9 +7,9 @@ if __name__ == "__main__":
     a = 2
     boundary_conditions = ("F", "F")
     boundary = (0, a)
-    n_modos = 10
+    n_modos = 20
 
-    f = EnrichedCosineExpansion._generate_set_C0(boundary_conditions, boundary, 3, n_modos+1)
+    f = EnrichedCosineExpansion._generate_set_C1(boundary_conditions, boundary, 3, n_modos+1)
 
     x = np.linspace(boundary[0], boundary[1], 200)
 

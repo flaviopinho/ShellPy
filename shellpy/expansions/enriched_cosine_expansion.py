@@ -3,6 +3,7 @@ import numpy as np
 
 from shellpy import DisplacementExpansion, displacement_field_index
 from shellpy import RectangularMidSurfaceDomain
+from shellpy.expansions.simple_expansions import constant_value_expansion, fourier_expansion_for_periodic_solutions
 
 
 class EnrichedCosineExpansion(DisplacementExpansion):
@@ -44,6 +45,10 @@ class EnrichedCosineExpansion(DisplacementExpansion):
         self._boundary_conditions = boundary_conditions
         self._equations = self._determine_equations()
 
+        self._number_of_fields = len(expansion_size)
+        if self._number_of_fields != 3 or self._number_of_fields != 6:
+            ValueError('Expansion must have 3 or 6 fields.')
+
     def mapping(self, n):
         """
         :param n: n-th degree of freedom
@@ -65,7 +70,7 @@ class EnrichedCosineExpansion(DisplacementExpansion):
         :return: A vector that contains the value of the shape function for the coordinates xi1 and xi2
         """
 
-        u = np.zeros((3,) + np.shape(xi1), dtype=np.float64)
+        u = np.zeros((self._number_of_fields,) + np.shape(xi1), dtype=np.float64)
         vec = self._mapping[n]
         field = self._mapping[n][0]
         k = displacement_field_index[field]
@@ -73,7 +78,12 @@ class EnrichedCosineExpansion(DisplacementExpansion):
         j = vec[2]
         c = self._equations(xi1, xi2, field, i, j, derivative1, derivative2)
         u[k] = c
-        return u
+        if self.number_of_fields() == 6:
+            v = u[3:6]
+            u = u[0:3]
+            return u, v
+        else:
+            return u
 
     def shape_function_first_derivatives(self, n, xi1, xi2):
         """
@@ -83,7 +93,7 @@ class EnrichedCosineExpansion(DisplacementExpansion):
         :param xi2: curvilinear coordinate 2
         :return: Returns a matrix (numpy ndarray) that contains the derivative of the shape_functions
         """
-        du = np.zeros((3, 2) + np.shape(xi1), dtype=np.float64)
+        du = np.zeros((self._number_of_fields, 2) + np.shape(xi1), dtype=np.float64)
         field = self._mapping[n][0]
         k = displacement_field_index[field]
         i = self._mapping[n][1]
@@ -92,7 +102,12 @@ class EnrichedCosineExpansion(DisplacementExpansion):
         for derivative_index, derivatives in enumerate(((1, 0), (0, 1))):
             du[k, derivative_index] = self._equations(xi1, xi2, field, i, j, *derivatives)
 
-        return du
+        if self.number_of_fields() == 6:
+            dv = du[3:6]
+            du = du[0:3]
+            return du, dv
+        else:
+            return du
 
     def shape_function_second_derivatives(self, n, xi1, xi2):
         """
@@ -102,7 +117,7 @@ class EnrichedCosineExpansion(DisplacementExpansion):
         :param xi2: curvilinear coordinate 2
         :return: Returns a tensor (numpy ndarray) that contains the derivative of the shape_functions
         """
-        ddu = np.zeros((3, 2, 2) + np.shape(xi1), dtype=np.float64)
+        ddu = np.zeros((self._number_of_fields, 2, 2) + np.shape(xi1), dtype=np.float64)
         field = self._mapping[n][0]
         k = displacement_field_index[field]
         i = self._mapping[n][1]
@@ -113,17 +128,45 @@ class EnrichedCosineExpansion(DisplacementExpansion):
                 derivatives = (derivatives_j[0] + derivatives_k[0], derivatives_j[1] + derivatives_k[1])
                 ddu[k, jj, kk] = self._equations(xi1, xi2, field, i, j, *derivatives)
 
-        return ddu
+        if self.number_of_fields() == 6:
+            ddv = ddu[3:6]
+            ddu = ddu[0:3]
+            return ddu, ddv
+        else:
+            return ddu
 
     def _determine_equations(self):
 
         cosine_set_functions = {}
         for field_, bc in self._boundary_conditions.items():
+
+            maximum_modes = [t for t in self._mapping if t[0] == field_]
+            if not maximum_modes:
+                maximum_modes_xi1 = 0
+                maximum_modes_xi2 = 0
+            else:
+                maximum_modes_xi1 = max(t[1] for t in maximum_modes)
+                maximum_modes_xi2 = max(t[2] for t in maximum_modes)
+
             for direction, BC in bc.items():
-                if field_ == 'u3':
-                    cosine_set_functions[(field_, direction)] = EnrichedCosineExpansion._generate_set_C1(BC, self._edges[direction], 3, 30)
+                if direction == "xi1":
+                    maximum_mode = maximum_modes_xi1
                 else:
-                    cosine_set_functions[(field_, direction)] = EnrichedCosineExpansion._generate_set_C0(BC, self._edges[direction], 3, 30)
+                    maximum_mode = maximum_modes_xi2
+
+                if BC == ("O", "O"):
+                    if maximum_mode != 1:
+                        raise ValueError("expansion_size must be 1 when BC is ('O', 'O')")
+                    cosine_set_functions[(field_, direction)] = constant_value_expansion(3)
+
+                elif BC == ("R", "R"):
+                    cosine_set_functions[(field_, direction)] = fourier_expansion_for_periodic_solutions(
+                        self._edges[direction], 3, maximum_mode+1)
+                else:
+                    if field_ == 'u3':
+                        cosine_set_functions[(field_, direction)] = EnrichedCosineExpansion._generate_set_C1(BC, self._edges[direction], 3, maximum_mode+5)
+                    else:
+                        cosine_set_functions[(field_, direction)] = EnrichedCosineExpansion._generate_set_C0(BC, self._edges[direction], 3, maximum_mode+5)
 
         equations = lambda xi1, xi2, field, i, j, derivative1, derivative2: (
                 cosine_set_functions[field, "xi1"][(i - 1, derivative1)](xi1)
@@ -148,15 +191,26 @@ class EnrichedCosineExpansion(DisplacementExpansion):
         return mapping
 
     def __call__(self, *args, **kwargs):
-        u = args[0]
+        U = args[0]
         xi1 = args[1]
         xi2 = args[2]
+        if self.number_of_fields() == 3:
+            result = np.zeros((3,) + np.shape(xi1))
 
-        result = np.zeros((3,) + np.shape(xi1))
-        for i in range(self.number_of_degrees_of_freedom()):
-            result = result + self.shape_function(i, xi1, xi2, 0, 0) * u[i]
+            for i in range(self.number_of_degrees_of_freedom()):
+                result = result + self.shape_function(i, xi1, xi2, 0, 0) * U[i]
 
-        return result
+            return result
+        else:
+            u = np.zeros((3,) + np.shape(xi1))
+            v = np.zeros((3,) + np.shape(xi1))
+
+            for i in range(self.number_of_degrees_of_freedom()):
+                u1, v1 = self.shape_function(i, xi1, xi2, 0, 0)
+                u = u + u1 * U[i]
+                v = v + v1 * U[i]
+            return u, v
+
 
     @staticmethod
     def _generate_set_C0(boundary_conditions, boundary, maximum_derivative=3, maximum_mode = 10):
@@ -169,9 +223,9 @@ class EnrichedCosineExpansion(DisplacementExpansion):
         xi_ = (2 * x_ - (a+b))/L
 
         Fc = []
-        Fc.append(sym.simplify(1/4*(3*xi_+1)*(xi_-1)))
-        Fc.append(sym.simplify(1/4*(3*xi_-1)*(xi_+1)))
-        Fcj = sym.simplify(sym.cos(sym.pi/2*(j_-3)*(xi_+1))-Fc[0]+((-1) ** j_)*Fc[1])
+        Fc.append(1/4*(3*xi_+1)*(xi_-1))
+        Fc.append(1/4*(3*xi_-1)*(xi_+1))
+        Fcj = sym.cos(sym.pi/2*(j_-3)*(xi_+1))-Fc[0]+((-1) ** j_)*Fc[1]
 
         functions_set = {}
         for derivative in range(maximum_derivative):
@@ -181,10 +235,10 @@ class EnrichedCosineExpansion(DisplacementExpansion):
                     functions_set[(count, derivative)] = sym.lambdify(x_, Fc[point].diff(x_, derivative))
                     count += 1
                 elif boundary_conditions[point] != "S":
-                    print('erro')
+                    raise ValueError("Boundary condition must be 'F' or 'S' for C0 cosine set")
 
             for point in range(3, maximum_mode):
-                functions_set[(count, derivative)] = sym.lambdify(x_, sym.simplify(Fcj.subs(j_, point).diff(x_, derivative)))
+                functions_set[(count, derivative)] = sym.lambdify(x_, Fcj.subs(j_, point).diff(x_, derivative))
                 count += 1
 
         return functions_set
@@ -220,13 +274,16 @@ class EnrichedCosineExpansion(DisplacementExpansion):
                     functions_set[(count, derivative)] = sym.lambdify(x_, Fc[2*point+1].diff(x_, derivative))
                     count += 1
                 elif boundary_conditions[point] != "C":
-                    print('erro')
+                    raise ValueError("Boundary condition must be 'F', 'S' or 'C' for C1 cosine set")
 
             for point in range(5, maximum_mode):
                 functions_set[(count, derivative)] = sym.lambdify(x_, sym.simplify(Fcj.subs(j_, point).diff(x_, derivative)))
                 count += 1
 
         return functions_set
+
+    def number_of_fields(self):
+        return self._number_of_fields
 
 
 

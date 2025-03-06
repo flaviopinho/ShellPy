@@ -31,12 +31,12 @@ if __name__ == "__main__":
                       "u3": (1, 1)}
 
     # Boundary conditions for each displacement field
-    boundary_conditions_u1 = {"xi1": ("S", "S"),
-                              "xi2": ("S", "S")}
-    boundary_conditions_u2 = {"xi1": ("S", "S"),
-                              "xi2": ("S", "S")}
-    boundary_conditions_u3 = {"xi1": ("S", "S"),
-                              "xi2": ("S", "S")}
+    boundary_conditions_u1 = {"xi1_0": ("S", "S"),
+                              "xi2_0": ("S", "S")}
+    boundary_conditions_u2 = {"xi1_0": ("S", "S"),
+                              "xi2_0": ("S", "S")}
+    boundary_conditions_u3 = {"xi1_0": ("S", "S"),
+                              "xi2_0": ("S", "S")}
 
     # Group mid_surface_domain conditions into a single dictionary
     boundary_conditions = {"u1": boundary_conditions_u1,
@@ -50,10 +50,10 @@ if __name__ == "__main__":
     R_ = sym.Matrix([xi1_, xi2_, sym.sqrt(R ** 2 - (xi1_ - a / 2) ** 2 - (xi2_ - b / 2) ** 2)])
     mid_surface_geometry = MidSurfaceGeometry(R_)
 
-    # Create a meshgrid for the xi1 and xi2 coordinates for numerical evaluation
-    xi1 = np.linspace(*edges.edges["xi1"], 500)
-    xi2 = np.linspace(*edges.edges["xi2"], 500)
-    x, y = np.meshgrid(xi1, xi2, indexing='xy')
+    # Create a meshgrid for the xi1_0 and xi2_0 coordinates for numerical evaluation
+    xi1 = np.linspace(*edges.edges["xi1_0"], 500)
+    xi2 = np.linspace(*edges.edges["xi2_0"], 500)
+    x, y = np.meshgrid(xi1, xi2, indexing='ij')
 
     # First calculation: natural_base function without caching
     start = time.time()  # Start the timer

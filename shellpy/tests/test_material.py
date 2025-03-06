@@ -13,7 +13,7 @@ if __name__ == "__main__":
 
     material = LinearElasticMaterial(10, 0.2, 0)
 
-    C = material.thin_shell_constitutive_tensor(mid_surface.metric_tensor_contravariant_components(0, 0))
+    C = material.plane_stress_constitutive_tensor_for_koiter_theory(mid_surface.metric_tensor_contravariant_components(0, 0))
 
     idn = np.zeros((2,) * 4)
     idn[tuple([np.arange(2)] * 4)] = 1

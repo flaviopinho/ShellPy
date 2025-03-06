@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 import sympy as sym
 import numpy as np
 
+from nonlinear_static_analysis.residue_jacobian_stability import shell_stability, shell_jacobian, shell_residue
 from shellpy import simply_supported, pinned
 from shellpy.expansions.eigen_function_expansion import EigenFunctionExpansion
 from shellpy.expansions.polinomial_expansion import GenericPolynomialSeries
@@ -27,60 +28,7 @@ sys.path.append('../../ContinuationPy/ContinuationPy')
 import continuation
 
 
-def pinho_nonshallow_shell_residue(F_int, F_ext, x, *args):
-    u = x[:-1]
-    p = x[-1]
-    F_int_tot = np.einsum('ij, j->i', F_int[0], u, optimize=True) + \
-                np.einsum('ijk, j, k->i', F_int[1], u, u, optimize=True) + \
-                np.einsum('ijkl, j, k, l->i', F_int[2], u, u, u, optimize=True)
-    return F_int_tot + F_ext * p
-
-
-def pinho_nonshallow_shell_jacobian(J_int, F_ext, x, *args):
-    u = x[:-1]
-    p = [-1]
-    J_int_tot = J_int[0] + \
-                np.einsum('ijk, k->ij', J_int[1], u, optimize=True) + \
-                np.einsum('ijkl, k, l->ij', J_int[2], u, u, optimize=True)
-
-    return np.hstack((J_int_tot, F_ext[:, np.newaxis]))
-
-
-def pinho_nonshallow_shell_stability(u, J, model, *args):
-    # Extrai a submatriz Jx
-    Jx = -J[:model['n'], :model['n']]
-
-    # Determinação dos autovalores de Jx
-    eigen_values = np.linalg.eigvals(Jx)
-
-    # Partes reais e imaginárias dos autovalores
-    real_part = np.real(eigen_values)
-    imaginary_part = np.imag(eigen_values)
-
-    # Estabilidade: maior parte real
-    stability = np.max(real_part)
-
-    tipo = None
-    if 'tipo' in locals():  # Para verificar se a variável tipo foi definida
-        # Análise do tipo de bifurcação
-        index_real_positivo = real_part > 0
-        index_real_negativo = real_part < 0
-        num_real_positivo = np.sum(index_real_positivo)
-        num_real_negativo = np.sum(index_real_negativo)
-
-        if num_real_positivo == 2 and np.any(imaginary_part[index_real_positivo] != 0):
-            tipo = 'H'  # Hopf
-        elif num_real_positivo == 1 and num_real_negativo >= 0:
-            tipo = 'SN'  # Ponto de sela
-        elif num_real_positivo == 0 and num_real_negativo >= 0:
-            tipo = 'PR'  # Ponto regular
-        else:
-            tipo = 'BC'  # Bifurcação complexa
-
-    return stability, tipo
-
-
-def pinho_output_results(shell, xi1, xi2, x, *args):
+def non_shallow_sphere_panel_output_results(shell, xi1, xi2, x, *args):
     u = x[:-1]
     p = x[-1]
     U = shell.displacement_expansion(u, xi1, xi2)
@@ -162,10 +110,10 @@ if __name__ == "__main__":
     J3_int = tensor_derivative(F3_int, 1)
     J4_int = tensor_derivative(F4_int, 1)
 
-    residue = lambda u, *args: pinho_nonshallow_shell_residue((F2_int, F3_int, F4_int), F_ext, u, *args)
-    jacobian = lambda u, *args: pinho_nonshallow_shell_jacobian((J2_int, J3_int, J4_int), F_ext, u, *args)
-    stability = pinho_nonshallow_shell_stability
-    output = lambda u, *args: pinho_output_results(shell, a/4, b/4, u, *args)
+    residue = lambda u, *args: shell_residue((F2_int, F3_int, F4_int), F_ext, u, *args)
+    jacobian = lambda u, *args: shell_jacobian((J2_int, J3_int, J4_int), F_ext, u, *args)
+    stability = shell_stability
+    output = lambda u, *args: non_shallow_sphere_panel_output_results(shell, a / 4, b / 4, u, *args)
 
     # Limites de interesse das variaveis e parametros
     continuation_boundary = np.zeros((n + p, 2))

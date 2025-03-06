@@ -47,6 +47,10 @@ class GenericPolynomialSeries(DisplacementExpansion):
         self._bc_equations = self._set_boundary_conditions_equations()
         self._coeff = self._determine_coefficients()
 
+        self._number_of_fields = len(expansion_size)
+        if self._number_of_fields != 3 or self._number_of_fields != 6:
+            ValueError('Expansion must have 3 or 6 fields.')
+
     def _set_mapping(self):
         mapping = []
         self._dof = 0
@@ -133,9 +137,14 @@ class GenericPolynomialSeries(DisplacementExpansion):
         """
         c = self._coeff[(n, derivative1, derivative2)]
         value = P.polynomial.polyval2d(xi1, xi2, c)
-        vector_u = np.zeros((3,) + np.shape(xi1))
+        vector_u = np.zeros((self._number_of_fields,) + np.shape(xi1))
         vector_u[displacement_field_index[self._mapping[n][0]]] = value
-        return vector_u
+        if self.number_of_fields() == 6:
+            v = vector_u[3:6]
+            u = vector_u[0:3]
+            return u, v
+        else:
+            return vector_u
 
     def shape_function_first_derivatives(self, n, xi1, xi2):
         """
@@ -145,13 +154,18 @@ class GenericPolynomialSeries(DisplacementExpansion):
         :param xi2: curvilinear coordinate 2
         :return: Returns a matrix (numpy ndarray) that contains the derivative of the shape_functions
         """
-        du = np.zeros((3, 2) + np.shape(xi1), dtype=np.float64)
+        du = np.zeros((self._number_of_fields, 2) + np.shape(xi1), dtype=np.float64)
         i = displacement_field_index[self._mapping[n][0]]
         for jj, j in enumerate(((1, 0), (0, 1))):
             c = self._coeff[(n,) + j]
             du[i, jj] = P.polynomial.polyval2d(xi1, xi2, c)
 
-        return du
+        if self.number_of_fields() == 6:
+            dv = du[3:6]
+            du = du[0:3]
+            return du, dv
+        else:
+            return du
 
     def shape_function_second_derivatives(self, n, xi1, xi2):
         """
@@ -161,7 +175,7 @@ class GenericPolynomialSeries(DisplacementExpansion):
         :param xi2: curvilinear coordinate 2
         :return: Returns a tensor (numpy ndarray) that contains the derivative of the shape_functions
         """
-        ddu = np.zeros((3, 2, 2) + np.shape(xi1), dtype=np.float64)
+        ddu = np.zeros((self._number_of_fields, 2, 2) + np.shape(xi1), dtype=np.float64)
         i = displacement_field_index[self._mapping[n][0]]
 
         for jj, j in enumerate(((1, 0), (0, 1))):
@@ -170,18 +184,37 @@ class GenericPolynomialSeries(DisplacementExpansion):
                 c = self._coeff[aux]
                 ddu[i, jj, kk] = P.polynomial.polyval2d(xi1, xi2, c)
 
-        return ddu
+        if self.number_of_fields() == 6:
+            ddv = ddu[3:6]
+            ddu = ddu[0:3]
+            return ddu, ddv
+        else:
+            return ddu
 
     def __call__(self, *args, **kwargs):
-        u = args[0]
+        U = args[0]
         xi1 = args[1]
         xi2 = args[2]
 
-        result = np.zeros((3,) + np.shape(xi1))
-        for i in range(self.number_of_degrees_of_freedom()):
-            result = result + self.shape_function(i, xi1, xi2) * u[i]
+        if self.number_of_fields() == 3:
+            result = np.zeros((3,) + np.shape(xi1))
 
-        return result
+            for i in range(self.number_of_degrees_of_freedom()):
+                result = result + self.shape_function(i, xi1, xi2, 0, 0) * U[i]
+
+            return result
+        else:
+            u = np.zeros((3,) + np.shape(xi1))
+            v = np.zeros((3,) + np.shape(xi1))
+
+            for i in range(self.number_of_degrees_of_freedom()):
+                u1, v1 = self.shape_function(i, xi1, xi2, 0, 0)
+                u = u + u1 * U[i]
+                v = v + v1 * U[i]
+            return u, v
+
+    def number_of_fields(self):
+        return self._number_of_fields
 
 
 LegendreSeries = lambda expansion_size, rectangular_boundary, boundary_conditions, mapping=None: GenericPolynomialSeries(P.Legendre,

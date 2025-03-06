@@ -10,12 +10,18 @@ import matplotlib.pyplot as plt
 import sympy as sym
 import numpy as np
 
+import shellpy
+from nonlinear_static_analysis.residue_jacobian_stability import shell_jacobian, shell_residue, shell_stability
 from shellpy import simply_supported, pinned
 from shellpy.expansions.eigen_function_expansion import EigenFunctionExpansion
 from shellpy.expansions.enriched_cosine_expansion import EnrichedCosineExpansion
 from shellpy.expansions.polinomial_expansion import GenericPolynomialSeries
 from shellpy import RectangularMidSurfaceDomain
+from shellpy.fosd_theory.fosd_load_energy import fosd_load_energy
+from shellpy.fosd_theory.fosd_strain_energy import fosd_strain_energy
 from shellpy.koiter_shell_theory import fast_koiter_strain_energy
+from shellpy.koiter_shell_theory.koiter_strain_energy_large_rotations import \
+    koiter_strain_energy_large_rotations
 from shellpy.tensor_derivatives import tensor_derivative
 from shellpy.koiter_shell_theory.koiter_load_energy import koiter_load_energy
 from shellpy.shell_loads.shell_conservative_load import ConcentratedForce, PressureLoad
@@ -23,77 +29,27 @@ from shellpy import LinearElasticMaterial
 from shellpy import Shell
 from shellpy import ConstantThickness
 from shellpy import MidSurfaceGeometry, xi1_, xi2_
+import shellpy.integral_booles_rule
 
 sys.path.append('../../ContinuationPy/ContinuationPy')
 import continuation
 
 
-def pinho_nonshallow_shell_residue(F_int, F_ext, x, *args):
+def arc_output_results(shell, xi1, xi2, x, *args):
     u = x[:-1]
     p = x[-1]
-    F_int_tot = np.einsum('ij, j->i', F_int[0], u, optimize=True) + \
-                np.einsum('ijk, j, k->i', F_int[1], u, u, optimize=True) + \
-                np.einsum('ijkl, j, k, l->i', F_int[2], u, u, u, optimize=True)
-    return F_int_tot + F_ext * p
-
-
-def pinho_nonshallow_shell_jacobian(J_int, F_ext, x, *args):
-    u = x[:-1]
-    p = [-1]
-    J_int_tot = J_int[0] + \
-                np.einsum('ijk, k->ij', J_int[1], u, optimize=True) + \
-                np.einsum('ijkl, k, l->ij', J_int[2], u, u, optimize=True)
-
-    return np.hstack((J_int_tot, F_ext[:, np.newaxis]))
-
-
-def pinho_nonshallow_shell_stability(u, J, model, *args):
-    # Extrai a submatriz Jx
-    Jx = J[:model['n'], :model['n']]
-
-    # Determinação dos autovalores de Jx
-    eigen_values = np.linalg.eigvals(Jx)
-
-    # Partes reais e imaginárias dos autovalores
-    real_part = np.real(eigen_values)
-    imaginary_part = np.imag(eigen_values)
-
-    # Estabilidade: maior parte real
-    stability = np.max(real_part)
-
-    tipo = None
-    if 'tipo' in locals():  # Para verificar se a variável tipo foi definida
-        # Análise do tipo de bifurcação
-        index_real_positivo = real_part > 0
-        index_real_negativo = real_part < 0
-        num_real_positivo = np.sum(index_real_positivo)
-        num_real_negativo = np.sum(index_real_negativo)
-
-        if num_real_positivo == 2 and np.any(imaginary_part[index_real_positivo] != 0):
-            tipo = 'H'  # Hopf
-        elif num_real_positivo == 1 and num_real_negativo >= 0:
-            tipo = 'SN'  # Ponto de sela
-        elif num_real_positivo == 0 and num_real_negativo >= 0:
-            tipo = 'PR'  # Ponto regular
-        else:
-            tipo = 'BC'  # Bifurcação complexa
-
-    return stability, tipo
-
-
-def pinho_output_results(shell, xi1, xi2, x, *args):
-    u = x[:-1]
-    p = x[-1]
-    U = shell.displacement_expansion(u, xi1, xi2)
+    h = shell.thickness(xi1, xi2)
+    U, _ = shell.displacement_expansion(u, xi1, xi2)
+    U = U * h
     N1, N2, N3 = shell.mid_surface_geometry.reciprocal_base(xi1, xi2)
     U = U[0] * N1 + U[1] * N2 + U[2] * N3
 
-    plot_shell(shell, u)
+    plot_shell_arc(shell, u)
 
     return -U[2], p, "u_3(pi/2, 0)", "P"
 
 
-def plot_shell(shell, u):
+def plot_shell_arc(shell, u):
     """
     Plots the deformed shell geometry.
 
@@ -104,10 +60,15 @@ def plot_shell(shell, u):
     # Create meshgrid of xi1 and xi2 coordinates for plotting.
     xi1 = np.linspace(*shell.mid_surface_domain.edges["xi1"], 100)
     xi2 = np.linspace(*shell.mid_surface_domain.edges["xi2"], 2)
-    x, y = np.meshgrid(xi1, xi2, indexing='xy')
+    x, y = np.meshgrid(xi1, xi2, indexing='ij')
+    h = shell.thickness(xi1, xi2)
+
+    reciprocal_base = shell.mid_surface_geometry.reciprocal_base(x, y)
 
     # Calculate the deformed shape (mode) using the displacement expansion.
-    mode = shell.displacement_expansion(u, x, y)  # Compute mode shape
+    mode1,  _ = shell.displacement_expansion(u, x, y)   # Compute mode shape
+    mode1 = mode1 * h
+    mode = reciprocal_base[0] * mode1[0] + reciprocal_base[1] * mode1[1] + reciprocal_base[2] * mode1[2]
 
     # Calculate the original (undeformed) mid-surface geometry.
     z = shell.mid_surface_geometry(x, y)  # Compute deformed geometry
@@ -119,6 +80,17 @@ def plot_shell(shell, u):
         fig.clf()  # Clear figure
         ax = fig.add_subplot(1, 2, 1)  # First subplot (not used)
         ax = fig.add_subplot(1, 2, 2, projection='3d')  # Second subplot (3D plot)
+
+        data = np.loadtxt("arc_results.txt", delimiter=",", skiprows=1)
+
+        # Separar as colunas x e y
+        x = data[:, 0]
+        y = data[:, 1]
+        ax = plt.subplot(1, 2, 1)
+        ax.plot(x, y, linestyle='-', color='r')
+
+        ax = plt.subplot(1, 2, 2)
+
     else:  # If figure already exists
         ax = plt.subplot(1, 2, 2)  # Select the 3D subplot
 
@@ -128,7 +100,7 @@ def plot_shell(shell, u):
     scmap = plt.cm.ScalarMappable(cmap='jet')  # Define colormap
 
     # Plot the deformed shell surface. The displacement is scaled by a factor of 5 for visualization.
-    ax.plot_surface(z[0, 0] + mode[0], z[1, 0] + mode[1] , z[2, 0] + mode[2],
+    ax.plot_surface(z[0, 0] + mode[0], z[1, 0] + mode[1], z[2, 0] + mode[2],
                     facecolors=scmap.to_rgba(mode[2]),  # Color based on transverse displacement
                     edgecolor='black',  # Black edges
                     linewidth=0.1)  # Edge linewidth
@@ -145,6 +117,10 @@ def plot_shell(shell, u):
 
 
 if __name__ == "__main__":
+    integral_x = 40
+    integral_y = 1
+    integral_z = 2
+
     R = 1
     b = 0.1
     alpha = 35 / 2 * (np.pi / 180)
@@ -159,28 +135,56 @@ if __name__ == "__main__":
     E = 1
     nu = 0.3
 
-    load = ConcentratedForce(0, 0, 1 / (R ** 2 / (E * In)), np.pi / 2, 0)
+    load = ConcentratedForce(0, 0, -1 / (R ** 2 / (E * In)), np.pi / 2, 0)
 
-    rectangular_domain = RectangularMidSurfaceDomain(alpha1, alpha2, b / 2, -b / 2)
+    rectangular_domain = RectangularMidSurfaceDomain(alpha1, alpha2, -b / 2, b / 2)
 
-    expansion_size = {"u1": (15, 4),
-                      "u2": (2, 2),
-                      "u3": (20, 4)}
+    expansion_size = {"u1": (20, 1),
+                      "u2": (0, 0),
+                      "u3": (20, 1),
+                      "v1": (20, 1),
+                      "v2": (0, 0),
+                      "v3": (20, 1)}
 
+    boundary_conditions_u1 = {"xi1": ("S", "S"),
+                              "xi2": ("O", "O")}
+    boundary_conditions_u2 = {"xi1": ("S", "S"),
+                              "xi2": ("S", "S")}
+    boundary_conditions_u3 = {"xi1": ("S", "C"),
+                              "xi2": ("O", "O")}
+
+    boundary_conditions_v1 = {"xi1": ("F", "S"),
+                              "xi2": ("O", "O")}
+    boundary_conditions_v2 = {"xi1": ("S", "S"),
+                              "xi2": ("S", "S")}
+    boundary_conditions_v3 = {"xi1": ("F", "S"),
+                              "xi2": ("O", "O")}
+    """
     boundary_conditions_u1 = {"xi1": ("S", "S"),
                               "xi2": ("F", "F")}
     boundary_conditions_u2 = {"xi1": ("S", "S"),
+                              "xi2": ("S", "S")}
+    boundary_conditions_u3 = {"xi1": ("S", "C"),
                               "xi2": ("F", "F")}
-    boundary_conditions_u3 = {"xi1": ("C", "C"),
+
+    boundary_conditions_v1 = {"xi1": ("F", "S"),
                               "xi2": ("F", "F")}
+    boundary_conditions_v2 = {"xi1": ("S", "S"),
+                              "xi2": ("S", "S")}
+    boundary_conditions_v3 = {"xi1": ("F", "S"),
+                              "xi2": ("F", "F")}"""
 
     boundary_conditions = {"u1": boundary_conditions_u1,
                            "u2": boundary_conditions_u2,
-                           "u3": boundary_conditions_u3}
+                           "u3": boundary_conditions_u3,
+                           "v1": boundary_conditions_v1,
+                           "v2": boundary_conditions_v2,
+                           "v3": boundary_conditions_v3}
 
     displacement_field = EnrichedCosineExpansion(expansion_size, rectangular_domain, boundary_conditions)
+    #displacement_field = GenericPolynomialSeries(np.polynomial.Legendre, expansion_size, rectangular_domain, boundary_conditions)
 
-    R_ = sym.Matrix([R * sym.cos(xi1_), xi2_, R * sym.sin(xi1_)])
+    R_ = sym.Matrix([-R * sym.cos(xi1_), xi2_, R * sym.sin(xi1_)])
     mid_surface_geometry = MidSurfaceGeometry(R_)
     thickness = ConstantThickness(h)
     material = LinearElasticMaterial(E, nu, density)
@@ -188,9 +192,9 @@ if __name__ == "__main__":
 
     n_dof = shell.displacement_expansion.number_of_degrees_of_freedom()
 
-    U_ext = koiter_load_energy(shell)
+    U_ext = fosd_load_energy(shell)
 
-    U2_int, U3_int, U4_int = fast_koiter_strain_energy(shell)
+    U2_int, U3_int, U4_int = fosd_strain_energy(shell, integral_x, integral_y, integral_z)
 
     # Numero de variaveis
     n = displacement_field.number_of_degrees_of_freedom()
@@ -208,17 +212,17 @@ if __name__ == "__main__":
     J3_int = tensor_derivative(F3_int, 1)
     J4_int = tensor_derivative(F4_int, 1)
 
-    residue = lambda u, *args: pinho_nonshallow_shell_residue((F2_int, F3_int, F4_int), F_ext, u, *args)
-    jacobian = lambda u, *args: pinho_nonshallow_shell_jacobian((J2_int, J3_int, J4_int), F_ext, u, *args)
-    stability = pinho_nonshallow_shell_stability
-    output = lambda u, *args: pinho_output_results(shell, np.pi / 2, 0, u, *args)
+    residue = lambda u, *args: shell_residue((F2_int, F3_int, F4_int), F_ext, u, *args)
+    jacobian = lambda u, *args: shell_jacobian((J2_int, J3_int, J4_int), F_ext, u, *args)
+    stability = shell_stability
+    output = lambda u, *args: arc_output_results(shell, np.pi / 2, 0, u, *args)
 
     # Limites de interesse das variaveis e parametros
     continuation_boundary = np.zeros((n + p, 2))
     continuation_boundary[:-1, 0] = -100000
     continuation_boundary[:-1, 1] = 100000
-    continuation_boundary[-1, 0] = -0.2
-    continuation_boundary[-1, 1] = 20
+    continuation_boundary[-1, 0] = -2
+    continuation_boundary[-1, 1] = 10
 
     # Definindo continuation_model
     continuation_model = {'n': n_dof,
@@ -230,12 +234,13 @@ if __name__ == "__main__":
                           'output_function': output}
 
     continuation = continuation.Continuation(continuation_model)
-    continuation.parameters['tol2'] = 1E-9
-    continuation.parameters['tol1'] = 1E-5
+    continuation.parameters['tol2'] = 1E-6
+    continuation.parameters['tol1'] = 1E-6
     continuation.parameters['index1'] = -1
     continuation.parameters['index2'] = 0
+    continuation.parameters['cont_max'] = 10000
 
-    continuation.parameters['h_max'] = 1
+    continuation.parameters['h_max'] = 100
 
     # Determinacao de um ponto regular inicial
     u0 = np.zeros(continuation_model['n'] + continuation_model['p'])

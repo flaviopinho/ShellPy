@@ -19,63 +19,42 @@ from shellpy import MidSurfaceGeometry, xi1_, xi2_
 if __name__ == "__main__":
     n_integral_default = 20
 
-    plot_scale = 40
+    plot_scale = 4
 
     # Entrada de dados
     # painel esferico
-    R = 1
-    a = 0.1
-    b = 0.1
-    rectangular_domain = RectangularMidSurfaceDomain(0, a, 0, b)
-    R_ = sym.Matrix([xi1_, xi2_, sym.sqrt(R ** 2 - (xi1_ - a / 2) ** 2 - (xi2_ - b / 2) ** 2)])
-
     # placa
-    """
-    a = 0.1
-    b = 0.2
+    a = 1.0
+    b = 2.0
     rectangular_domain = RectangularMidSurfaceDomain(0, a, 0, b)
     R_ = sym.Matrix([xi1_, xi2_, 0])
-    """
 
-    # painel cilindrico
-    """
-    R = 1
-    b = 2
-    rectangular_domain = RectangularMidSurfaceDomain(-R*0.999, R*0.999, 0, b)
-    R_ = sym.Matrix([xi1_, xi2_, sym.sqrt(R ** 2 - (xi1_) ** 2)])
-    """
 
-    h = 0.001
+    h = 0.25
     density = 7850
 
-    E = 206E9
-    nu = 0.3
+    E = 27000E6
+    nu = 0.2
 
-    load = ConcentratedForce(0, 0, -700, a / 2, b / 2)
-    # load = PressureLoad(10)
+    # load = ConcentratedForce(0, 0, -10, a/2, b/2)
+    load = PressureLoad(-10E3)
 
-    expansion_size = {"u1": (6, 6),
-                      "u2": (6, 6),
-                      "u3": (6, 6)}
+    expansion_size = {"u1": (0, 0),
+                      "u2": (0, 0),
+                      "u3": (10, 10)}
 
-    # boundary_conditions = pinned
-    # boundary_conditions = fully_clamped
-    boundary_conditions = simply_supported
-
-    """
-    boundary_conditions_u1 = {"xi1": ("S", "F"), #F: livre (Free)
-                              "xi2": ("S", "F")} #S: apoiado (Simply supported
-    boundary_conditions_u2 = {"xi1": ("S", "F"), #C: Engastado (clamped)
-                              "xi2": ("S", "F")}
-    boundary_conditions_u3 = {"xi1": ("C", "F"),
-                              "xi2": ("C", "F")}
+    boundary_conditions_u1 = {"xi1": ("F", "F"),  # F: livre (Free)
+                              "xi2": ("F", "S")}  # S: apoiado (Simply supported
+    boundary_conditions_u2 = {"xi1": ("F", "F"),  # C: Engastado (clamped)
+                              "xi2": ("F", "S")}
+    boundary_conditions_u3 = {"xi1": ("F", "F"),
+                              "xi2": ("F", "C")}
 
     boundary_conditions = {"u1": boundary_conditions_u1,
                            "u2": boundary_conditions_u2,
                            "u3": boundary_conditions_u3}
-    """
 
-    displacement_field = EigenFunctionExpansion(expansion_size, rectangular_domain, boundary_conditions)
+    #displacement_field = EigenFunctionExpansion(expansion_size, rectangular_domain, boundary_conditions)
     displacement_field = GenericPolynomialSeries(np.polynomial.Legendre, expansion_size, rectangular_domain,
                                                  boundary_conditions)
 
@@ -109,10 +88,11 @@ if __name__ == "__main__":
     fig = plt.figure(figsize=(8, 6))
     ax = fig.add_subplot(111, projection='3d')
 
+    print("Deslocamento (cm) = ", shell.displacement_expansion(U, a/2, 0)*100)
+
     mode1 = shell.displacement_expansion(U, x, y)
     mode = reciprocal_base[0] * mode1[0] + reciprocal_base[1] * mode1[1] + reciprocal_base[2] * mode1[2]
 
-    mode = mode / np.max(np.abs(mode)) * 0.01  # Normalize and scale for visualization
     mode_norm = mode / np.max(np.abs(mode)) * h * plot_scale  # Normalizar e escalar
     z = shell.mid_surface_geometry(x, y)
 
@@ -123,7 +103,7 @@ if __name__ == "__main__":
 
     # Plotar a superfície
     surf = ax.plot_surface(z[0, 0] + mode_norm[0], z[1, 0] + mode_norm[1], z[2, 0] + mode_norm[2],
-                           facecolors=cmap((mode[2] - mode[2].min()) / (mode[2].max() - mode[2].min())),
+                           facecolors=cmap((mode[2] - mode[2].min())),
                            edgecolor='k', linewidth=0.2, alpha=0.9)
 
     # Adicionar uma barra de cores

@@ -4,6 +4,9 @@ displacement_field_index = {
     "u1": 0,
     "u2": 1,
     "u3": 2,
+    "v1": 3,
+    "v2": 4,
+    "v3": 5
 }
 
 
@@ -65,6 +68,12 @@ class DisplacementExpansion(ABC):
         :param args: state_vector (1st), xi1 (2nd) and xi2 (3rd)
         :param kwargs:
         :return: return the position vector for a given state vector and curvilinear coordinates
+        """
+        pass
+
+    def number_of_fields(self):
+        """
+        :return: return the number of fields of the displacement vector. 3 for thin shell theory and 6 for FOSD theory
         """
         pass
 

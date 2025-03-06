@@ -25,7 +25,7 @@ class LinearElasticMaterial:
         self.cache = {}  # A cache to store precomputed results for efficiency
 
     @cache_method  # This decorator caches the results of the method to avoid redundant computations.
-    def thin_shell_constitutive_tensor(self, metric_tensor=None):
+    def plane_stress_constitutive_tensor_for_koiter_theory(self, metric_tensor=None):
         """
         Computes the constitutive tensor for a thin shell based on the given metric tensor.
 
@@ -53,3 +53,33 @@ class LinearElasticMaterial:
         # Compute the constitutive tensor using the material properties E (Young's modulus) and nu (Poisson's ratio)
         # The formula incorporates the material's behavior and the metric tensor's influence.
         return self.E / (2 * (1 - self.nu ** 2)) * ((1 - self.nu) * (T1 + T2) + 2 * self.nu * T3)
+
+    @cache_method  # This decorator caches the results of the method to avoid redundant computations.
+    def constitutive_tensor(self, metric_tensor_extended=None):
+        """
+        Computes the constitutive tensor for based on the given metric tensor.
+
+        :param metric_tensor_extended: The metric tensor used to compute the constitutive tensor (default is identity).
+        :return: The constitutive tensor of the thin shell, computed using the material properties and metric tensor.
+        """
+        # If no metric tensor is provided, initialize it as a 2x2 identity tensor for the default case.
+        if metric_tensor_extended is None:
+            # Creating a 4-dimensional tensor (3, 3, 3, 3) with identity in the diagonal.
+            metric_tensor_extended = np.zeros((3,) * 4)
+            metric_tensor_extended[tuple([np.arange(3)] * 4)] = 1  # Identity tensor (diagonal elements set to 1)
+
+        # Calculate the first term of the constitutive tensor (T1)
+        # This is a contraction of the metric tensor with itself.
+        T1 = np.einsum('il...,jk...->ijkl...', metric_tensor_extended, metric_tensor_extended)
+
+        # Calculate the second term of the constitutive tensor (T2)
+        # This is a contraction of the metric tensor with itself, but with different indices.
+        T2 = np.einsum('ik...,jl...->ijkl...', metric_tensor_extended, metric_tensor_extended)
+
+        # Calculate the third term of the constitutive tensor (T3)
+        # This is a contraction of the metric tensor with itself, with all indices intact.
+        T3 = np.einsum('ij...,kl...->ijkl...', metric_tensor_extended, metric_tensor_extended)
+
+        # Compute the constitutive tensor using the material properties E (Young's modulus) and nu (Poisson's ratio)
+        # The formula incorporates the material's behavior and the metric tensor's influence.
+        return self.E / (2 * (1 + self.nu)) * (T1 + T2) + self.E *self.nu / ((1 + self.nu) * (1 - 2 * self.nu)) * T3

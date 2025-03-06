@@ -14,7 +14,7 @@ if __name__ == "__main__":
     # Calling the determine_eigenfunctions function to calculate the eigenfunctions.
     # The input parameters are ('F', 'C') (could represent a specific configuration or type),
     # 1 (likely the first eigenfunction or a mid_surface_domain condition), and n_modos (number of modes to calculate).
-    eigen = determine_eigenfunctions(('F', 'C'), 1, n_modos)
+    eigen = determine_eigenfunctions(('F', 'S'), 1, n_modos)
 
     # Create a range of x values for plotting the eigenfunctions (from 0 to 1 with 1000 points)
     x = np.linspace(0, 1, 1000)

@@ -1,7 +1,6 @@
 """
-This example demonstrates how to determine the natural frequencies and vibration modes of a shell structure.
-The shell in question is a parabolic conoid with fully clamped boundary conditions, previously studied in the literature
-(see Table 5 Case D and Fig 13 of DOI: 10.1016/j.engstruct.2021.112807 ).
+This example demonstrates how to determine the natural frequencies and vibration modes of a plate.
+This plate was previously studied by Boumediene et al. (2009) (see https://doi.org/10.1016/j.compstruc.2009.07.005)
 """
 
 import sympy as sym
@@ -24,23 +23,21 @@ from shellpy import ConstantThickness
 if __name__ == "__main__":
 
     # Define geometric parameters of the shell
-    a = 4
-    b = 3
-    f1 = 0.5 * b
-    f2 = 0.25 * b
-    h = np.sqrt(a*b/10000)
-    density = 1
+    a = 0.6
+    b = 0.3
+    h = 0.001
+    density = 2778
 
     # Define material properties
-    E = 1  # Young's modulus
+    E = 70E9  # Young's modulus
     nu = 0.3  # Poisson’s ratio
 
     # Define the rectangular mid-surface domain of the shell
     rectangular_domain = RectangularMidSurfaceDomain(0, a, 0, b)
 
     # Define the number of terms used in the displacement expansion
-    expansion_size = {"u1": (15, 15),  # Expansion order for displacement u1
-                      "u2": (15, 15),  # Expansion order for displacement u2
+    expansion_size = {"u1": (0, 0),  # Expansion order for displacement u1
+                      "u2": (0, 0),  # Expansion order for displacement u2
                       "u3": (15, 15)}  # Expansion order for displacement u3
 
     # Define boundary conditions (pinned edges)
@@ -51,7 +48,7 @@ if __name__ == "__main__":
 
     # Define the symbolic representation of the mid-surface geometry
     # The surface is assumed to be a portion of a sphere
-    R_ = sym.Matrix([xi1_, xi2_, f1*(1-(1-f2/f1)*xi1_/a)*(1-(2*xi2_/b-1)**2)])
+    R_ = sym.Matrix([xi1_, xi2_, 0])
 
     # Create objects representing the shell geometry, thickness, and material properties
     mid_surface_geometry = MidSurfaceGeometry(R_)
@@ -83,37 +80,41 @@ if __name__ == "__main__":
     # Compute natural frequencies (Hz)
     omega = np.sqrt(eigen_vals.real)
 
-    freq = omega*a*b/h*np.sqrt(density/E)
+    freq = omega
 
     # Number of modes to be analyzed
     n_modes = 5
 
     # Print the first five natural frequencies
-    print("Normalized natural frequencies:", freq[:n_modes])
+    print("Natural frequencies (rad/s):", freq[:n_modes])
 
     # Generate a mesh grid for visualization of mode shapes
-    xi1 = np.linspace(*rectangular_domain.edges["xi1"], 100)
-    xi2 = np.linspace(*rectangular_domain.edges["xi2"], 100)
-    x, y = np.meshgrid(xi1, xi2, indexing='xy')
+    xi1 = np.linspace(*rectangular_domain.edges["xi1"], 50)
+    xi2 = np.linspace(*rectangular_domain.edges["xi2"], 25)
+    x, y = np.meshgrid(xi1, xi2, indexing='ij')
+
+    reciprocal_base = shell.mid_surface_geometry.reciprocal_base(x, y)
 
     # Create a figure for mode shape visualization
     fig, axes = plt.subplots(1, n_modes, figsize=(15, 5), subplot_kw={'projection': '3d'})
 
     # Loop through the first few vibration modes
     for i in range(n_modes):
-        mode = shell.displacement_expansion(eigen_vectors[:, i], x, y)  # Compute mode shape
-        mode = mode / np.max(np.abs(mode)) * h * 10  # Normalize and scale for visualization
+        mode1 = shell.displacement_expansion(eigen_vectors[:, i], x, y)  # Compute mode shape
+
+        mode = reciprocal_base[0] * mode1[0] + reciprocal_base[1] * mode1[1] + reciprocal_base[2] * mode1[2]
+        mode = mode / np.max(np.abs(mode)) * h * 20  # Normalize and scale for visualization
         z = shell.mid_surface_geometry(x, y)  # Compute deformed geometry
 
         ax = axes[i]  # Select subplot
         scmap = plt.cm.ScalarMappable(cmap='jet')  # Define colormap
         ax.plot_surface(z[0, 0] + mode[0], z[1, 0] + mode[1], z[2, 0] + mode[2],
-                        facecolors=scmap.to_rgba(mode[2]),
+                        facecolors=scmap.to_rgba(mode1[2]),
                         edgecolor='black',
-                        linewidth=0.5)  # Plot mode shape
+                        linewidth=0.1)  # Plot mode shape
 
         # Label axes and set the title with frequency information
-        ax.set_title(f"Mode {i + 1} - Frequency: {freq[i]:.2f}")
+        ax.set_title(f"Mode {i + 1} - Frequency: {freq[i]:.2f} rad/s")
         ax.set_xlabel("x")
         ax.set_ylabel("y")
         ax.set_zlabel("z")

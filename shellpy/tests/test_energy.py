@@ -13,8 +13,8 @@ if __name__ == "__main__":
 
     # Define the shell geometry parameters.
     R = 1  # Radius of the spherical shell (in meters).
-    a = 0.1  # Length in the xi1 direction (length of the rectangular domain in meters).
-    b = 0.1  # Length in the xi2 direction (width of the rectangular domain in meters).
+    a = 0.1  # Length in the xi1_0 direction (length of the rectangular domain in meters).
+    b = 0.1  # Length in the xi2_0 direction (width of the rectangular domain in meters).
     h = 0.001  # Thickness of the shell (in meters).
 
     # Define the material properties for the shell.
@@ -27,8 +27,8 @@ if __name__ == "__main__":
 
     # Define the displacement field expansion size for the shell.
     # This defines the number of terms in the displacement series for each direction.
-    expansion_size = {"u1": (1, 1),  # Number of terms in the displacement series in the xi1 direction.
-                      "u2": (1, 1),  # Number of terms in the displacement series in the xi2 direction.
+    expansion_size = {"u1": (1, 1),  # Number of terms in the displacement series in the xi1_0 direction.
+                      "u2": (1, 1),  # Number of terms in the displacement series in the xi2_0 direction.
                       "u3": (1, 1)}  # Number of terms in the displacement series in the xi3 direction.
 
     # Define rectangular_domain conditions for the shell.
@@ -39,7 +39,7 @@ if __name__ == "__main__":
     displacement_field = EigenFunctionExpansion(expansion_size, rectangular_domain, boundary_conditions)
 
     # Define the symbolic representation for the mid-surface geometry.
-    # The coordinates are defined using symbolic variables xi1 and xi2, with xi3 depending on the radius.
+    # The coordinates are defined using symbolic variables xi1_0 and xi2_0, with xi3 depending on the radius.
     R_ = sym.Matrix([xi1_, xi2_, sym.sqrt(R ** 2 - (xi1_ - a / 2) ** 2 - (xi2_ - b / 2) ** 2)])
 
     # Create the MidSurfaceGeometry object, which models the geometry of the shell.

@@ -1,3 +1,4 @@
+import matplotlib.pyplot as plt
 import sympy as sym
 import numpy as np
 import scipy
@@ -70,6 +71,7 @@ def determine_eigenfunctions(boundary_conditions, maximum_derivative=3, maximum_
     lambda_det = sym.lambdify(k_, det, 'mpmath')
     lambda_det_prime = sym.lambdify(k_, det.diff(k_, 1), 'mpmath')
 
+
     # Initialize list for storing solution intervals
     solution_interval = []
     point1 = mp.mpf(0.01)  # Initial point for bisection
@@ -100,6 +102,28 @@ def determine_eigenfunctions(boundary_conditions, maximum_derivative=3, maximum_
 
     eigen_functions = {}
 
+    cont = 0
+    if boundary_conditions == ("S", "F"):
+        cont = 1
+        for derivative in range(maximum_derivative):
+            if derivative == 0:
+                eigen_functions[(0, derivative)] = lambda x: x
+            elif derivative == 1:
+                eigen_functions[(0, derivative)] = lambda x: np.ones(np.shape(x))
+            else:
+                eigen_functions[(0, derivative)] = lambda x: np.zeros(np.shape(x))
+
+    if boundary_conditions == ("F", "S"):
+        cont = 1
+        for derivative in range(maximum_derivative):
+            if derivative == 0:
+                eigen_functions[(0, derivative)] = lambda x: x-1
+            elif derivative == 1:
+                eigen_functions[(0, derivative)] = lambda x: np.ones(np.shape(x))
+            else:
+                eigen_functions[(0, derivative)] = lambda x: np.zeros(np.shape(x))
+
+
     # Calculate eigenfunctions for each eigenvalue and its derivatives
     for modo in range(maximum_mode):
         k = sol[modo]  # Eigenvalue
@@ -121,7 +145,7 @@ def determine_eigenfunctions(boundary_conditions, maximum_derivative=3, maximum_
 
         # Store the eigenfunction and its derivatives up to the maximum derivative order
         for derivative in range(maximum_derivative):
-            eigen_functions[(modo, derivative)] = sym.lambdify(x_, ws.diff(x_, derivative))
+            eigen_functions[(modo+cont, derivative)] = sym.lambdify(x_, ws.diff(x_, derivative))
 
     # Return the dictionary of eigenfunctions and their derivatives
     return eigen_functions
@@ -133,12 +157,26 @@ def free_free(maximum_derivative, maximum_mode):
     def func(i, j, n):
         return lambda x: np.cos(i * np.pi * x - 1 / 2 * j * np.pi + 1 / 2 * np.pi * n) * (i * np.pi) ** n
 
+    for derivative in range(maximum_derivative):
+        if derivative == 0:
+            eigen_functions[(0, derivative)] = lambda x: np.ones(np.shape(x))
+        else:
+            eigen_functions[(0, derivative)] = lambda x: np.zeros(np.shape(x))
+
+    for derivative in range(maximum_derivative):
+        if derivative == 0:
+            eigen_functions[(1, derivative)] = lambda x: x
+        elif derivative == 1:
+            eigen_functions[(1, derivative)] = lambda x: np.ones(np.shape(x))
+        else:
+            eigen_functions[(1, derivative)] = lambda x: np.zeros(np.shape(x))
+
     for modo in range(maximum_mode):
         i = np.floor((modo + 2) / 2)
         j = (1 + (-1) ** (modo)) / 2
         for derivative in range(maximum_derivative):
             n = derivative
-            eigen_functions[(modo, derivative)] = func(i, j, n)
+            eigen_functions[(modo+2, derivative)] = func(i, j, n)
 
     return eigen_functions
 

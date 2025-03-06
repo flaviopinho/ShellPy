@@ -62,13 +62,13 @@ def koiter_load_energy_density(i: int, load, shell):
         sqrtG = midsurface_geometry1.sqrtG(xi1, xi2)
 
         # Return the integrand for the energy density using the Einstein summation convention
-        return np.einsum('ijxy,ijxy,xy->xy', F, U, sqrtG)
+        return np.einsum('ixy,ixy,xy->xy', F, U, sqrtG)
 
     # Define the lambda function to be used in the integration
     func = lambda xi1, xi2: energy_density(load.pressure, shell.mid_surface_geometry, shell.displacement_expansion, xi1, xi2)
 
     # Get the integration points and weights for the numerical integration
-    xi1, xi2, W = boole_weights_double_integral(shell.mid_surface_domain)
+    xi1, xi2, W = boole_weights_double_integral(shell.mid_surface_domain.edges["xi1"], shell.mid_surface_domain.edges["xi2"])
 
     # Perform the numerical integration and return the negative of the result
     return -np.einsum('xy, xy->', func(xi1, xi2), W)
