@@ -267,7 +267,7 @@ class MidSurfaceGeometry:
 
     @cache_method
     def gaussian_curvature(self, xi1, xi2):
-        curvature = self.curvature_tensor_covariant_components(xi1, xi2)
+        curvature = self.curvature_tensor_mixed_components(xi1, xi2)
         shape = list(range(curvature.ndim))
 
         _gaussian_curvature = np.linalg.det(curvature.transpose(shape[2:] + shape[0:2]))
@@ -275,7 +275,7 @@ class MidSurfaceGeometry:
         return _gaussian_curvature
 
     def mean_curvature(self, xi1, xi2):
-        curvature = self.curvature_tensor_covariant_components(xi1, xi2)
+        curvature = self.curvature_tensor_mixed_components(xi1, xi2)
 
         _mean_curvature = 0.5 * np.einsum('aa...->...', curvature)
 
@@ -310,9 +310,7 @@ class MidSurfaceGeometry:
         return shifter_inv
 
     @cache_method
-    def shifter_tensor_inverse_cubic_approximation(self, xi1, xi2, xi3):
-        curvature = self.curvature_tensor_mixed_components(xi1, xi2)
-
+    def shifter_tensor_inverse_approximation(self, xi1, xi2, xi3):
         delta = np.eye(2, 2)
         delta_expanded = np.einsum('ab,...->ab...', delta, np.ones(np.shape(xi1)+np.shape(xi3)))
 
@@ -320,8 +318,9 @@ class MidSurfaceGeometry:
         aux1 = np.einsum('...,z->...z', curvature, xi3)
         aux2 = np.einsum('ag...z, gb..., z->ab...z', aux1, curvature, xi3)
         aux3 = np.einsum('ao...z, ob..., z->ab...z', aux2, curvature, xi3)
+        aux4 = np.einsum('ao...z, ob..., z->ab...z', aux3, curvature, xi3)
 
-        return delta_expanded - aux1 + aux2 - aux3
+        return delta_expanded - aux1 + aux2 - aux3 + aux4
 
     @cache_method
     def determinant_shifter_tensor(self, xi1, xi2, xi3):

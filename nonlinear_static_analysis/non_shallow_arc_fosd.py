@@ -1,7 +1,7 @@
 """
-This example analyzes the nonlinear behavior of a doubly curved shell
-(a non shallow spherical panel) under a pressure load.  This shell has been
-previously studied by Pinho et al. (DOI: 10.1016/j.engstruct.2021.113674).
+This example analyzes the nonlinear behavior of an arc
+under a concentrated force unsing FOSD theory. This arc has been
+previously studied (https://doi.org/10.1016/j.ijnonlinmec.2005.06.009).
 This script determines the nonlinear static response.
 """
 
@@ -38,9 +38,7 @@ import continuation
 def arc_output_results(shell, xi1, xi2, x, *args):
     u = x[:-1]
     p = x[-1]
-    h = shell.thickness(xi1, xi2)
     U, _ = shell.displacement_expansion(u, xi1, xi2)
-    U = U * h
     N1, N2, N3 = shell.mid_surface_geometry.reciprocal_base(xi1, xi2)
     U = U[0] * N1 + U[1] * N2 + U[2] * N3
 
@@ -61,13 +59,12 @@ def plot_shell_arc(shell, u):
     xi1 = np.linspace(*shell.mid_surface_domain.edges["xi1"], 100)
     xi2 = np.linspace(*shell.mid_surface_domain.edges["xi2"], 2)
     x, y = np.meshgrid(xi1, xi2, indexing='ij')
-    h = shell.thickness(xi1, xi2)
 
     reciprocal_base = shell.mid_surface_geometry.reciprocal_base(x, y)
 
     # Calculate the deformed shape (mode) using the displacement expansion.
     mode1,  _ = shell.displacement_expansion(u, x, y)   # Compute mode shape
-    mode1 = mode1 * h
+    mode1 = mode1
     mode = reciprocal_base[0] * mode1[0] + reciprocal_base[1] * mode1[1] + reciprocal_base[2] * mode1[2]
 
     # Calculate the original (undeformed) mid-surface geometry.
@@ -81,13 +78,12 @@ def plot_shell_arc(shell, u):
         ax = fig.add_subplot(1, 2, 1)  # First subplot (not used)
         ax = fig.add_subplot(1, 2, 2, projection='3d')  # Second subplot (3D plot)
 
-        data = np.loadtxt("arc_results.txt", delimiter=",", skiprows=1)
+        data = np.loadtxt("arc_results.txt", delimiter=",")
 
-        # Separar as colunas x e y
         x = data[:, 0]
         y = data[:, 1]
         ax = plt.subplot(1, 2, 1)
-        ax.plot(x, y, linestyle='-', color='r')
+        ax.plot(x, y, linestyle='-', color='k')
 
         ax = plt.subplot(1, 2, 2)
 
@@ -117,34 +113,37 @@ def plot_shell_arc(shell, u):
 
 
 if __name__ == "__main__":
-    integral_x = 40
+    integral_x = 50
     integral_y = 1
-    integral_z = 2
+    integral_z = 4
 
     R = 1
-    b = 0.1
+    b = 2 * 3.384E-2
     alpha = 35 / 2 * (np.pi / 180)
     alpha1 = -alpha
     alpha2 = np.pi + alpha
-    h = 0.001
+    h = 3.384E-2
 
     In = b * h ** 3 / 12
 
     density = 1
 
     E = 1
-    nu = 0.3
+    nu = 0
 
-    load = ConcentratedForce(0, 0, -1 / (R ** 2 / (E * In)), np.pi / 2, 0)
+    div = (E * In) / R ** 2
+
+    load = ConcentratedForce(0, 0, -1, np.pi / 2, 0)
 
     rectangular_domain = RectangularMidSurfaceDomain(alpha1, alpha2, -b / 2, b / 2)
 
-    expansion_size = {"u1": (20, 1),
+    n_modos = 20
+    expansion_size = {"u1": (n_modos, 1),
                       "u2": (0, 0),
-                      "u3": (20, 1),
-                      "v1": (20, 1),
+                      "u3": (n_modos, 1),
+                      "v1": (n_modos, 1),
                       "v2": (0, 0),
-                      "v3": (20, 1)}
+                      "v3": (n_modos, 1)}
 
     boundary_conditions_u1 = {"xi1": ("S", "S"),
                               "xi2": ("O", "O")}
@@ -159,20 +158,6 @@ if __name__ == "__main__":
                               "xi2": ("S", "S")}
     boundary_conditions_v3 = {"xi1": ("F", "S"),
                               "xi2": ("O", "O")}
-    """
-    boundary_conditions_u1 = {"xi1": ("S", "S"),
-                              "xi2": ("F", "F")}
-    boundary_conditions_u2 = {"xi1": ("S", "S"),
-                              "xi2": ("S", "S")}
-    boundary_conditions_u3 = {"xi1": ("S", "C"),
-                              "xi2": ("F", "F")}
-
-    boundary_conditions_v1 = {"xi1": ("F", "S"),
-                              "xi2": ("F", "F")}
-    boundary_conditions_v2 = {"xi1": ("S", "S"),
-                              "xi2": ("S", "S")}
-    boundary_conditions_v3 = {"xi1": ("F", "S"),
-                              "xi2": ("F", "F")}"""
 
     boundary_conditions = {"u1": boundary_conditions_u1,
                            "u2": boundary_conditions_u2,
@@ -181,8 +166,9 @@ if __name__ == "__main__":
                            "v2": boundary_conditions_v2,
                            "v3": boundary_conditions_v3}
 
-    displacement_field = EnrichedCosineExpansion(expansion_size, rectangular_domain, boundary_conditions)
-    #displacement_field = GenericPolynomialSeries(np.polynomial.Legendre, expansion_size, rectangular_domain, boundary_conditions)
+    #displacement_field = EnrichedCosineExpansion(expansion_size, rectangular_domain, boundary_conditions)
+    displacement_field = GenericPolynomialSeries(np.polynomial.Legendre, expansion_size, rectangular_domain, boundary_conditions)
+    #displacement_field = EigenFunctionExpansion(expansion_size, rectangular_domain, boundary_conditions)
 
     R_ = sym.Matrix([-R * sym.cos(xi1_), xi2_, R * sym.sin(xi1_)])
     mid_surface_geometry = MidSurfaceGeometry(R_)
@@ -201,12 +187,11 @@ if __name__ == "__main__":
     # Numero de parametros
     p = 1
 
-    div = E * h ** 2
-    F_ext = tensor_derivative(U_ext, 0) / div
+    F_ext = tensor_derivative(U_ext, 0)
 
-    F2_int = tensor_derivative(U2_int, 0) * h / div
-    F3_int = tensor_derivative(U3_int, 0) * h ** 2 / div
-    F4_int = tensor_derivative(U4_int, 0) * h ** 3 / div
+    F2_int = tensor_derivative(U2_int, 0) / div
+    F3_int = tensor_derivative(U3_int, 0) / div
+    F4_int = tensor_derivative(U4_int, 0) / div
 
     J2_int = tensor_derivative(F2_int, 1)
     J3_int = tensor_derivative(F3_int, 1)
@@ -221,8 +206,8 @@ if __name__ == "__main__":
     continuation_boundary = np.zeros((n + p, 2))
     continuation_boundary[:-1, 0] = -100000
     continuation_boundary[:-1, 1] = 100000
-    continuation_boundary[-1, 0] = -2
-    continuation_boundary[-1, 1] = 10
+    continuation_boundary[-1, 0] = -5
+    continuation_boundary[-1, 1] = 20
 
     # Definindo continuation_model
     continuation_model = {'n': n_dof,

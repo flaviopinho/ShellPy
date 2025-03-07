@@ -194,20 +194,25 @@ class EigenFunctionExpansion(DisplacementExpansion):
             return ddu
 
     def __call__(self, *args, **kwargs):
-        u = args[0]
+        U = args[0]
         xi1 = args[1]
         xi2 = args[2]
+        if self.number_of_fields() == 3:
+            result = np.zeros((3,) + np.shape(xi1))
 
-        result = np.zeros((self._number_of_fields,) + np.shape(xi1))
-        for i in range(self.number_of_degrees_of_freedom()):
-            result = result + self.shape_function(i, xi1, xi2, 0, 0) * u[i]
+            for i in range(self.number_of_degrees_of_freedom()):
+                result = result + self.shape_function(i, xi1, xi2, 0, 0) * U[i]
 
-        if self.number_of_fields() == 6:
-            v = result[3:6]
-            u = result[0:3]
-            return u, v
-        else:
             return result
+        else:
+            u = np.zeros((3,) + np.shape(xi1))
+            v = np.zeros((3,) + np.shape(xi1))
+
+            for i in range(self.number_of_degrees_of_freedom()):
+                u1, v1 = self.shape_function(i, xi1, xi2, 0, 0)
+                u = u + u1 * U[i]
+                v = v + v1 * U[i]
+            return u, v
 
     def number_of_fields(self):
         return self._number_of_fields

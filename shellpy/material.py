@@ -82,4 +82,4 @@ class LinearElasticMaterial:
 
         # Compute the constitutive tensor using the material properties E (Young's modulus) and nu (Poisson's ratio)
         # The formula incorporates the material's behavior and the metric tensor's influence.
-        return self.E / (2 * (1 + self.nu)) * (T1 + T2) + self.E *self.nu / ((1 + self.nu) * (1 - 2 * self.nu)) * T3
+        return self.E / (2 * (1 + self.nu)) * (T1 + T2) + self.E * self.nu / ((1 + self.nu) * (1 - 2 * self.nu)) * T3

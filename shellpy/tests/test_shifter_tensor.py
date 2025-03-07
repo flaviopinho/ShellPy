@@ -105,5 +105,5 @@ if __name__ == "__main__":
     print("inv(Upsilon^alpha_beta[:, :, 0, 0, 0]) = \n", np.linalg.inv(shifter[:, :, 0, 0, 0]))
     print("Lambda^alpha_beta[:, :, 0, 0, 0] = \n", shifter_inv[:, :, 0, 0, 0])
 
-    shifter_inv = midsurface.shifter_tensor_inverse_cubic_approximation(x, y, z)
+    shifter_inv = midsurface.shifter_tensor_inverse_approximation(x, y, z)
     print("Lambda^alpha_beta[:, :, 0, 0, 0] (cubic approx) = \n", shifter_inv[:, :, 0, 0, 0])

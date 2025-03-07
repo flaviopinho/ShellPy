@@ -98,6 +98,17 @@ def plot_shell(shell, u):
         fig.clf() # Clear figure
         ax = fig.add_subplot(1, 2, 1) # First subplot (not used)
         ax = fig.add_subplot(1, 2, 2, projection='3d') # Second subplot (3D plot)
+
+        data = np.loadtxt("shallow_sphere_abaqus.txt", delimiter=";")
+
+        xx = -data[:, 0]
+        yy = data[:, 1]/0.001
+        ax = plt.subplot(1, 2, 1)
+        ax.plot(xx, yy, linestyle='-', color='k', label='Abaqus')
+
+        ax.legend()
+
+        ax = plt.subplot(1, 2, 2)
     else: # If figure already exists
         ax = plt.subplot(1, 2, 2) # Select the 3D subplot
 
@@ -110,7 +121,7 @@ def plot_shell(shell, u):
     ax.plot_surface(z[0, 0] + mode[0] * 5, z[1, 0] + mode[1] * 5, z[2, 0] + mode[2] * 5,
                     facecolors=scmap.to_rgba(mode[2]), # Color based on transverse displacement
                     edgecolor='black', # Black edges
-                    linewidth=0.5)  # Edge linewidth
+                    linewidth=0.1)  # Edge linewidth
 
     # Label the axes.
     ax.set_xlabel("x")

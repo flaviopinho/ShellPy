@@ -79,7 +79,7 @@ class GenericPolynomialSeries(DisplacementExpansion):
         return bc_equations
 
     def _get_boundary_condition_equation(self, edge, condition_type) -> P.Polynomial:
-        if condition_type == "F":
+        if condition_type == "F" or condition_type == "O":
             return P.Polynomial([1])
         elif condition_type == "S":
             return P.Polynomial([edge, -1])

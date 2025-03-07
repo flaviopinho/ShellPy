@@ -51,7 +51,7 @@ def boole_weights_simple_integral(edges, n_x=None):
     """
 
     if n_x is None:
-        n_x = n_integral_default_x
+        n_x = n_integral_default_z
 
     n2_x = n_x * 4  # Total number of subdivisions (4n)
 
@@ -66,7 +66,7 @@ def boole_weights_simple_integral(edges, n_x=None):
 
     h1 = (edges[1] - edges[0]) / n2_x
 
-    W = (2 * h1 / (45)) * weights_1d_x
+    W = (2 * h1 / 45) * weights_1d_x
 
     return x, W
 

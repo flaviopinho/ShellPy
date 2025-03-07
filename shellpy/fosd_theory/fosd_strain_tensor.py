@@ -96,24 +96,29 @@ def fosd_nonlinear_strain_components(mid_surface_geometry: MidSurfaceGeometry,
                                            metric_tensor_contravariant_components,
                                            dcvJ)
 
-    epsilon0[2, 0:2] = 1 / 2 * np.einsum('ot...,t...,ob...->b...',
+    epsilon0[2, 0:2] = 1 / 2 * np.einsum('t...,ot...,ob...->b...',
+                                         vI,
                                          metric_tensor_contravariant_components,
-                                         vI, dcuJ)
+                                         dcuJ)
 
-    epsilon0[0:2, 2] = 1 / 2 * np.einsum('ot...,ob...,t...->b...',
+    epsilon0[0:2, 2] = 1 / 2 * np.einsum('ob...,ot...,t...->b...',
+                                         dcuI,
                                          metric_tensor_contravariant_components,
-                                         dcuI, vJ)
+                                         vJ)
 
-    epsilon1[2, 0:2] = 1 / 2 * np.einsum('ot...,t...,ob...->b...',
+    epsilon1[2, 0:2] = 1 / 2 * np.einsum('t...,ot...,ob...->b...',
+                                         vI,
                                          metric_tensor_contravariant_components,
-                                         vI, dcvJ)
+                                         dcvJ)
 
-    epsilon1[0:2, 2] = 1 / 2 * np.einsum('ot...,ob...,t...->b...',
+    epsilon1[0:2, 2] = 1 / 2 * np.einsum('ob...,ot...,t...->b...',
+                                         dcvI,
                                          metric_tensor_contravariant_components,
-                                         dcvI, vJ)
+                                         vJ)
 
-    epsilon0[2, 2] = 1 / 2 * np.einsum('ot...,o...,t...->...',
+    epsilon0[2, 2] = 1 / 2 * np.einsum('o...,ot...,t...->...',
+                                       vI,
                                        metric_tensor_contravariant_components,
-                                       vI, vJ)
+                                       vJ)
 
     return epsilon0, epsilon1, epsilon2

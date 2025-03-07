@@ -1,7 +1,7 @@
 """
-This example analyzes the nonlinear behavior of a doubly curved shell
-(a non shallow spherical panel) under a pressure load.  This shell has been
-previously studied by Pinho et al. (DOI: 10.1016/j.engstruct.2021.113674).
+This example analyzes the nonlinear behavior of an arc
+ under a concentrated force unsing Koiter-Sanders theory. This arc has been
+previously studied (https://doi.org/10.1016/j.ijnonlinmec.2005.06.009).
 This script determines the nonlinear static response.
 """
 
@@ -76,6 +76,15 @@ def plot_shell_arc(shell, u):
         fig.clf()  # Clear figure
         ax = fig.add_subplot(1, 2, 1)  # First subplot (not used)
         ax = fig.add_subplot(1, 2, 2, projection='3d')  # Second subplot (3D plot)
+
+        data = np.loadtxt("arc_results.txt", delimiter=",", skiprows=1)
+
+        x = data[:, 0]
+        y = data[:, 1]
+        ax = plt.subplot(1, 2, 1)
+        ax.plot(x, y, linestyle='-', color='r')
+
+        ax = plt.subplot(1, 2, 2)
     else:  # If figure already exists
         ax = plt.subplot(1, 2, 2)  # Select the 3D subplot
 
@@ -123,9 +132,9 @@ if __name__ == "__main__":
 
     rectangular_domain = RectangularMidSurfaceDomain(alpha1, alpha2, -b / 2, b / 2)
 
-    expansion_size = {"u1": (20, 1),
+    expansion_size = {"u1": (35, 1),
                       "u2": (0, 0),
-                      "u3": (20, 1)}
+                      "u3": (35, 1)}
 
     boundary_conditions_u1 = {"xi1": ("S", "S"),
                               "xi2": ("O", "O")}

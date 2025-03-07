@@ -35,7 +35,75 @@ def non_shallow_sphere_panel_output_results(shell, xi1, xi2, x, *args):
     N1, N2, N3 = shell.mid_surface_geometry.reciprocal_base(xi1, xi2)
     U = U[0] * N1 + U[1] * N2 + U[2] * N3
 
+    # Plot the deformed shell.
+    plot_shell(shell, u)
+
     return p, U[2], "p (1E7)", "u_3(a/4,b/4)/h"
+
+
+def plot_shell(shell, u):
+    """
+    Plots the deformed shell geometry.
+
+    Args:
+        shell: The Shell object.
+        u: Displacement coefficients.
+    """
+    # Create meshgrid of xi1 and xi2 coordinates for plotting.
+    xi1 = np.linspace(*shell.mid_surface_domain.edges["xi1"], 30)
+    xi2 = np.linspace(*shell.mid_surface_domain.edges["xi2"], 30)
+    x, y = np.meshgrid(xi1, xi2, indexing='ij')
+
+    reciprocal_base = shell.mid_surface_geometry.reciprocal_base(x, y)
+
+    # Calculate the deformed shape (mode) using the displacement expansion.
+    mode1 = shell.displacement_expansion(u, x, y) * h  # Compute mode shape
+    mode = reciprocal_base[0] * mode1[0] + reciprocal_base[1] * mode1[1] + reciprocal_base[2] * mode1[2]
+
+    # Calculate the original (undeformed) mid-surface geometry.
+    z = shell.mid_surface_geometry(x, y)  # Compute deformed geometry
+
+    # Create the plot figure and axes.
+    fig = plt.figure(1)
+    n = len(fig.axes)
+    if n == 1: # If it is the first time the figure is created
+        fig.clf() # Clear figure
+        ax = fig.add_subplot(1, 2, 1) # First subplot (not used)
+        ax = fig.add_subplot(1, 2, 2, projection='3d') # Second subplot (3D plot)
+
+        data = np.loadtxt("non_shallow_sphere_abaqus.txt", delimiter=None, skiprows=1)
+        xx = data[0:440, 0] / 100000
+        yy = data[0:440, 2] / 0.001
+
+        ax = plt.subplot(1, 2, 1)
+        ax.plot(xx, yy, linestyle='-', color='k', label='Abaqus')
+
+        ax.legend()
+
+        ax = plt.subplot(1, 2, 2)
+    else: # If figure already exists
+        ax = plt.subplot(1, 2, 2) # Select the 3D subplot
+
+    ax.cla()  # Clear the axes.
+
+    # Create a colormap for visualization.
+    scmap = plt.cm.ScalarMappable(cmap='jet')  # Define colormap
+
+    # Plot the deformed shell surface. The displacement is scaled by a factor of 5 for visualization.
+    ax.plot_surface(z[0, 0] + mode[0] , z[1, 0] + mode[1], z[2, 0] + mode[2],
+                    facecolors=scmap.to_rgba(mode[2]), # Color based on transverse displacement
+                    edgecolor='black', # Black edges
+                    linewidth=0.1)  # Edge linewidth
+
+    # Label the axes.
+    ax.set_xlabel("x")
+    ax.set_ylabel("y")
+    ax.set_zlabel("z")
+
+    # Ensure equal aspect ratio for proper visualization of the shell shape.
+    ax.set_box_aspect([ub - lb for lb, ub in (getattr(ax, f'get_{a}lim')() for a in 'xyz')])
+
+    plt.pause(0.01)  # Pause briefly to allow the plot to update. This is important for animations.
 
 
 if __name__ == "__main__":
