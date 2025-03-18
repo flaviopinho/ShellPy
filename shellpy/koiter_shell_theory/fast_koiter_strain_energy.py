@@ -1,12 +1,12 @@
 from time import time
 import numpy as np
 
-from shellpy import boole_weights_double_integral
+from shellpy import boole_weights_double_integral, n_integral_default_x, n_integral_default_y
 from shellpy import Shell
 from .koiter_strain_tensor import koiter_linear_strain_components, koiter_nonlinear_strain_components_total
 
 
-def fast_koiter_strain_energy(shell: Shell, integral_weights=boole_weights_double_integral):
+def fast_koiter_strain_energy(shell: Shell, n_x=n_integral_default_x, n_y=n_integral_default_y, integral_weights=boole_weights_double_integral):
     """
     Calculates the strain energy functional for a shell structure using the Koiter approximation.
     This function computes quadratic, cubic, and quartic strain energy components.
@@ -24,7 +24,7 @@ def fast_koiter_strain_energy(shell: Shell, integral_weights=boole_weights_doubl
     """
 
     # Get integration points and weights for the double integral over the mid-surface domain
-    xi1, xi2, W = integral_weights(shell.mid_surface_domain.edges["xi1"], shell.mid_surface_domain.edges["xi2"])
+    xi1, xi2, W = integral_weights(shell.mid_surface_domain.edges["xi1"], shell.mid_surface_domain.edges["xi2"], n_x, n_y)
 
     # Shape of xi1 (discretized domain in terms of xi1 and xi2)
     n = np.shape(xi1)
@@ -116,7 +116,7 @@ def fast_koiter_strain_energy(shell: Shell, integral_weights=boole_weights_doubl
     return quadratic_energy_tensor, cubic_energy_tensor, quartic_energy_tensor
 
 
-def fast_koiter_quadratic_strain_energy(shell: Shell, integral_weights=boole_weights_double_integral):
+def fast_koiter_quadratic_strain_energy(shell: Shell, n_x=n_integral_default_x, n_y=n_integral_default_y, integral_weights=boole_weights_double_integral):
     """
     Calculates only the quadratic strain energy functional for a shell structure using the Koiter approximation.
 
@@ -131,7 +131,7 @@ def fast_koiter_quadratic_strain_energy(shell: Shell, integral_weights=boole_wei
     """
 
     # Get integration points and weights for the double integral over the mid-surface domain
-    xi1, xi2, W = integral_weights(shell.mid_surface_domain.edges["xi1"], shell.mid_surface_domain.edges["xi2"])
+    xi1, xi2, W = integral_weights(shell.mid_surface_domain.edges["xi1"], shell.mid_surface_domain.edges["xi2"], n_x, n_y)
 
     # Shape of xi1 (discretized domain in terms of xi1 and xi2)
     n = np.shape(xi1)

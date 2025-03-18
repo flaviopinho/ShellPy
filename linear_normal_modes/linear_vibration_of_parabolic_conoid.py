@@ -35,6 +35,9 @@ if __name__ == "__main__":
     E = 1  # Young's modulus
     nu = 0.3  # Poisson’s ratio
 
+    n_int_x = 30
+    n_int_y = 30
+
     # Define the rectangular mid-surface domain of the shell
     rectangular_domain = RectangularMidSurfaceDomain(0, a, 0, b)
 
@@ -64,9 +67,9 @@ if __name__ == "__main__":
     # Determine the number of degrees of freedom in the displacement field
     n_dof = shell.displacement_expansion.number_of_degrees_of_freedom()
 
-    T = fast_koiter_kinetic_energy(shell)
+    T = fast_koiter_kinetic_energy(shell, n_int_x, n_int_y)
 
-    U2p = fast_koiter_quadratic_strain_energy(shell)
+    U2p = fast_koiter_quadratic_strain_energy(shell, n_int_x, n_int_y)
 
     # Compute the mass (M) and stiffness (K) matrices
     M = tensor_derivative(tensor_derivative(T, 0), 1)  # Second derivative of kinetic energy (mass matrix)

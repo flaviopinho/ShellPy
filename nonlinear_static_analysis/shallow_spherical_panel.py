@@ -118,7 +118,7 @@ def plot_shell(shell, u):
     scmap = plt.cm.ScalarMappable(cmap='jet')  # Define colormap
 
     # Plot the deformed shell surface. The displacement is scaled by a factor of 5 for visualization.
-    ax.plot_surface(z[0, 0] + mode[0] * 5, z[1, 0] + mode[1] * 5, z[2, 0] + mode[2] * 5,
+    ax.plot_surface(z[0, 0] + mode[0], z[1, 0] + mode[1], z[2, 0] + mode[2],
                     facecolors=scmap.to_rgba(mode[2]), # Color based on transverse displacement
                     edgecolor='black', # Black edges
                     linewidth=0.1)  # Edge linewidth

@@ -54,13 +54,16 @@ if __name__ == "__main__":
     E = 2E11  # Young's modulus
     nu = 0.3  # Poisson’s ratio
 
+    n_int_x = 20
+    n_int_y = 20
+
     # Define the rectangular mid-surface domain of the shell
     rectangular_domain = RectangularMidSurfaceDomain(0, a, 0, L)
 
     # Define the number of terms used in the displacement expansion
-    expansion_size = {"u1": (30, 10),  # Expansion order for displacement u1
-                      "u2": (30, 10),  # Expansion order for displacement u2
-                      "u3": (30, 10)}  # Expansion order for displacement u3
+    expansion_size = {"u1": (15, 10),  # Expansion order for displacement u1
+                      "u2": (15, 10),  # Expansion order for displacement u2
+                      "u3": (15, 10)}  # Expansion order for displacement u3
 
     # Define boundary conditions
     # Campled - Free
@@ -71,8 +74,8 @@ if __name__ == "__main__":
     boundary_conditions_u3 = {"xi1": ("R", "R"),
                               "xi2": ("C", "F")}
 
-    # Pined - Pined
     """
+    # Pined - Pined
     boundary_conditions_u1 = {"xi1": ("R", "R"),
                               "xi2": ("S", "S")}
     boundary_conditions_u2 = {"xi1": ("R", "R"),
@@ -80,14 +83,14 @@ if __name__ == "__main__":
     boundary_conditions_u3 = {"xi1": ("R", "R"),
                               "xi2": ("S", "S")}
     """
-
     boundary_conditions = {"u1": boundary_conditions_u1,
                            "u2": boundary_conditions_u2,
                            "u3": boundary_conditions_u3}
 
+
     # Define the displacement field using an enriched cosine expansion
-    #displacement_field = EnrichedCosineExpansion(expansion_size, rectangular_domain, boundary_conditions)
-    displacement_field = EigenFunctionExpansion(expansion_size, rectangular_domain, boundary_conditions)
+    displacement_field = EnrichedCosineExpansion(expansion_size, rectangular_domain, boundary_conditions)
+    #displacement_field = EigenFunctionExpansion(expansion_size, rectangular_domain, boundary_conditions)
 
     # Define the symbolic representation of the mid-surface geometry
     # The surface is assumed to be a portion of a sphere
@@ -104,9 +107,9 @@ if __name__ == "__main__":
     # Determine the number of degrees of freedom in the displacement field
     n_dof = shell.displacement_expansion.number_of_degrees_of_freedom()
 
-    T = fast_koiter_kinetic_energy(shell)
+    T = fast_koiter_kinetic_energy(shell, n_int_x, n_int_y)
 
-    U2p = fast_koiter_quadratic_strain_energy(shell)
+    U2p = fast_koiter_quadratic_strain_energy(shell, n_int_x, n_int_y)
 
     # Compute the mass (M) and stiffness (K) matrices
     M = tensor_derivative(tensor_derivative(T, 0), 1)  # Second derivative of kinetic energy (mass matrix)

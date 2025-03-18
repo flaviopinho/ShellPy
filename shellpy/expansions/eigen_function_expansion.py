@@ -1,6 +1,6 @@
 import numpy as np
 
-from shellpy import DisplacementExpansion, displacement_field_index
+from shellpy import DisplacementExpansion, displacement_field_index, cache_method
 from shellpy import RectangularMidSurfaceDomain
 from shellpy.expansions import determine_eigenfunctions
 from shellpy.expansions.simple_expansions import constant_value_expansion, fourier_expansion_for_periodic_solutions
@@ -49,6 +49,8 @@ class EigenFunctionExpansion(DisplacementExpansion):
         self._number_of_fields = len(expansion_size)
         if self._number_of_fields != 3 or self._number_of_fields != 6:
             ValueError('Expansion must have 3 or 6 fields.')
+
+        self.cache = {}
 
     def _set_mapping(self):
         mapping = []

@@ -1,8 +1,5 @@
 """
-This example analyzes the nonlinear behavior of a doubly curved shell
-(a non shallow spherical panel) under a pressure load.  This shell has been
-previously studied by Pinho et al. (DOI: 10.1016/j.engstruct.2021.113674).
-This script determines the nonlinear static response.
+
 """
 
 import sys
@@ -10,13 +7,18 @@ import matplotlib.pyplot as plt
 import sympy as sym
 import numpy as np
 
-from nonlinear_static_analysis.residue_jacobian_stability import shell_stability, shell_jacobian, shell_residue
+import shellpy
+from nonlinear_static_analysis.residue_jacobian_stability import shell_jacobian, shell_residue, shell_stability
 from shellpy import simply_supported, pinned
 from shellpy.expansions.eigen_function_expansion import EigenFunctionExpansion
+from shellpy.expansions.enriched_cosine_expansion import EnrichedCosineExpansion
 from shellpy.expansions.polinomial_expansion import GenericPolynomialSeries
 from shellpy import RectangularMidSurfaceDomain
+from shellpy.fosd_theory.fosd_load_energy import fosd_load_energy
+from shellpy.fosd_theory.fosd_strain_energy import fosd_strain_energy
 from shellpy.koiter_shell_theory import fast_koiter_strain_energy
-from shellpy.koiter_shell_theory.koiter_strain_energy_large import koiter_strain_energy_large_rotations
+from shellpy.koiter_shell_theory.koiter_strain_energy_large import \
+    koiter_strain_energy_large_rotations
 from shellpy.tensor_derivatives import tensor_derivative
 from shellpy.koiter_shell_theory.koiter_load_energy import koiter_load_energy
 from shellpy.shell_loads.shell_conservative_load import ConcentratedForce, PressureLoad
@@ -24,25 +26,25 @@ from shellpy import LinearElasticMaterial
 from shellpy import Shell
 from shellpy import ConstantThickness
 from shellpy import MidSurfaceGeometry, xi1_, xi2_
+import shellpy.integral_booles_rule
 
 sys.path.append('../../ContinuationPy/ContinuationPy')
 import continuation
 
 
-def non_shallow_sphere_panel_output_results(shell, xi1, xi2, x, *args):
+def output_results(shell, xi1, xi2, x, *args):
     u = x[:-1]
     p = x[-1]
-    U = shell.displacement_expansion(u, xi1, xi2)
+    U, _ = shell.displacement_expansion(u, xi1, xi2)
     N1, N2, N3 = shell.mid_surface_geometry.reciprocal_base(xi1, xi2)
     U = U[0] * N1 + U[1] * N2 + U[2] * N3
 
-    # Plot the deformed shell.
-    plot_shell(shell, u)
+    plot_shell_arc(shell, u)
 
-    return p, U[2], "p (1E7)", "u_3(a/4,b/4)/h"
+    return -U[2], p, "u_z", "P"
 
 
-def plot_shell(shell, u):
+def plot_shell_arc(shell, u):
     """
     Plots the deformed shell geometry.
 
@@ -51,14 +53,15 @@ def plot_shell(shell, u):
         u: Displacement coefficients.
     """
     # Create meshgrid of xi1 and xi2 coordinates for plotting.
-    xi1 = np.linspace(*shell.mid_surface_domain.edges["xi1"], 30)
-    xi2 = np.linspace(*shell.mid_surface_domain.edges["xi2"], 30)
+    xi1 = np.linspace(*shell.mid_surface_domain.edges["xi1"], 50)
+    xi2 = np.linspace(*shell.mid_surface_domain.edges["xi2"], 50)
     x, y = np.meshgrid(xi1, xi2, indexing='ij')
 
     reciprocal_base = shell.mid_surface_geometry.reciprocal_base(x, y)
 
     # Calculate the deformed shape (mode) using the displacement expansion.
-    mode1 = shell.displacement_expansion(u, x, y) * h  # Compute mode shape
+    mode1,  _ = shell.displacement_expansion(u, x, y)   # Compute mode shape
+    mode1 = mode1
     mode = reciprocal_base[0] * mode1[0] + reciprocal_base[1] * mode1[1] + reciprocal_base[2] * mode1[2]
 
     # Calculate the original (undeformed) mid-surface geometry.
@@ -67,23 +70,12 @@ def plot_shell(shell, u):
     # Create the plot figure and axes.
     fig = plt.figure(1)
     n = len(fig.axes)
-    if n == 1: # If it is the first time the figure is created
-        fig.clf() # Clear figure
-        ax = fig.add_subplot(1, 2, 1) # First subplot (not used)
-        ax = fig.add_subplot(1, 2, 2, projection='3d') # Second subplot (3D plot)
-
-        data = np.loadtxt("non_shallow_sphere_abaqus.txt", delimiter=None, skiprows=1)
-        xx = data[0:440, 0] / 100000
-        yy = data[0:440, 2] / 0.001
-
-        ax = plt.subplot(1, 2, 1)
-        ax.plot(xx, yy, linestyle='-', color='k', label='Abaqus')
-
-        ax.legend()
-
-        ax = plt.subplot(1, 2, 2)
-    else: # If figure already exists
-        ax = plt.subplot(1, 2, 2) # Select the 3D subplot
+    if n == 1:  # If it is the first time the figure is created
+        fig.clf()  # Clear figure
+        ax = fig.add_subplot(1, 2, 1)  # First subplot (not used)
+        ax = fig.add_subplot(1, 2, 2, projection='3d')  # Second subplot (3D plot)
+    else:  # If figure already exists
+        ax = plt.subplot(1, 2, 2)  # Select the 3D subplot
 
     ax.cla()  # Clear the axes.
 
@@ -92,8 +84,8 @@ def plot_shell(shell, u):
 
     # Plot the deformed shell surface. The displacement is scaled by a factor of 5 for visualization.
     ax.plot_surface(z[0, 0] + mode[0], z[1, 0] + mode[1], z[2, 0] + mode[2],
-                    facecolors=scmap.to_rgba(mode[2]), # Color based on transverse displacement
-                    edgecolor='black', # Black edges
+                    facecolors=scmap.to_rgba(mode[2]),  # Color based on transverse displacement
+                    edgecolor='black',  # Black edges
                     linewidth=0.1)  # Edge linewidth
 
     # Label the axes.
@@ -108,50 +100,56 @@ def plot_shell(shell, u):
 
 
 if __name__ == "__main__":
+    integral_x = 20
+    integral_y = 20
+    integral_z = 4
 
-    R = 0.1
-    a = 0.1
-    b = 0.1
-    h = 0.001
-    density = 7850
+    R = 1.016
+    L = 3.048
+    h = 0.03
 
-    E = 1
-    E1 = 206E9
+    density = 1
+
+    E = 20.685E6
     nu = 0.3
 
-    load = PressureLoad(-1E7 / E1)
+    load = ConcentratedForce(0, 0, -1600, 1, 0)
 
-    rectangular_domain = RectangularMidSurfaceDomain(0, a, 0, b)
+    rectangular_domain = RectangularMidSurfaceDomain(0, 1, 0, np.pi/2)
 
-    expansion_size = {"u1": (6, 6),
-                      "u2": (6, 6),
-                      "u3": (6, 6)}
+    n_modos = 3
+    expansion_size = {"u1": (n_modos, n_modos),
+                      "u2": (n_modos, n_modos),
+                      "u3": (n_modos, n_modos),
+                      "v1": (n_modos, n_modos),
+                      "v2": (n_modos, n_modos),
+                      "v3": (n_modos, n_modos)}
 
-    boundary_conditions = pinned
+    boundary_conditions_u1 = {"xi1": ("S", "F"),
+                              "xi2": ("F", "S")}
+    boundary_conditions_u2 = {"xi1": ("S", "F"),
+                              "xi2": ("S", "F")}
+    boundary_conditions_u3 = {"xi1": ("S", "F"),
+                              "xi2": ("FC", "S")}
 
-    mapping = []
-    modes_xi1 = [2, 4, 6, 8, 10, 12, 14, 16]
-    modes_xi2 = [1, 3, 5, 7, 9, 11, 13, 15]
-    for i in range(expansion_size["u1"][0]):
-        for j in range(expansion_size["u1"][1]):
-            mapping.append(("u1", modes_xi1[i], modes_xi2[j]))
+    boundary_conditions_v1 = {"xi1": ("F", "F"),
+                              "xi2": ("F", "F")}
+    boundary_conditions_v2 = {"xi1": ("F", "F"),
+                              "xi2": ("S", "F")}
+    boundary_conditions_v3 = {"xi1": ("F", "F"),
+                              "xi2": ("F", "F")}
 
-    modes_xi1 = [1, 3, 5, 7, 9, 11, 13, 15]
-    modes_xi2 = [2, 4, 6, 8, 10, 12, 14, 16]
-    for i in range(expansion_size["u2"][0]):
-        for j in range(expansion_size["u2"][1]):
-            mapping.append(("u2", modes_xi1[i], modes_xi2[j]))
+    boundary_conditions = {"u1": boundary_conditions_u1,
+                           "u2": boundary_conditions_u2,
+                           "u3": boundary_conditions_u3,
+                           "v1": boundary_conditions_v1,
+                           "v2": boundary_conditions_v2,
+                           "v3": boundary_conditions_v3}
 
-    modes_xi1 = [1, 3, 5, 7, 9, 11, 13, 15]
-    modes_xi2 = [1, 3, 5, 7, 9, 11, 13, 15]
-    for i in range(expansion_size["u3"][0]):
-        for j in range(expansion_size["u3"][1]):
-            mapping.append(("u3", modes_xi1[i], modes_xi2[j]))
+    displacement_field = EnrichedCosineExpansion(expansion_size, rectangular_domain, boundary_conditions)
+    #displacement_field = GenericPolynomialSeries(np.polynomial.Legendre, expansion_size, rectangular_domain, boundary_conditions)
 
-    displacement_field = EigenFunctionExpansion(expansion_size, rectangular_domain, boundary_conditions, mapping)
-    # displacement_field = GenericPolynomialSeries(np.polynomial.Legendre, expansion_size, mid_surface_domain, boundary_conditions)
-
-    R_ = sym.Matrix([xi1_, xi2_, sym.sqrt(R ** 2 - (xi1_ - a / 2) ** 2 - (xi2_ - b / 2) ** 2)])
+    R_ = sym.Matrix([xi1_*L, R * sym.sin(xi2_), R * sym.cos(xi2_)])
     mid_surface_geometry = MidSurfaceGeometry(R_)
     thickness = ConstantThickness(h)
     material = LinearElasticMaterial(E, nu, density)
@@ -159,22 +157,21 @@ if __name__ == "__main__":
 
     n_dof = shell.displacement_expansion.number_of_degrees_of_freedom()
 
-    U_ext = koiter_load_energy(shell)
+    U_ext = fosd_load_energy(shell)
 
-    U2_int, U3_int, U4_int = fast_koiter_strain_energy(shell)
-    #U2_int, U3_int, U4_int = koiter_strain_energy_large_rotations(shell)
+    U2_int, U3_int, U4_int = fosd_strain_energy(shell, integral_x, integral_y, integral_z)
 
     # Numero de variaveis
     n = displacement_field.number_of_degrees_of_freedom()
     # Numero de parametros
     p = 1
 
-    div = E * h ** 2
+    div = E
     F_ext = tensor_derivative(U_ext, 0) / div
 
-    F2_int = tensor_derivative(U2_int, 0) * h / div
-    F3_int = tensor_derivative(U3_int, 0) * h ** 2 / div
-    F4_int = tensor_derivative(U4_int, 0) * h ** 3 / div
+    F2_int = tensor_derivative(U2_int, 0) / div
+    F3_int = tensor_derivative(U3_int, 0) / div
+    F4_int = tensor_derivative(U4_int, 0) / div
 
     J2_int = tensor_derivative(F2_int, 1)
     J3_int = tensor_derivative(F3_int, 1)
@@ -183,12 +180,12 @@ if __name__ == "__main__":
     residue = lambda u, *args: shell_residue((F2_int, F3_int, F4_int), F_ext, u, *args)
     jacobian = lambda u, *args: shell_jacobian((J2_int, J3_int, J4_int), F_ext, u, *args)
     stability = shell_stability
-    output = lambda u, *args: non_shallow_sphere_panel_output_results(shell, a / 4, b / 4, u, *args)
+    output = lambda u, *args: output_results(shell, 1, 0, u, *args)
 
     # Limites de interesse das variaveis e parametros
     continuation_boundary = np.zeros((n + p, 2))
-    continuation_boundary[:-1, 0] = -1000
-    continuation_boundary[:-1, 1] = 1000
+    continuation_boundary[:-1, 0] = -100000
+    continuation_boundary[:-1, 1] = 100000
     continuation_boundary[-1, 0] = -2
     continuation_boundary[-1, 1] = 2
 
@@ -202,12 +199,13 @@ if __name__ == "__main__":
                           'output_function': output}
 
     continuation = continuation.Continuation(continuation_model)
-    continuation.parameters['tol2'] = 0
-    continuation.parameters['tol1'] = 1E-5
+    continuation.parameters['tol2'] = 1E-7
+    continuation.parameters['tol1'] = 1E-7
     continuation.parameters['index1'] = -1
-    continuation.parameters['index2'] = mapping.index(('u3', 1, 1))
+    continuation.parameters['index2'] = 0
+    continuation.parameters['cont_max'] = 10000
 
-    continuation.parameters['h_max'] = 0.1
+    continuation.parameters['h_max'] = 100
 
     # Determinacao de um ponto regular inicial
     u0 = np.zeros(continuation_model['n'] + continuation_model['p'])

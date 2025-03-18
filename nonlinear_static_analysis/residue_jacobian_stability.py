@@ -4,18 +4,32 @@ import numpy as np
 def shell_residue(F_int, F_ext, x, *args):
     u = x[:-1]
     p = x[-1]
-    F_int_tot = np.einsum('ij, j->i', F_int[0], u, optimize=True) + \
-                np.einsum('ijk, j, k->i', F_int[1], u, u, optimize=True) + \
-                np.einsum('ijkl, j, k, l->i', F_int[2], u, u, u, optimize=True)
+
+    index_labels = "abcdefghijklmnopqrstuvwxyz"
+
+    F_int_tot = sum(
+        np.einsum(
+            f"i{index_labels[:len(t.shape) - 1]},{','.join(index_labels[:len(t.shape) - 1])}->i",
+            t, *[u] * (len(t.shape) - 1), optimize=True
+        )
+        for t in F_int
+    )
+
     return F_int_tot + F_ext * p
 
 
 def shell_jacobian(J_int, F_ext, x, *args):
     u = x[:-1]
-    p = [-1]
-    J_int_tot = J_int[0] + \
-                np.einsum('ijk, k->ij', J_int[1], u, optimize=True) + \
-                np.einsum('ijkl, k, l->ij', J_int[2], u, u, optimize=True)
+
+    index_labels = "abcdefghijklmnopqrstuvwxyz"
+
+    J_int_tot = J_int[0] + sum(
+        np.einsum(
+            f"ij{index_labels[:len(t.shape) - 2]},{','.join(index_labels[:len(t.shape) - 2])}->ij",
+            t, *[u] * (len(t.shape) - 2), optimize=True
+        )
+        for t in J_int[1:]
+    )
 
     return np.hstack((J_int_tot, F_ext[:, np.newaxis]))
 

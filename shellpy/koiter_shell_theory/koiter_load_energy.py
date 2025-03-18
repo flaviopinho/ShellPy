@@ -2,13 +2,13 @@ from typing import Any
 import numpy as np
 from multipledispatch import dispatch
 
-from shellpy import boole_weights_double_integral
+from shellpy import boole_weights_double_integral, n_integral_default_x, n_integral_default_y
 from shellpy import Shell
 from shellpy.shell_loads import ConcentratedForce, PressureLoad
 
 
 # Function to compute the energy functional for the applied loads on the shell using Koiter's theory
-def koiter_load_energy(shell: Shell):
+def koiter_load_energy(shell: Shell, n_x=n_integral_default_x, n_y=n_integral_default_y):
     # Get the number of degrees of freedom (DOF) for the displacement expansion
     n_dof = shell.displacement_expansion.number_of_degrees_of_freedom()
 

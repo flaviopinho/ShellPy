@@ -1,5 +1,5 @@
 """
-This example analyzes the nonlinear behavior of an arc
+This example analyzes the nonlinear behavior of an arch
 under a concentrated force unsing FOSD theory. This arc has been
 previously studied (https://doi.org/10.1016/j.ijnonlinmec.2005.06.009).
 This script determines the nonlinear static response.
@@ -20,7 +20,7 @@ from shellpy import RectangularMidSurfaceDomain
 from shellpy.fosd_theory.fosd_load_energy import fosd_load_energy
 from shellpy.fosd_theory.fosd_strain_energy import fosd_strain_energy
 from shellpy.koiter_shell_theory import fast_koiter_strain_energy
-from shellpy.koiter_shell_theory.koiter_strain_energy_large_rotations import \
+from shellpy.koiter_shell_theory.koiter_strain_energy_large import \
     koiter_strain_energy_large_rotations
 from shellpy.tensor_derivatives import tensor_derivative
 from shellpy.koiter_shell_theory.koiter_load_energy import koiter_load_energy
@@ -137,7 +137,7 @@ if __name__ == "__main__":
 
     rectangular_domain = RectangularMidSurfaceDomain(alpha1, alpha2, -b / 2, b / 2)
 
-    n_modos = 20
+    n_modos = 15
     expansion_size = {"u1": (n_modos, 1),
                       "u2": (0, 0),
                       "u3": (n_modos, 1),
@@ -166,8 +166,8 @@ if __name__ == "__main__":
                            "v2": boundary_conditions_v2,
                            "v3": boundary_conditions_v3}
 
-    #displacement_field = EnrichedCosineExpansion(expansion_size, rectangular_domain, boundary_conditions)
-    displacement_field = GenericPolynomialSeries(np.polynomial.Legendre, expansion_size, rectangular_domain, boundary_conditions)
+    displacement_field = EnrichedCosineExpansion(expansion_size, rectangular_domain, boundary_conditions)
+    #displacement_field = GenericPolynomialSeries(np.polynomial.Legendre, expansion_size, rectangular_domain, boundary_conditions)
     #displacement_field = EigenFunctionExpansion(expansion_size, rectangular_domain, boundary_conditions)
 
     R_ = sym.Matrix([-R * sym.cos(xi1_), xi2_, R * sym.sin(xi1_)])
@@ -207,7 +207,7 @@ if __name__ == "__main__":
     continuation_boundary[:-1, 0] = -100000
     continuation_boundary[:-1, 1] = 100000
     continuation_boundary[-1, 0] = -5
-    continuation_boundary[-1, 1] = 20
+    continuation_boundary[-1, 1] = 15
 
     # Definindo continuation_model
     continuation_model = {'n': n_dof,

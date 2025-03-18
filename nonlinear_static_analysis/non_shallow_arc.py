@@ -18,7 +18,7 @@ from shellpy.expansions.enriched_cosine_expansion import EnrichedCosineExpansion
 from shellpy.expansions.polinomial_expansion import GenericPolynomialSeries
 from shellpy import RectangularMidSurfaceDomain
 from shellpy.koiter_shell_theory import fast_koiter_strain_energy
-from shellpy.koiter_shell_theory.koiter_strain_energy_large_rotations import \
+from shellpy.koiter_shell_theory.koiter_strain_energy_large import \
     koiter_strain_energy_large_rotations
 from shellpy.tensor_derivatives import tensor_derivative
 from shellpy.koiter_shell_theory.koiter_load_energy import koiter_load_energy
@@ -77,7 +77,7 @@ def plot_shell_arc(shell, u):
         ax = fig.add_subplot(1, 2, 1)  # First subplot (not used)
         ax = fig.add_subplot(1, 2, 2, projection='3d')  # Second subplot (3D plot)
 
-        data = np.loadtxt("arc_results.txt", delimiter=",", skiprows=1)
+        data = np.loadtxt("arc_results.txt", delimiter=",")
 
         x = data[:, 0]
         y = data[:, 1]
@@ -111,8 +111,6 @@ def plot_shell_arc(shell, u):
 
 
 if __name__ == "__main__":
-    shellpy.n_integral_default_x = 40
-    shellpy.n_integral_default_y = 1
 
     R = 1
     b = 0.1
@@ -126,15 +124,18 @@ if __name__ == "__main__":
     density = 1
 
     E = 1
-    nu = 0.3
+    nu = 0
+
+    n_int_x = 40
+    n_int_y = 1
 
     load = ConcentratedForce(0, 0, -1 / (R ** 2 / (E * In)), np.pi / 2, 0)
 
     rectangular_domain = RectangularMidSurfaceDomain(alpha1, alpha2, -b / 2, b / 2)
 
-    expansion_size = {"u1": (35, 1),
+    expansion_size = {"u1": (20, 1),
                       "u2": (0, 0),
-                      "u3": (35, 1)}
+                      "u3": (20, 1)}
 
     boundary_conditions_u1 = {"xi1": ("S", "S"),
                               "xi2": ("O", "O")}
@@ -159,7 +160,7 @@ if __name__ == "__main__":
 
     U_ext = koiter_load_energy(shell)
 
-    U2_int, U3_int, U4_int = fast_koiter_strain_energy(shell)
+    U2_int, U3_int, U4_int = koiter_strain_energy_large_rotations(shell, n_int_x, n_int_y)
 
     # Numero de variaveis
     n = displacement_field.number_of_degrees_of_freedom()
@@ -199,8 +200,8 @@ if __name__ == "__main__":
                           'output_function': output}
 
     continuation = continuation.Continuation(continuation_model)
-    continuation.parameters['tol2'] = 1E-7
-    continuation.parameters['tol1'] = 1E-7
+    continuation.parameters['tol2'] = 1E-6
+    continuation.parameters['tol1'] = 1E-6
     continuation.parameters['index1'] = -1
     continuation.parameters['index2'] = 0
     continuation.parameters['cont_max'] = 10000

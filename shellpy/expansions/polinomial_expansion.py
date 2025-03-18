@@ -1,7 +1,7 @@
 import numpy as np
 from numpy import polynomial as P
 
-from shellpy import DisplacementExpansion, displacement_field_index
+from shellpy import DisplacementExpansion, displacement_field_index, cache_method
 from shellpy import RectangularMidSurfaceDomain
 
 
@@ -23,7 +23,7 @@ class GenericPolynomialSeries(DisplacementExpansion):
                         exemple:
                         edges = {"xi1": (0, a),
                                  "xi2": (0, b)}
-        :param boundary_conditions: Dict of dict of tuples
+        :param boundary_conditions: Dict of dicts of tuples
                                     exemple:
                                     boundary_conditions = {"u1": {"xi1": ("S", "S"),
                                                                   "xi2": ("S", "S")},
@@ -50,6 +50,8 @@ class GenericPolynomialSeries(DisplacementExpansion):
         self._number_of_fields = len(expansion_size)
         if self._number_of_fields != 3 or self._number_of_fields != 6:
             ValueError('Expansion must have 3 or 6 fields.')
+
+        self.cache = {}
 
     def _set_mapping(self):
         mapping = []

@@ -28,14 +28,14 @@ def determine_eigenfunctions(boundary_conditions, maximum_derivative=3, maximum_
         return ss_ss(maximum_derivative, maximum_mode)
 
     # Set the precision for mpmath calculations
-    mp.mp.dps = 40
+    mp.mp.dps = 100
 
     # Define symbolic variables
     x_, C1_, C2_, C3_, C4_, k_ = sym.symbols('x_ C1_ C2_ C3_ C4_ k_')
 
     # General form for the eigenfunction expansion
-    w = C1_ * sym.sin(k_ ** (1 / 4) * x_) + C2_ * sym.cos(k_ ** (1 / 4) * x_) + C3_ * sym.sinh(
-        k_ ** (1 / 4) * x_) + C4_ * sym.cosh(k_ ** (1 / 4) * x_)
+    w = C1_ * sym.sin(k_ * x_) + C2_ * sym.cos(k_ * x_) + C3_ * sym.sinh(
+        k_ * x_) + C4_ * sym.cosh(k_ * x_)
 
     # Initialize list to store mid_surface_domain condition equations
     BC_equations = []
@@ -71,7 +71,6 @@ def determine_eigenfunctions(boundary_conditions, maximum_derivative=3, maximum_
     lambda_det = sym.lambdify(k_, det, 'mpmath')
     lambda_det_prime = sym.lambdify(k_, det.diff(k_, 1), 'mpmath')
 
-
     # Initialize list for storing solution intervals
     solution_interval = []
     point1 = mp.mpf(0.01)  # Initial point for bisection
@@ -93,6 +92,12 @@ def determine_eigenfunctions(boundary_conditions, maximum_derivative=3, maximum_
         # Move to the next point and calculate its function value
         point1 = point2
         value1 = value2
+
+    # Solve for eigenvalues using Newton-Raphson method
+    sol = []
+    for interval in solution_interval:
+        # sol.append(solver_bisection(lambda_det, *interval))  # Uncomment for bisection method
+        sol.append(_solver_newton_raphson(lambda_det, lambda_det_prime, interval[0], interval[1]))
 
     # Solve for eigenvalues using Newton-Raphson method
     sol = []
@@ -140,12 +145,49 @@ def determine_eigenfunctions(boundary_conditions, maximum_derivative=3, maximum_
         Coeff = Coeff.apply(lambda x: x.real)  # Use real part of the coefficients
         Coeff = Coeff.apply(lambda x: mp.mpf(0) if mp.fabs(x) < mp.mpf(1e-30) else x)  # Threshold small values to zero
 
+        # Normalize the eigenvector (L2 normalization)
+        norm = mp.sqrt(sum(Coeff[i] ** 2 for i in range(len(Coeff))))  # Calculate the L2 norm
+        Coeff = Coeff.apply(lambda x: x / norm)  # Normalize the coefficients
+
         # Simplify the expression for the eigenfunction
-        ws = sym.simplify(w.subs(((C1_, Coeff[0]), (C2_, Coeff[1]), (C3_, Coeff[2]), (C4_, Coeff[3]), (k_, k))))
+        ws = w.subs(((C1_, Coeff[0]), (C2_, Coeff[1]), (C3_, Coeff[2]), (C4_, Coeff[3]), (k_, k)))
 
         # Store the eigenfunction and its derivatives up to the maximum derivative order
         for derivative in range(maximum_derivative):
-            eigen_functions[(modo+cont, derivative)] = sym.lambdify(x_, ws.diff(x_, derivative))
+            eigen_functions[(modo+cont, derivative)] = sym.lambdify(x_, ws.diff(x_, derivative), 'mpmath')
+
+    for key in eigen_functions:
+        # Função lambdify original
+        func = eigen_functions[key]
+
+        # Criação de uma cópia da função lambdified e definição do comportamento
+        def create_func_with_float_conversion(func):
+            def func_with_float_conversion(*args):
+                # Caso args seja um array ou lista, iteramos sobre cada elemento
+                if isinstance(args[0], np.ndarray):  # Verificando se args[0] é um array
+                    # Inicializa a estrutura de resultado com a mesma forma de args
+                    result_mpf = np.empty_like(args[0], dtype=np.float64)
+
+                    # Itera sobre cada elemento do ndarray mantendo a estrutura original
+                    it = np.nditer(args[0], flags=['multi_index'])
+                    for idx in it:
+                        # Converte cada elemento de args para mpmath.mpf e aplica a função
+                        result_mpf[it.multi_index] = float(func(mp.mpf(args[0][it.multi_index])))
+
+                    return result_mpf
+                else:
+                    # Se a entrada for um float ou int, tratamos normalmente
+                    args_mpf = mp.mpf(args[0])  # Converter para mpmath.mpf
+
+                    # Calcular o resultado com precisão mpmath e garantir que a saída seja do tipo float ou np.float64
+                    result_mpf = float(func(args_mpf))  # Retorna o valor como float
+
+                    return result_mpf
+
+            return func_with_float_conversion
+
+        # Atribuir a cópia da função modificada para a chave correspondente
+        eigen_functions[key] = create_func_with_float_conversion(func)
 
     # Return the dictionary of eigenfunctions and their derivatives
     return eigen_functions
@@ -195,7 +237,7 @@ def ss_ss(maximum_derivative, maximum_mode):
     return eigen_functions
 
 
-def _solver_newton_raphson(f, f_prime, x0, x1, tol=mp.mpf(1e-20), max_iter=1000):
+def _solver_newton_raphson(f, f_prime, x0, x1, tol=mp.mpf(1e-30), max_iter=1000):
     a, b = x0, x1  # Definição do intervalo
     x = (a + b) / 2  # Começa no meio do intervalo
 
@@ -204,6 +246,7 @@ def _solver_newton_raphson(f, f_prime, x0, x1, tol=mp.mpf(1e-20), max_iter=1000)
         f_prime_val = f_prime(x)
 
         if abs(f_prime_val) < tol:  # Evita divisão por valores pequenos
+            ValueError("Newton-Raphson error. Step too small.")
             return None
 
         x_next = x - f_val / f_prime_val  # Passo do Newton-Raphson
@@ -226,7 +269,8 @@ def _solver_newton_raphson(f, f_prime, x0, x1, tol=mp.mpf(1e-20), max_iter=1000)
 
         x = x_next  # Atualiza x
 
-    return None  # Se não convergir
+    print(f"Warning: Newton-Raphson did not converge within {max_iter} iterations.")
+    return x  # Se não convergir
 
 
 def _solver_bisection(f, a, b, tol=mp.mpf(1e-15), max_iter=100000):

@@ -1,7 +1,7 @@
 import sympy as sym
 import numpy as np
 
-from shellpy import DisplacementExpansion, displacement_field_index
+from shellpy import DisplacementExpansion, displacement_field_index, cache_method
 from shellpy import RectangularMidSurfaceDomain
 from shellpy.expansions.simple_expansions import constant_value_expansion, fourier_expansion_for_periodic_solutions
 
@@ -48,6 +48,8 @@ class EnrichedCosineExpansion(DisplacementExpansion):
         self._number_of_fields = len(expansion_size)
         if self._number_of_fields != 3 or self._number_of_fields != 6:
             ValueError('Expansion must have 3 or 6 fields.')
+
+        self.cache = {}
 
     def mapping(self, n):
         """
@@ -269,15 +271,17 @@ class EnrichedCosineExpansion(DisplacementExpansion):
                     count += 1
                     functions_set[(count, derivative)] = sym.lambdify(x_, Fc[2*point+1].diff(x_, derivative))
                     count += 1
-
                 elif boundary_conditions[point] == "S":
                     functions_set[(count, derivative)] = sym.lambdify(x_, Fc[2*point+1].diff(x_, derivative))
                     count += 1
+                elif boundary_conditions[point] == "FC":
+                    functions_set[(count, derivative)] = sym.lambdify(x_, Fc[2 * point].diff(x_, derivative))
+                    count += 1
                 elif boundary_conditions[point] != "C":
-                    raise ValueError("Boundary condition must be 'F', 'S' or 'C' for C1 cosine set")
+                    raise ValueError("Boundary condition must be 'F', 'S', 'FC' or 'C' for C1 cosine set")
 
             for point in range(5, maximum_mode):
-                functions_set[(count, derivative)] = sym.lambdify(x_, sym.simplify(Fcj.subs(j_, point).diff(x_, derivative)))
+                functions_set[(count, derivative)] = sym.lambdify(x_, Fcj.subs(j_, point).diff(x_, derivative))
                 count += 1
 
         return functions_set

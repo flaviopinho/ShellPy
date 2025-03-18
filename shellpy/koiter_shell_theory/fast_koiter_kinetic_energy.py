@@ -1,10 +1,10 @@
 import numpy as np
 
-from shellpy import boole_weights_double_integral
+from shellpy import boole_weights_double_integral, n_integral_default_x, n_integral_default_y
 from shellpy import Shell
 
 
-def fast_koiter_kinetic_energy(shell: Shell, integral_weights=boole_weights_double_integral):
+def fast_koiter_kinetic_energy(shell: Shell, n_x=n_integral_default_x, n_y = n_integral_default_y, integral_weights=boole_weights_double_integral):
     """
     Calculates the kinetic energy of a shell structure using the Koiter approximation.
     This function computes the kinetic energy tensor based on the displacement fields,
@@ -22,7 +22,7 @@ def fast_koiter_kinetic_energy(shell: Shell, integral_weights=boole_weights_doub
 
     # Get the weights (xi1, xi2) and corresponding weights (W) for the double integral
     # The weights are used in numerical integration for the domain of the shell's mid-surface
-    xi1, xi2, W = integral_weights(shell.mid_surface_domain.edges["xi1"], shell.mid_surface_domain.edges["xi2"])
+    xi1, xi2, W = integral_weights(shell.mid_surface_domain.edges["xi1"], shell.mid_surface_domain.edges["xi2"], n_x, n_y)
 
     # Get the shape of xi1 (which represents a discretized domain in terms of xi1 and xi2)
     n = np.shape(xi1)
