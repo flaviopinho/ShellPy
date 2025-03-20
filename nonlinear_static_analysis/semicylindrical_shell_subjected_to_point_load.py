@@ -1,7 +1,7 @@
 """
 
 """
-
+import os
 import sys
 import matplotlib.pyplot as plt
 import sympy as sym
@@ -9,16 +9,13 @@ import numpy as np
 
 import shellpy
 from nonlinear_static_analysis.residue_jacobian_stability import shell_jacobian, shell_residue, shell_stability
-from shellpy import simply_supported, pinned
+from shellpy.cache_decorator import clear_cache
 from shellpy.expansions.eigen_function_expansion import EigenFunctionExpansion
 from shellpy.expansions.enriched_cosine_expansion import EnrichedCosineExpansion
 from shellpy.expansions.polinomial_expansion import GenericPolynomialSeries
 from shellpy import RectangularMidSurfaceDomain
 from shellpy.fosd_theory.fosd_load_energy import fosd_load_energy
 from shellpy.fosd_theory.fosd_strain_energy import fosd_strain_energy
-from shellpy.koiter_shell_theory import fast_koiter_strain_energy
-from shellpy.koiter_shell_theory.koiter_strain_energy_large import \
-    koiter_strain_energy_large_rotations
 from shellpy.tensor_derivatives import tensor_derivative
 from shellpy.koiter_shell_theory.koiter_load_energy import koiter_load_energy
 from shellpy.shell_loads.shell_conservative_load import ConcentratedForce, PressureLoad
@@ -26,7 +23,7 @@ from shellpy import LinearElasticMaterial
 from shellpy import Shell
 from shellpy import ConstantThickness
 from shellpy import MidSurfaceGeometry, xi1_, xi2_
-import shellpy.integral_booles_rule
+import dill
 
 sys.path.append('../../ContinuationPy/ContinuationPy')
 import continuation
@@ -98,8 +95,7 @@ def plot_shell_arc(shell, u):
 
     plt.pause(0.01)  # Pause briefly to allow the plot to update. This is important for animations.
 
-
-if __name__ == "__main__":
+def create_shell():
     integral_x = 20
     integral_y = 20
     integral_z = 4
@@ -115,9 +111,9 @@ if __name__ == "__main__":
 
     load = ConcentratedForce(0, 0, -1600, 1, 0)
 
-    rectangular_domain = RectangularMidSurfaceDomain(0, 1, 0, np.pi/2)
+    rectangular_domain = RectangularMidSurfaceDomain(0, 1, 0, np.pi / 2)
 
-    n_modos = 3
+    n_modos = 2
     expansion_size = {"u1": (n_modos, n_modos),
                       "u2": (n_modos, n_modos),
                       "u3": (n_modos, n_modos),
@@ -147,9 +143,9 @@ if __name__ == "__main__":
                            "v3": boundary_conditions_v3}
 
     displacement_field = EnrichedCosineExpansion(expansion_size, rectangular_domain, boundary_conditions)
-    #displacement_field = GenericPolynomialSeries(np.polynomial.Legendre, expansion_size, rectangular_domain, boundary_conditions)
+    # displacement_field = GenericPolynomialSeries(np.polynomial.Legendre, expansion_size, rectangular_domain, boundary_conditions)
 
-    R_ = sym.Matrix([xi1_*L, R * sym.sin(xi2_), R * sym.cos(xi2_)])
+    R_ = sym.Matrix([xi1_ * L, R * sym.sin(xi2_), R * sym.cos(xi2_)])
     mid_surface_geometry = MidSurfaceGeometry(R_)
     thickness = ConstantThickness(h)
     material = LinearElasticMaterial(E, nu, density)
@@ -161,12 +157,29 @@ if __name__ == "__main__":
 
     U2_int, U3_int, U4_int = fosd_strain_energy(shell, integral_x, integral_y, integral_z)
 
+    clear_cache(shell)
+
+    dill.settings['recurse'] = True
+
+    with open("semicylindrical_shell_subjected_to_point_load.dill", "wb") as f:
+        dill.dump((shell, U_ext, U2_int, U3_int, U4_int), f)
+
+
+if __name__ == "__main__":
+    filename = "semicylindrical_shell_subjected_to_point_load.dill"
+    if not os.path.exists(filename):
+        print("Calculating shell")
+        create_shell()
+
+    with open(filename, "rb") as f:
+        shell, U_ext, U2_int, U3_int, U4_int = dill.load(f)
+
     # Numero de variaveis
-    n = displacement_field.number_of_degrees_of_freedom()
+    n = shell.displacement_expansion.number_of_degrees_of_freedom()
     # Numero de parametros
     p = 1
 
-    div = E
+    div = shell.material.E
     F_ext = tensor_derivative(U_ext, 0) / div
 
     F2_int = tensor_derivative(U2_int, 0) / div
@@ -190,7 +203,7 @@ if __name__ == "__main__":
     continuation_boundary[-1, 1] = 2
 
     # Definindo continuation_model
-    continuation_model = {'n': n_dof,
+    continuation_model = {'n': n,
                           'p': 1,
                           'residue': residue,
                           'jacobian': jacobian,
