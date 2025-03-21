@@ -25,7 +25,7 @@ from shellpy import ConstantThickness
 from shellpy import MidSurfaceGeometry, xi1_, xi2_
 import dill
 
-sys.path.append('../../ContinuationPy/ContinuationPy')
+sys.path.append('../../ContinuationPy/')
 import continuation
 
 
@@ -96,8 +96,8 @@ def plot_shell_arc(shell, u):
     plt.pause(0.01)  # Pause briefly to allow the plot to update. This is important for animations.
 
 def create_shell():
-    integral_x = 20
-    integral_y = 20
+    integral_x = 30
+    integral_y = 30
     integral_z = 4
 
     R = 1.016
@@ -106,20 +106,23 @@ def create_shell():
 
     density = 1
 
-    E = 20.685E6
+    E1 = 20.685E6
+    E = 1
     nu = 0.3
 
-    load = ConcentratedForce(0, 0, -1600, 1, 0)
+    load = ConcentratedForce(0, 0, -1600 / E1, 1, 0)
 
     rectangular_domain = RectangularMidSurfaceDomain(0, 1, 0, np.pi / 2)
 
     n_modos = 2
-    expansion_size = {"u1": (n_modos, n_modos),
-                      "u2": (n_modos, n_modos),
-                      "u3": (n_modos, n_modos),
-                      "v1": (n_modos, n_modos),
-                      "v2": (n_modos, n_modos),
-                      "v3": (n_modos, n_modos)}
+    n_modos1 = 2
+
+    expansion_size = {"u1": (n_modos1, n_modos),
+                      "u2": (n_modos1, n_modos),
+                      "u3": (n_modos1, n_modos),
+                      "v1": (n_modos1, n_modos),
+                      "v2": (n_modos1, n_modos),
+                      "v3": (n_modos1, n_modos)}
 
     boundary_conditions_u1 = {"xi1": ("S", "F"),
                               "xi2": ("F", "S")}
@@ -142,8 +145,9 @@ def create_shell():
                            "v2": boundary_conditions_v2,
                            "v3": boundary_conditions_v3}
 
-    displacement_field = EnrichedCosineExpansion(expansion_size, rectangular_domain, boundary_conditions)
-    # displacement_field = GenericPolynomialSeries(np.polynomial.Legendre, expansion_size, rectangular_domain, boundary_conditions)
+    #displacement_field = EnrichedCosineExpansion(expansion_size, rectangular_domain, boundary_conditions)
+    displacement_field = EigenFunctionExpansion(expansion_size, rectangular_domain, boundary_conditions)
+    #displacement_field = GenericPolynomialSeries(np.polynomial.Legendre, expansion_size, rectangular_domain, boundary_conditions)
 
     R_ = sym.Matrix([xi1_ * L, R * sym.sin(xi2_), R * sym.cos(xi2_)])
     mid_surface_geometry = MidSurfaceGeometry(R_)
@@ -179,12 +183,12 @@ if __name__ == "__main__":
     # Numero de parametros
     p = 1
 
-    div = shell.material.E
-    F_ext = tensor_derivative(U_ext, 0) / div
+    div = 1
+    F_ext = tensor_derivative(U_ext, 0)
 
-    F2_int = tensor_derivative(U2_int, 0) / div
-    F3_int = tensor_derivative(U3_int, 0) / div
-    F4_int = tensor_derivative(U4_int, 0) / div
+    F2_int = tensor_derivative(U2_int, 0)
+    F3_int = tensor_derivative(U3_int, 0)
+    F4_int = tensor_derivative(U4_int, 0)
 
     J2_int = tensor_derivative(F2_int, 1)
     J3_int = tensor_derivative(F3_int, 1)
@@ -200,7 +204,7 @@ if __name__ == "__main__":
     continuation_boundary[:-1, 0] = -100000
     continuation_boundary[:-1, 1] = 100000
     continuation_boundary[-1, 0] = -2
-    continuation_boundary[-1, 1] = 2
+    continuation_boundary[-1, 1] = 12
 
     # Definindo continuation_model
     continuation_model = {'n': n,
@@ -212,8 +216,8 @@ if __name__ == "__main__":
                           'output_function': output}
 
     continuation = continuation.Continuation(continuation_model)
-    continuation.parameters['tol2'] = 1E-7
-    continuation.parameters['tol1'] = 1E-7
+    continuation.parameters['tol2'] = 1E-9
+    continuation.parameters['tol1'] = 1E-9
     continuation.parameters['index1'] = -1
     continuation.parameters['index2'] = 0
     continuation.parameters['cont_max'] = 10000
@@ -222,7 +226,7 @@ if __name__ == "__main__":
 
     # Determinacao de um ponto regular inicial
     u0 = np.zeros(continuation_model['n'] + continuation_model['p'])
-    u0[-1] = 0.01
+    u0[-1] = 1
     H0 = continuation.model['residue'](u0)
     J0 = continuation.model['jacobian'](u0)
     t0 = continuation.tangent_vector(J0)

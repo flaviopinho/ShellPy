@@ -9,6 +9,8 @@ def tensor_derivative(tensor, n=0):
     :param n: Base index for the permutation.
     :return: Derived tensor.
     """
+
+    """
     rank = tensor.ndim  # Number of dimensions of the tensor
     tensor_jacobian = np.copy(tensor)  # Copy the original tensor
 
@@ -16,5 +18,14 @@ def tensor_derivative(tensor, n=0):
         p = list(range(rank))  # Create a list of indices [0, 1, ..., rank-1]
         p[i], p[n] = p[n], p[i]  # Swap the indices i and n
         tensor_jacobian += np.transpose(tensor, axes=p)  # Apply the permutation and add it to the tensor
+
+    return tensor_jacobian """
+
+    rank = tensor.ndim  # Number of dimensions of the tensor
+    tensor_jacobian = np.copy(tensor)  # Copy the original tensor
+
+    # Use a vectorized approach to avoid excessive Python loops
+    permutations = [np.swapaxes(tensor, n, i) for i in range(n + 1, rank)]
+    tensor_jacobian += sum(permutations)  # Sum all permutations
 
     return tensor_jacobian

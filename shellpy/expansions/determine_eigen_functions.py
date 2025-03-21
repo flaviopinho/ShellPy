@@ -5,6 +5,7 @@ import scipy
 from scipy.linalg import eigh
 import mpmath as mp
 
+high_precision_eigen_function = False
 
 # Function to calculate eigenfunction expansion for given mid_surface_domain conditions
 # Parameters:
@@ -51,6 +52,9 @@ def determine_eigenfunctions(boundary_conditions, maximum_derivative=3, maximum_
             BC_equations.append(sym.diff(w, x_, 2).subs(x_, mp.mpf(edge)))  # 2nd derivative at edge
         elif boundary_conditions[edge] == 'C':  # Clamped mid_surface_domain
             BC_equations.append(w.subs(x_, mp.mpf(edge)))  # Function value at edge
+            BC_equations.append(sym.diff(w, x_, 1).subs(x_, mp.mpf(edge)))  # 1st derivative at edge
+        elif boundary_conditions[edge] == 'FC':  # Clamped mid_surface_domain
+            BC_equations.append(sym.diff(w, x_, 3).subs(x_, mp.mpf(edge)))  # 3rd derivative at edge
             BC_equations.append(sym.diff(w, x_, 1).subs(x_, mp.mpf(edge)))  # 1st derivative at edge
         else:
             # Raise error if mid_surface_domain condition is invalid
@@ -108,6 +112,14 @@ def determine_eigenfunctions(boundary_conditions, maximum_derivative=3, maximum_
     eigen_functions = {}
 
     cont = 0
+    if boundary_conditions == ("FC", "F") or boundary_conditions == ("F", "FC"):
+        cont = 1
+        for derivative in range(maximum_derivative):
+            if derivative == 0:
+                eigen_functions[(0, derivative)] = lambda x: np.ones(np.shape(x))
+            else:
+                eigen_functions[(0, derivative)] = lambda x: np.zeros(np.shape(x))
+
     if boundary_conditions == ("S", "F"):
         cont = 1
         for derivative in range(maximum_derivative):
@@ -154,40 +166,45 @@ def determine_eigenfunctions(boundary_conditions, maximum_derivative=3, maximum_
 
         # Store the eigenfunction and its derivatives up to the maximum derivative order
         for derivative in range(maximum_derivative):
-            eigen_functions[(modo+cont, derivative)] = sym.lambdify(x_, ws.diff(x_, derivative), 'mpmath')
+            if high_precision_eigen_function:
+                eigen_functions[(modo+cont, derivative)] = sym.lambdify(x_, ws.diff(x_, derivative), 'mpmath')
+            else:
+                eigen_functions[(modo + cont, derivative)] = sym.lambdify(x_, ws.diff(x_, derivative), 'numpy')
 
-    for key in eigen_functions:
-        # Função lambdify original
-        func = eigen_functions[key]
 
-        # Criação de uma cópia da função lambdified e definição do comportamento
-        def create_func_with_float_conversion(func):
-            def func_with_float_conversion(*args):
-                # Caso args seja um array ou lista, iteramos sobre cada elemento
-                if isinstance(args[0], np.ndarray):  # Verificando se args[0] é um array
-                    # Inicializa a estrutura de resultado com a mesma forma de args
-                    result_mpf = np.empty_like(args[0], dtype=np.float64)
+    if high_precision_eigen_function:
+        for key in eigen_functions:
+            # Função lambdify original
+            func = eigen_functions[key]
 
-                    # Itera sobre cada elemento do ndarray mantendo a estrutura original
-                    it = np.nditer(args[0], flags=['multi_index'])
-                    for idx in it:
-                        # Converte cada elemento de args para mpmath.mpf e aplica a função
-                        result_mpf[it.multi_index] = float(func(mp.mpf(args[0][it.multi_index])))
+            # Criação de uma cópia da função lambdified e definição do comportamento
+            def create_func_with_float_conversion(func):
+                def func_with_float_conversion(*args):
+                    # Caso args seja um array ou lista, iteramos sobre cada elemento
+                    if isinstance(args[0], np.ndarray):  # Verificando se args[0] é um array
+                        # Inicializa a estrutura de resultado com a mesma forma de args
+                        result_mpf = np.empty_like(args[0], dtype=np.float64)
 
-                    return result_mpf
-                else:
-                    # Se a entrada for um float ou int, tratamos normalmente
-                    args_mpf = mp.mpf(args[0])  # Converter para mpmath.mpf
+                        # Itera sobre cada elemento do ndarray mantendo a estrutura original
+                        it = np.nditer(args[0], flags=['multi_index'])
+                        for idx in it:
+                            # Converte cada elemento de args para mpmath.mpf e aplica a função
+                            result_mpf[it.multi_index] = float(func(mp.mpf(args[0][it.multi_index])))
 
-                    # Calcular o resultado com precisão mpmath e garantir que a saída seja do tipo float ou np.float64
-                    result_mpf = float(func(args_mpf))  # Retorna o valor como float
+                        return result_mpf
+                    else:
+                        # Se a entrada for um float ou int, tratamos normalmente
+                        args_mpf = mp.mpf(args[0])  # Converter para mpmath.mpf
 
-                    return result_mpf
+                        # Calcular o resultado com precisão mpmath e garantir que a saída seja do tipo float ou np.float64
+                        result_mpf = float(func(args_mpf))  # Retorna o valor como float
 
-            return func_with_float_conversion
+                        return result_mpf
 
-        # Atribuir a cópia da função modificada para a chave correspondente
-        eigen_functions[key] = create_func_with_float_conversion(func)
+                return func_with_float_conversion
+
+            # Atribuir a cópia da função modificada para a chave correspondente
+            eigen_functions[key] = create_func_with_float_conversion(func)
 
     # Return the dictionary of eigenfunctions and their derivatives
     return eigen_functions
