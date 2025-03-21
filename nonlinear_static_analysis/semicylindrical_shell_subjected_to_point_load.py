@@ -96,8 +96,8 @@ def plot_shell_arc(shell, u):
     plt.pause(0.01)  # Pause briefly to allow the plot to update. This is important for animations.
 
 def create_shell():
-    integral_x = 30
-    integral_y = 30
+    integral_x = 15
+    integral_y = 15
     integral_z = 4
 
     R = 1.016
@@ -114,8 +114,8 @@ def create_shell():
 
     rectangular_domain = RectangularMidSurfaceDomain(0, 1, 0, np.pi / 2)
 
-    n_modos = 2
-    n_modos1 = 2
+    n_modos = 5
+    n_modos1 = 5
 
     expansion_size = {"u1": (n_modos1, n_modos),
                       "u2": (n_modos1, n_modos),
@@ -204,7 +204,7 @@ if __name__ == "__main__":
     continuation_boundary[:-1, 0] = -100000
     continuation_boundary[:-1, 1] = 100000
     continuation_boundary[-1, 0] = -2
-    continuation_boundary[-1, 1] = 12
+    continuation_boundary[-1, 1] = 5
 
     # Definindo continuation_model
     continuation_model = {'n': n,
@@ -226,7 +226,7 @@ if __name__ == "__main__":
 
     # Determinacao de um ponto regular inicial
     u0 = np.zeros(continuation_model['n'] + continuation_model['p'])
-    u0[-1] = 1
+    u0[-1] = 0.01
     H0 = continuation.model['residue'](u0)
     J0 = continuation.model['jacobian'](u0)
     t0 = continuation.tangent_vector(J0)
