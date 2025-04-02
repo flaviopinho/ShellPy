@@ -1,7 +1,9 @@
 import numpy as np
-from shellpy import LinearElasticMaterial
 from shellpy import MidSurfaceGeometry, xi1_, xi2_
 import sympy as sym
+
+from shellpy.materials.constitutive_tensor_koiter import plane_stress_constitutive_tensor_for_koiter_theory
+from shellpy.materials.linear_elastic_material import LinearElasticMaterial
 
 if __name__ == "__main__":
     R = 1
@@ -13,7 +15,7 @@ if __name__ == "__main__":
 
     material = LinearElasticMaterial(10, 0.2, 0)
 
-    C = material.plane_stress_constitutive_tensor_for_koiter_theory(mid_surface.metric_tensor_contravariant_components(0, 0))
+    C = plane_stress_constitutive_tensor_for_koiter_theory(mid_surface, material, 0, 0, 0)
 
     idn = np.zeros((2,) * 4)
     idn[tuple([np.arange(2)] * 4)] = 1

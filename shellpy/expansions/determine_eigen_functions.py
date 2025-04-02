@@ -112,7 +112,7 @@ def determine_eigenfunctions(boundary_conditions, maximum_derivative=3, maximum_
     eigen_functions = {}
 
     cont = 0
-    if boundary_conditions == ("FC", "F") or boundary_conditions == ("F", "FC"):
+    if boundary_conditions == ("FC", "F") or boundary_conditions == ("F", "FC") or boundary_conditions == ("FC", "FC"):
         cont = 1
         for derivative in range(maximum_derivative):
             if derivative == 0:

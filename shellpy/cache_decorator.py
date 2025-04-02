@@ -13,7 +13,7 @@ def generate_hash(value):
     - For NumPy arrays, the content is converted to bytes before hashing to ensure uniqueness.
     - For other data types, the hash is based only on the type of the object.
     """
-    if isinstance(value, (int, float, np.ndarray)):
+    if isinstance(value, (int, float, np.ndarray, tuple)):
         if isinstance(value, np.ndarray):
             value = value.tobytes()  # Convert arrays to bytes for hashing
         return hashlib.sha256(str(value).encode("utf-8")).hexdigest()

@@ -2,20 +2,20 @@ from time import time
 
 import numpy as np
 
-from shellpy import Shell, boole_weights_double_integral, boole_weights_triple_integral, boole_weights_simple_integral
+from shellpy import Shell
 from shellpy.fosd_theory.fosd_strain_tensor import fosd_linear_strain_components, fosd_nonlinear_strain_components
-from shellpy.koiter_shell_theory import koiter_nonlinear_strain_components_total
+from shellpy.materials.constitutive_tensor_fosd import constitutive_tensor_for_fosd
+from shellpy.numeric_integration.boole_integral import boole_weights_simple_integral
+from shellpy.numeric_integration.integral_weights import double_integral_weights
 
 
-def fosd_strain_energy(shell: Shell, n_x, n_y, n_z):
+def fosd_strain_energy(shell: Shell, n_x, n_y, n_z, integral_method=boole_weights_simple_integral):
     h = shell.thickness()
 
     # Get integration points and weights for the double integral over the mid-surface domain
-    xi1, xi2, Wxy = boole_weights_double_integral(shell.mid_surface_domain.edges["xi1"],
-                                                  shell.mid_surface_domain.edges["xi2"],
-                                                  n_x, n_y)
+    xi1, xi2, Wxy = double_integral_weights(shell.mid_surface_domain, n_x, n_y, integral_method)
 
-    xi3, Wz = boole_weights_simple_integral((-h / 2, h / 2), n_z)
+    xi3, Wz = integral_method((-h / 2, h / 2), n_z)
 
     # Shape of xi1 (discretized domain in terms of xi1 and xi2)
     n_xy = np.shape(xi1)
@@ -44,7 +44,7 @@ def fosd_strain_energy(shell: Shell, n_x, n_y, n_z):
     metric_tensor2[2, 2] = 1
 
     # Calculate the constitutive tensor C for the thin shell material
-    C = shell.material.constitutive_tensor(metric_tensor2)
+    C = constitutive_tensor_for_fosd(shell.mid_surface_geometry, shell.material, xi1, xi2, xi3)
 
     C[0:2, 2, 0:2, 2] = 5 / 6 * C[0:2, 2, 0:2, 2]
     C[2, 0:2, 0:2, 2] = 5 / 6 * C[2, 0:2, 0:2, 2]

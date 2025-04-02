@@ -6,8 +6,8 @@ def fourier_expansion_for_periodic_solutions(edges, maximum_derivative=3, maximu
     L = edges[1] - edges[0]
 
     def func(n, derivative):
-        k = n // 2  # Índice do harmônico
-        omega = (2 * np.pi * (k + 1)) / L  # Frequência angular
+        k = (n+1) // 2  # Índice do harmônico
+        omega = (2 * np.pi * k) / L  # Frequência angular
         phase_shift = (n % 2 + derivative) * (np.pi / 2)  # Mudança de fase
         return lambda x: omega ** derivative * np.cos(omega * x - phase_shift)
 

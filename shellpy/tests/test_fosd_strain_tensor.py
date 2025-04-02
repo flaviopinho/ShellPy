@@ -26,18 +26,18 @@ if __name__ == "__main__":
                       "v2": (1, 1),
                       "v3": (1, 1)}
 
-    boundary_conditions_u1 = {"xi1_0": ("S", "S"),
-                              "xi2_0": ("S", "S")}
-    boundary_conditions_u2 = {"xi1_0": ("S", "S"),
-                              "xi2_0": ("S", "S")}
-    boundary_conditions_u3 = {"xi1_0": ("S", "S"),
-                              "xi2_0": ("S", "S")}
-    boundary_conditions_v1 = {"xi1_0": ("S", "S"),
-                              "xi2_0": ("S", "S")}
-    boundary_conditions_v2 = {"xi1_0": ("S", "S"),
-                              "xi2_0": ("S", "S")}
-    boundary_conditions_v3 = {"xi1_0": ("S", "S"),
-                              "xi2_0": ("S", "S")}
+    boundary_conditions_u1 = {"xi1": ("S", "S"),
+                              "xi2": ("S", "S")}
+    boundary_conditions_u2 = {"xi1": ("S", "S"),
+                              "xi2": ("S", "S")}
+    boundary_conditions_u3 = {"xi1": ("S", "S"),
+                              "xi2": ("S", "S")}
+    boundary_conditions_v1 = {"xi1": ("S", "S"),
+                              "xi2": ("S", "S")}
+    boundary_conditions_v2 = {"xi1": ("S", "S"),
+                              "xi2": ("S", "S")}
+    boundary_conditions_v3 = {"xi1": ("S", "S"),
+                              "xi2": ("S", "S")}
 
     boundary_conditions = {"u1": boundary_conditions_u1,
                            "u2": boundary_conditions_u2,
@@ -51,20 +51,19 @@ if __name__ == "__main__":
     R_ = sym.Matrix([xi1_, xi2_, sym.sqrt(R ** 2 - (xi1_ - a / 2) ** 2 - (xi2_ - b / 2) ** 2)])
     mid_surface_geometry = MidSurfaceGeometry(R_)
 
-    epsilon = fosd_linear_strain_components(mid_surface_geometry, displacement_field, 1, a / 4, b / 3, 0)
+    epsilon0, epsilon1, epsilon2 = fosd_linear_strain_components(mid_surface_geometry, displacement_field, 1, a / 4, b / 3)
 
-    print("epsilon_lin = \n", epsilon)
+    print("epsilon_lin = \n", epsilon0)
 
-    epsilon = fosd_nonlinear_strain_components(mid_surface_geometry, displacement_field, 2, 1, a / 4, b / 3, 0)
+    epsilon0, epsilon1, epsilon2  = fosd_nonlinear_strain_components(mid_surface_geometry, displacement_field, 2, 1, a / 4, b / 3)
 
-    print("epsilon_nonlin = \n", epsilon)
+    print("epsilon_nonlin = \n", epsilon0)
 
     xi1 = np.linspace(0, a, 3)
     xi2 = np.linspace(0, b, 3)
-    xi3 = np.linspace(-h / 2, h / 2, 2)
 
-    x, y, z = np.meshgrid(xi1, xi2, xi3)
+    x, y = np.meshgrid(xi1, xi2)
 
-    epsilon = fosd_linear_strain_components(mid_surface_geometry, displacement_field, 1, x,y,z)
+    epsilon0, epsilon1, epsilon2 = fosd_linear_strain_components(mid_surface_geometry, displacement_field, 1, x, y)
 
-    print("epsilon_lin = \n", epsilon)
+    print("epsilon_lin = \n", epsilon0)

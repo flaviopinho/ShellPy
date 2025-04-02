@@ -4,10 +4,10 @@ from shellpy import RectangularMidSurfaceDomain
 import sympy as sym
 from shellpy.koiter_shell_theory import fast_koiter_quadratic_strain_energy, fast_koiter_strain_energy
 
-from shellpy import LinearElasticMaterial
 from shellpy import MidSurfaceGeometry, xi1_, xi2_
 from shellpy import Shell
 from shellpy import ConstantThickness
+from shellpy.materials.linear_elastic_material import LinearElasticMaterial
 
 if __name__ == "__main__":
 

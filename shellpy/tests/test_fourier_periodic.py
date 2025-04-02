@@ -4,7 +4,7 @@ from matplotlib import pyplot as plt
 from shellpy.expansions.simple_expansions import fourier_expansion_for_periodic_solutions
 
 edges = (0, 3)
-n_modos = 5
+n_modos = 10
 
 f = fourier_expansion_for_periodic_solutions(edges, 3, n_modos)
 

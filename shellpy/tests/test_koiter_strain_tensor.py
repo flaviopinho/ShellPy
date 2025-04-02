@@ -22,12 +22,12 @@ if __name__ == "__main__":
                       "u2": (1, 1),
                       "u3": (1, 1)}
 
-    boundary_conditions_u1 = {"xi1_0": ("S", "S"),
-                              "xi2_0": ("S", "S")}
-    boundary_conditions_u2 = {"xi1_0": ("S", "S"),
-                              "xi2_0": ("S", "S")}
-    boundary_conditions_u3 = {"xi1_0": ("S", "S"),
-                              "xi2_0": ("S", "S")}
+    boundary_conditions_u1 = {"xi1": ("S", "S"),
+                              "xi2": ("S", "S")}
+    boundary_conditions_u2 = {"xi1": ("S", "S"),
+                              "xi2": ("S", "S")}
+    boundary_conditions_u3 = {"xi1": ("S", "S"),
+                              "xi2": ("S", "S")}
 
     boundary_conditions = {"u1": boundary_conditions_u1,
                            "u2": boundary_conditions_u2,
@@ -45,8 +45,8 @@ if __name__ == "__main__":
     print("rho_lin = \n", rho)
     print("gamma_nonlin = \n", gamma_nl)
 
-    xi1 = np.linspace(*edges.edges["xi1_0"],100)
-    xi2 = np.linspace(*edges.edges["xi2_0"],100)
+    xi1 = np.linspace(*edges.edges["xi1"],100)
+    xi2 = np.linspace(*edges.edges["xi2"],100)
     x, y = np.meshgrid(xi1, xi2, indexing='xy')
 
     gamma, rho = koiter_linear_strain_components(mid_surface_geometry, displacement_field, 1, x, y)

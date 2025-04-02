@@ -12,10 +12,10 @@ from shellpy import pinned, fully_clamped
 from shellpy.expansions.enriched_cosine_expansion import EnrichedCosineExpansion
 from shellpy.koiter_shell_theory import fast_koiter_quadratic_strain_energy
 from shellpy.koiter_shell_theory.fast_koiter_kinetic_energy import fast_koiter_kinetic_energy
-from shellpy import LinearElasticMaterial
 from shellpy import RectangularMidSurfaceDomain
 from shellpy import xi1_, xi2_, MidSurfaceGeometry
 from shellpy import Shell
+from shellpy.materials.linear_elastic_material import LinearElasticMaterial
 from shellpy.tensor_derivatives import tensor_derivative
 from shellpy import ConstantThickness
 
@@ -99,7 +99,7 @@ if __name__ == "__main__":
     reciprocal_base = shell.mid_surface_geometry.reciprocal_base(x, y)
 
     # Create a figure for mode shape visualization
-    fig, axes = plt.subplots(1, n_modes, figsize=(15, 5), subplot_kw={'projection': '3d'})
+    fig, axes = plt.subplots(1, n_modes, figsize=(15, 5), subplot_kw={'projection': '3d'}, constrained_layout=True)
 
     # Loop through the first few vibration modes
     for i in range(n_modes):
@@ -126,5 +126,5 @@ if __name__ == "__main__":
         ax.set_box_aspect([ub - lb for lb, ub in (getattr(ax, f'get_{a}lim')() for a in 'xyz')])
 
     # Adjust layout and display the plots
-    plt.tight_layout()
+    #plt.tight_layout()
     plt.show()

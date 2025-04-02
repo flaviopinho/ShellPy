@@ -17,10 +17,10 @@ from shellpy.expansions.polinomial_expansion import GenericPolynomialSeries
 from shellpy import RectangularMidSurfaceDomain
 from shellpy.koiter_shell_theory import fast_koiter_strain_energy
 from shellpy.koiter_shell_theory.koiter_strain_energy_large import koiter_strain_energy_large_rotations
+from shellpy.materials.linear_elastic_material import LinearElasticMaterial
 from shellpy.tensor_derivatives import tensor_derivative
 from shellpy.koiter_shell_theory.koiter_load_energy import koiter_load_energy
 from shellpy.shell_loads.shell_conservative_load import ConcentratedForce, PressureLoad
-from shellpy import LinearElasticMaterial
 from shellpy import Shell
 from shellpy import ConstantThickness
 from shellpy import MidSurfaceGeometry, xi1_, xi2_

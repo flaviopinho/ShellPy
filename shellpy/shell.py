@@ -1,7 +1,6 @@
 from typing import Callable, Any
 
 from .displacement_expansion import DisplacementExpansion
-from .material import LinearElasticMaterial
 from .mid_surface_domain import MidSurfaceDomain
 from .midsurface_geometry import MidSurfaceGeometry
 
@@ -15,7 +14,7 @@ class Shell:
                  mid_surface_geometry: MidSurfaceGeometry,  # Mid-surface geometry of the shell (e.g., shape, curvature)
                  thickness: Callable[[Any, Any], Any],  # Thickness function of the shell, which may depend on position (xi1, xi2)
                  mid_surface_domain: MidSurfaceDomain,  # Mid Surface curvilinear coordinates domain
-                 material: LinearElasticMaterial,  # Material properties (e.g., Young's modulus, Poisson's ratio, density)
+                 material,  # Material properties (e.g., Young's modulus, Poisson's ratio, density)
                  displacement_field: DisplacementExpansion,  # Displacement field expansion, which defines the displacement in terms of shape functions
                  load):  # Applied load function, which may depend on position and time
         """

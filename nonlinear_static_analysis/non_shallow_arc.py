@@ -10,24 +10,19 @@ import matplotlib.pyplot as plt
 import sympy as sym
 import numpy as np
 
-import shellpy
 from nonlinear_static_analysis.residue_jacobian_stability import shell_jacobian, shell_residue, shell_stability
-from shellpy import simply_supported, pinned
-from shellpy.expansions.eigen_function_expansion import EigenFunctionExpansion
 from shellpy.expansions.enriched_cosine_expansion import EnrichedCosineExpansion
-from shellpy.expansions.polinomial_expansion import GenericPolynomialSeries
 from shellpy import RectangularMidSurfaceDomain
 from shellpy.koiter_shell_theory import fast_koiter_strain_energy
 from shellpy.koiter_shell_theory.koiter_strain_energy_large import \
     koiter_strain_energy_large_rotations
+from shellpy.materials.linear_elastic_material import LinearElasticMaterial
 from shellpy.tensor_derivatives import tensor_derivative
 from shellpy.koiter_shell_theory.koiter_load_energy import koiter_load_energy
-from shellpy.shell_loads.shell_conservative_load import ConcentratedForce, PressureLoad
-from shellpy import LinearElasticMaterial
+from shellpy.shell_loads.shell_conservative_load import ConcentratedForce
 from shellpy import Shell
 from shellpy import ConstantThickness
 from shellpy import MidSurfaceGeometry, xi1_, xi2_
-import shellpy.integral_booles_rule
 
 sys.path.append('../../ContinuationPy/ContinuationPy')
 import continuation
@@ -161,6 +156,7 @@ if __name__ == "__main__":
     U_ext = koiter_load_energy(shell)
 
     U2_int, U3_int, U4_int = koiter_strain_energy_large_rotations(shell, n_int_x, n_int_y)
+    #U2_int, U3_int, U4_int = fast_koiter_strain_energy(shell, n_int_x, n_int_y)
 
     # Numero de variaveis
     n = displacement_field.number_of_degrees_of_freedom()

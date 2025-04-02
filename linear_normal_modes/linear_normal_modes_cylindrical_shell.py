@@ -33,10 +33,10 @@ from shellpy.expansions.eigen_function_expansion import EigenFunctionExpansion
 from shellpy.expansions.enriched_cosine_expansion import EnrichedCosineExpansion
 from shellpy.koiter_shell_theory import fast_koiter_quadratic_strain_energy
 from shellpy.koiter_shell_theory.fast_koiter_kinetic_energy import fast_koiter_kinetic_energy
-from shellpy import LinearElasticMaterial
 from shellpy import RectangularMidSurfaceDomain
 from shellpy import xi1_, xi2_, MidSurfaceGeometry
 from shellpy import Shell
+from shellpy.materials.linear_elastic_material import LinearElasticMaterial
 from shellpy.tensor_derivatives import tensor_derivative
 from shellpy import ConstantThickness
 
@@ -56,14 +56,15 @@ if __name__ == "__main__":
 
     n_int_x = 20
     n_int_y = 20
+    n_int_z = 4
 
     # Define the rectangular mid-surface domain of the shell
     rectangular_domain = RectangularMidSurfaceDomain(0, a, 0, L)
 
     # Define the number of terms used in the displacement expansion
-    expansion_size = {"u1": (15, 10),  # Expansion order for displacement u1
-                      "u2": (15, 10),  # Expansion order for displacement u2
-                      "u3": (15, 10)}  # Expansion order for displacement u3
+    expansion_size = {"u1": (20, 20),  # Expansion order for displacement u1
+                      "u2": (20, 20),  # Expansion order for displacement u2
+                      "u3": (20, 20)}  # Expansion order for displacement u3
 
     # Define boundary conditions
     # Campled - Free
@@ -107,9 +108,9 @@ if __name__ == "__main__":
     # Determine the number of degrees of freedom in the displacement field
     n_dof = shell.displacement_expansion.number_of_degrees_of_freedom()
 
-    T = fast_koiter_kinetic_energy(shell, n_int_x, n_int_y)
+    T = fast_koiter_kinetic_energy(shell, n_int_x, n_int_y, n_int_z)
 
-    U2p = fast_koiter_quadratic_strain_energy(shell, n_int_x, n_int_y)
+    U2p = fast_koiter_quadratic_strain_energy(shell, n_int_x, n_int_y, n_int_z)
 
     # Compute the mass (M) and stiffness (K) matrices
     M = tensor_derivative(tensor_derivative(T, 0), 1)  # Second derivative of kinetic energy (mass matrix)
@@ -132,7 +133,7 @@ if __name__ == "__main__":
     n_modes = 5
 
     # Print the first five natural frequencies
-    print("Natural frequencies:", freq[0:n_modes * 2:1])
+    print("Natural frequencies:", freq[0:n_modes:1])
 
     # Generate a mesh grid for visualization of mode shapes
     xi1 = np.linspace(*rectangular_domain.edges["xi1"], 100)
@@ -140,37 +141,40 @@ if __name__ == "__main__":
     x, y = np.meshgrid(xi1, xi2, indexing='ij')
 
     # Create a figure for mode shape visualization
-    fig, axes = plt.subplots(1, n_modes, figsize=(15, 5), subplot_kw={'projection': '3d'})
+    fig, axes = plt.subplots(2, n_modes, figsize=(20, 5), subplot_kw={'projection': '3d'}, constrained_layout=True)
 
     # Loop through the first few vibration modes
 
     reciprocal_base = shell.mid_surface_geometry.reciprocal_base(x, y)
 
-    for i in range(n_modes):
-        mode1 = shell.displacement_expansion(eigen_vectors[:, i * 2], x, y)  # Compute mode shape
+    for j in range(2):
+        for i in range(n_modes):
+            m = j*n_modes+i
+            print(m)
+            mode1 = shell.displacement_expansion(eigen_vectors[:, m], x, y)  # Compute mode shape
 
-        mode = reciprocal_base[0] * mode1[0] + reciprocal_base[1] * mode1[1] + reciprocal_base[2] * mode1[2]
+            mode = reciprocal_base[0] * mode1[0] + reciprocal_base[1] * mode1[1] + reciprocal_base[2] * mode1[2]
 
-        mode = mode / np.max(np.abs(mode)) * 0.02  # Normalize and scale for visualization
+            mode = mode / np.max(np.abs(mode)) * 0.02  # Normalize and scale for visualization
 
-        z = shell.mid_surface_geometry(x, y)  # Compute deformed geometry
+            z = shell.mid_surface_geometry(x, y)  # Compute deformed geometry
 
-        ax = axes[i]  # Select subplot
-        scmap = plt.cm.ScalarMappable(cmap='jet')  # Define colormap
-        ax.plot_surface(z[0, 0] + mode[0], z[1, 0] + mode[1], z[2, 0] + mode[2],
-                        facecolors=scmap.to_rgba(mode1[2]),
-                        edgecolor='black',
-                        linewidth=0.1, rstride=1, cstride=1)  # Plot mode shape
+            ax = axes[j,i]  # Select subplot
+            scmap = plt.cm.ScalarMappable(cmap='jet')  # Define colormap
+            ax.plot_surface(z[0, 0] + mode[0], z[1, 0] + mode[1], z[2, 0] + mode[2],
+                            facecolors=scmap.to_rgba(mode1[2]),
+                            edgecolor='black',
+                            linewidth=0.1, rstride=1, cstride=1)  # Plot mode shape
 
-        # Label axes and set the title with frequency information
-        ax.set_title(f"Mode {i + 1} - Frequency: {freq[i * 2]:.2f} Hz")
-        ax.set_xlabel("x")
-        ax.set_ylabel("y")
-        ax.set_zlabel("z")
+            # Label axes and set the title with frequency information
+            ax.set_title(f"Mode {m + 1} - Frequency: {freq[m]:.2f} Hz")
+            ax.set_xlabel("x")
+            ax.set_ylabel("y")
+            ax.set_zlabel("z")
 
-        # Ensure equal aspect ratio for visualization
-        ax.set_box_aspect([ub - lb for lb, ub in (getattr(ax, f'get_{a}lim')() for a in 'xyz')])
+            # Ensure equal aspect ratio for visualization
+            ax.set_box_aspect([ub - lb for lb, ub in (getattr(ax, f'get_{a}lim')() for a in 'xyz')])
 
     # Adjust layout and display the plots
-    plt.tight_layout()
+    #plt.tight_layout()
     plt.show()

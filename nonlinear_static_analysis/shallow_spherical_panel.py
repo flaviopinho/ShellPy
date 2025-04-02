@@ -17,12 +17,12 @@ from nonlinear_static_analysis.residue_jacobian_stability import shell_residue, 
 from shellpy.displacement_expansion import simply_supported  # Defines simply supported boundary conditions
 from shellpy.expansions.eigen_function_expansion import EigenFunctionExpansion # Eigenfunction expansion for displacements
 from shellpy.expansions.polinomial_expansion import GenericPolynomialSeries # Polynomial series expansion
+from shellpy.materials.linear_elastic_material import LinearElasticMaterial
 from shellpy.mid_surface_domain import RectangularMidSurfaceDomain # Defines the geometry of the mid-surface
 from shellpy.koiter_shell_theory import fast_koiter_strain_energy # Computes Koiter's strain energy
 from shellpy.tensor_derivatives import tensor_derivative # For calculating tensor derivatives (likely for strain)
 from shellpy.koiter_shell_theory.koiter_load_energy import koiter_load_energy # Computes work done by external loads
 from shellpy.shell_loads.shell_conservative_load import ConcentratedForce # Defines a concentrated force
-from shellpy.material import LinearElasticMaterial # Defines a linear elastic material model
 from shellpy.shell import Shell # Represents the shell structure
 from shellpy.thickness import ConstantThickness # Defines constant thickness
 from shellpy.midsurface_geometry import MidSurfaceGeometry, xi1_, xi2_ # Defines the mid-surface geometry and coordinate system

@@ -2,6 +2,9 @@ from abc import ABC, abstractmethod
 
 
 class MidSurfaceDomain(ABC):
+    def __init__(self):
+        self.edges = None
+
     """
     Abstract base class for defining a mid-surface domain.
     Any class representing a mid-surface domain should inherit from this class

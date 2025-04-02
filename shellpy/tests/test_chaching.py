@@ -51,8 +51,8 @@ if __name__ == "__main__":
     mid_surface_geometry = MidSurfaceGeometry(R_)
 
     # Create a meshgrid for the xi1_0 and xi2_0 coordinates for numerical evaluation
-    xi1 = np.linspace(*edges.edges["xi1_0"], 500)
-    xi2 = np.linspace(*edges.edges["xi2_0"], 500)
+    xi1 = np.linspace(*edges.edges["xi1"], 500)
+    xi2 = np.linspace(*edges.edges["xi2"], 500)
     x, y = np.meshgrid(xi1, xi2, indexing='ij')
 
     # First calculation: natural_base function without caching

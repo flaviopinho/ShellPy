@@ -16,16 +16,16 @@ from shellpy.expansions.polinomial_expansion import GenericPolynomialSeries
 from shellpy import RectangularMidSurfaceDomain
 from shellpy.fosd_theory.fosd_load_energy import fosd_load_energy
 from shellpy.fosd_theory.fosd_strain_energy import fosd_strain_energy
+from shellpy.materials.linear_elastic_material import LinearElasticMaterial
 from shellpy.tensor_derivatives import tensor_derivative
 from shellpy.koiter_shell_theory.koiter_load_energy import koiter_load_energy
 from shellpy.shell_loads.shell_conservative_load import ConcentratedForce, PressureLoad
-from shellpy import LinearElasticMaterial
 from shellpy import Shell
 from shellpy import ConstantThickness
 from shellpy import MidSurfaceGeometry, xi1_, xi2_
 import dill
 
-sys.path.append('../../ContinuationPy/')
+sys.path.append('../../ContinuationPy/ContinuationPy')
 import continuation
 
 
@@ -38,7 +38,7 @@ def output_results(shell, xi1, xi2, x, *args):
 
     plot_shell_arc(shell, u)
 
-    return -U[2], p, "u_z", "P"
+    return -U[2], p/2, "u_z", "P"
 
 
 def plot_shell_arc(shell, u):
@@ -71,6 +71,16 @@ def plot_shell_arc(shell, u):
         fig.clf()  # Clear figure
         ax = fig.add_subplot(1, 2, 1)  # First subplot (not used)
         ax = fig.add_subplot(1, 2, 2, projection='3d')  # Second subplot (3D plot)
+
+        data = np.loadtxt("semicylindrical_ansys.txt", delimiter=";")
+
+        x = data[:, 0]
+        y = data[:, 1] / 1000
+        ax = plt.subplot(1, 2, 1)
+        ax.plot(x, y, linestyle='-', color='k')
+
+        ax = plt.subplot(1, 2, 2)
+
     else:  # If figure already exists
         ax = plt.subplot(1, 2, 2)  # Select the 3D subplot
 
@@ -96,8 +106,8 @@ def plot_shell_arc(shell, u):
     plt.pause(0.01)  # Pause briefly to allow the plot to update. This is important for animations.
 
 def create_shell():
-    integral_x = 15
-    integral_y = 15
+    integral_x = 6
+    integral_y = 6
     integral_z = 4
 
     R = 1.016
@@ -106,16 +116,16 @@ def create_shell():
 
     density = 1
 
-    E1 = 20.685E6
+    E1 = 2.0685E7
     E = 1
     nu = 0.3
 
-    load = ConcentratedForce(0, 0, -1600 / E1, 1, 0)
+    load = ConcentratedForce(0, 0, -1000 / E1, 1, 0)
 
     rectangular_domain = RectangularMidSurfaceDomain(0, 1, 0, np.pi / 2)
 
-    n_modos = 5
-    n_modos1 = 5
+    n_modos = 3
+    n_modos1 = 3
 
     expansion_size = {"u1": (n_modos1, n_modos),
                       "u2": (n_modos1, n_modos),
@@ -125,17 +135,17 @@ def create_shell():
                       "v3": (n_modos1, n_modos)}
 
     boundary_conditions_u1 = {"xi1": ("S", "F"),
-                              "xi2": ("F", "S")}
-    boundary_conditions_u2 = {"xi1": ("S", "F"),
-                              "xi2": ("S", "F")}
-    boundary_conditions_u3 = {"xi1": ("S", "F"),
-                              "xi2": ("FC", "S")}
-
-    boundary_conditions_v1 = {"xi1": ("F", "F"),
                               "xi2": ("F", "F")}
-    boundary_conditions_v2 = {"xi1": ("F", "F"),
-                              "xi2": ("S", "F")}
-    boundary_conditions_v3 = {"xi1": ("F", "F"),
+    boundary_conditions_u2 = {"xi1": ("S", "F"),
+                              "xi2": ("S", "S")}
+    boundary_conditions_u3 = {"xi1": ("C", "F"),
+                              "xi2": ("FC", "FC")}
+
+    boundary_conditions_v1 = {"xi1": ("S", "F"),
+                              "xi2": ("F", "F")}
+    boundary_conditions_v2 = {"xi1": ("S", "F"),
+                              "xi2": ("S", "S")}
+    boundary_conditions_v3 = {"xi1": ("S", "F"),
                               "xi2": ("F", "F")}
 
     boundary_conditions = {"u1": boundary_conditions_u1,
@@ -144,6 +154,7 @@ def create_shell():
                            "v1": boundary_conditions_v1,
                            "v2": boundary_conditions_v2,
                            "v3": boundary_conditions_v3}
+
 
     #displacement_field = EnrichedCosineExpansion(expansion_size, rectangular_domain, boundary_conditions)
     displacement_field = EigenFunctionExpansion(expansion_size, rectangular_domain, boundary_conditions)
@@ -154,8 +165,6 @@ def create_shell():
     thickness = ConstantThickness(h)
     material = LinearElasticMaterial(E, nu, density)
     shell = Shell(mid_surface_geometry, thickness, rectangular_domain, material, displacement_field, load)
-
-    n_dof = shell.displacement_expansion.number_of_degrees_of_freedom()
 
     U_ext = fosd_load_energy(shell)
 
@@ -204,7 +213,7 @@ if __name__ == "__main__":
     continuation_boundary[:-1, 0] = -100000
     continuation_boundary[:-1, 1] = 100000
     continuation_boundary[-1, 0] = -2
-    continuation_boundary[-1, 1] = 5
+    continuation_boundary[-1, 1] = 10
 
     # Definindo continuation_model
     continuation_model = {'n': n,
