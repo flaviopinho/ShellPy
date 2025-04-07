@@ -5,7 +5,7 @@ from shellpy import cache_function, MidSurfaceGeometry
 from shellpy.materials.linear_elastic_material import LinearElasticMaterial
 
 
-@dispatch(MidSurfaceGeometry, LinearElasticMaterial, object, object, object)
+@dispatch(MidSurfaceGeometry, LinearElasticMaterial, np.ndarray, np.ndarray, np.ndarray)
 @cache_function
 def plane_stress_constitutive_tensor_for_koiter_theory(mid_surface_geometry: MidSurfaceGeometry, material: LinearElasticMaterial, xi1, xi2, xi3=0):
     n_xy = np.shape(xi1)

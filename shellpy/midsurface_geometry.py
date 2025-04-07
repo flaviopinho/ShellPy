@@ -48,12 +48,12 @@ class MidSurfaceGeometry:
 
         # Compute normal vector and surface area element
         Maux = M1.cross(M2)
-        sqrtG = sym.simplify(sym.sqrt(Maux.dot(Maux))) + zero  # Determinant of metric tensor
+        sqrtG = sym.sqrt(Maux.dot(Maux)) + zero  # Determinant of metric tensor
         M3 = Maux / sqrtG  # Normalized normal vector
 
         # Compute contravariant basis vectors
-        MR1 = sym.Matrix(sym.simplify(M2.cross(M3) / sqrtG))
-        MR2 = sym.Matrix(sym.simplify(-M1.cross(M3) / sqrtG))
+        MR1 = sym.Matrix(M2.cross(M3) / sqrtG)
+        MR2 = sym.Matrix(-M1.cross(M3) / sqrtG)
         MR3 = sym.Matrix(M3)
 
         # Ensure symbolic consistency
