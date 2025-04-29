@@ -22,10 +22,10 @@ if __name__ == "__main__":
     L = 0.5/(np.sin(beta)*np.cos(beta))*R
     print(L)
     h = 0.01
-    density = 1
+    density = 7850
 
     # Define material properties
-    E = 1  # Young's modulus
+    E = 2E11  # Young's modulus
     nu = 0.3  # Poisson’s ratio
 
     n_int_x = 30
@@ -36,9 +36,9 @@ if __name__ == "__main__":
     rectangular_domain = RectangularMidSurfaceDomain(0, 0.999*L, 0, 2 * np.pi)
 
     # Define the number of terms used in the displacement expansion
-    expansion_size = {"u1": (10, 20),  # Expansion order for displacement u1
-                      "u2": (10, 20),  # Expansion order for displacement u2
-                      "u3": (10, 20)}  # Expansion order for displacement u3
+    expansion_size = {"u1": (20, 20),  # Expansion order for displacement u1
+                      "u2": (20, 20),  # Expansion order for displacement u2
+                      "u3": (20, 20)}  # Expansion order for displacement u3
 
     # Define boundary conditions
     # Campled - Free
@@ -91,10 +91,11 @@ if __name__ == "__main__":
     # Compute natural frequencies (Hz)
     omega = np.sqrt(eigen_vals.real)
 
-    freq = omega * R * np.sqrt(density/E*(1-nu**2))
+    #freq = omega * R * np.sqrt(density/E*(1-nu**2))
+    freq = omega / (2 * np.pi)
 
     # Number of modes to be analyzed
-    n_modes = 4
+    n_modes = 6
 
     # Print the first five natural frequencies
     print("Normalized natural frequencies:", freq[0:n_modes:1])
@@ -117,14 +118,14 @@ if __name__ == "__main__":
 
         mode = reciprocal_base[0] * mode1[0] + reciprocal_base[1] * mode1[1] + reciprocal_base[2] * mode1[2]
 
-        mode = mode / np.max(np.abs(mode)) * 0.02  # Normalize and scale for visualization
+        mode = mode / np.max(np.abs(mode)) * 0.1  # Normalize and scale for visualization
 
         z = shell.mid_surface_geometry(x, y)  # Compute deformed geometry
 
         ax = axes[i]  # Select subplot
         scmap = plt.cm.ScalarMappable(cmap='jet')  # Define colormap
         ax.plot_surface(z[0, 0] + mode[0], z[1, 0] + mode[1], z[2, 0] + mode[2],
-                        facecolors=scmap.to_rgba(mode1[2]),
+                        facecolors=scmap.to_rgba(np.linalg.norm(mode1, axis=0)),
                         edgecolor='black',
                         linewidth=0.1, rstride=1, cstride=1)  # Plot mode shape
 
