@@ -307,18 +307,19 @@ class MidSurfaceGeometry:
 
         shifter_inv = np.linalg.inv(shifter.transpose(shape)).transpose(shape)
 
-        return shifter_inv
+        return np.swapaxes(shifter_inv, 0, 1)
 
     @cache_method
     def shifter_tensor_inverse_approximation(self, xi1, xi2, xi3):
         delta = np.eye(2, 2)
         delta_expanded = np.einsum('ab,...->ab...', delta, np.ones(np.shape(xi1)+np.shape(xi3)))
 
+        #Remenber!!! Transpose is required
         curvature = self.curvature_tensor_mixed_components(xi1, xi2)
         aux1 = np.einsum('...,z->...z', curvature, xi3)
-        aux2 = np.einsum('ag...z, gb..., z->ab...z', aux1, curvature, xi3)
-        aux3 = np.einsum('ao...z, ob..., z->ab...z', aux2, curvature, xi3)
-        aux4 = np.einsum('ao...z, ob..., z->ab...z', aux3, curvature, xi3)
+        aux2 = np.einsum('ag...z, gb..., z->ba...z', aux1, curvature, xi3)
+        aux3 = np.einsum('ao...z, ob..., z->ba...z', aux2, curvature, xi3)
+        aux4 = np.einsum('ao...z, ob..., z->ba...z', aux3, curvature, xi3)
 
         return delta_expanded - aux1 + aux2 - aux3 + aux4
 

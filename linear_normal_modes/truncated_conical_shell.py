@@ -19,7 +19,7 @@ if __name__ == "__main__":
     # Define geometric parameters of the shell
     R = 1
     beta = np.radians(45)
-    L = 0.5/(np.sin(beta)*np.cos(beta))*R
+    L = 0.3/(np.sin(beta)*np.cos(beta))*R
     print(L)
     h = 0.01
     density = 1
@@ -28,17 +28,17 @@ if __name__ == "__main__":
     E = 1  # Young's modulus
     nu = 0.3  # Poisson’s ratio
 
-    n_int_x = 30
-    n_int_y = 30
+    n_int_x = 10
+    n_int_y = 10
     n_int_z = 4
 
     # Define the rectangular mid-surface domain of the shell
     rectangular_domain = RectangularMidSurfaceDomain(0, 0.999*L, 0, 2 * np.pi)
 
     # Define the number of terms used in the displacement expansion
-    expansion_size = {"u1": (10, 20),  # Expansion order for displacement u1
-                      "u2": (10, 20),  # Expansion order for displacement u2
-                      "u3": (10, 20)}  # Expansion order for displacement u3
+    expansion_size = {"u1": (10, 10),  # Expansion order for displacement u1
+                      "u2": (10, 10),  # Expansion order for displacement u2
+                      "u3": (10, 10)}  # Expansion order for displacement u3
 
     # Define boundary conditions
     # Campled - Free

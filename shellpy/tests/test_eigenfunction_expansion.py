@@ -10,9 +10,9 @@ if __name__ == "__main__":
 
     edges = RectangularMidSurfaceDomain(0, a, 0, b)
 
-    expansion_size = {"u1": (2, 2),
-                      "u2": (2, 2),
-                      "u3": (3, 3)}
+    expansion_size = {"u1": (1, 1),
+                      "u2": (1, 1),
+                      "u3": (2, 2)}
 
     boundary_conditions_u1 = {"xi1": ("F", "F"),
                               "xi2": ("F", "F")}
@@ -27,7 +27,7 @@ if __name__ == "__main__":
 
     expansion = EigenFunctionExpansion(expansion_size, edges, boundary_conditions)
 
-    k = 1
+    k = 2
     print("n_dof = ", expansion.number_of_degrees_of_freedom())
     trig_func = lambda _xi1, _xi2: expansion.shape_function(k, _xi1, _xi2)
     print("du = ", expansion.shape_function_first_derivatives(k, a / 4, b / 4))
