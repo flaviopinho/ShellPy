@@ -19,7 +19,7 @@ def simple_integral(func, domain, n=n_integral_default_x, integral_rule=boole_we
         float: The approximated integral value.
     """
     x, W = integral_rule(domain, n)  # Obtain integration points and weights
-    return np.sum(W * func(x))  # Compute the weighted sum of function values
+    return np.sum(W * func(x), axis=-1)  # Compute the weighted sum of function values
 
 
 def double_integral(func, domain, n_x=n_integral_default_x, n_y=n_integral_default_y,

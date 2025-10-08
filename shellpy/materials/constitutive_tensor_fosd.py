@@ -3,15 +3,15 @@ from multipledispatch import dispatch
 
 from shellpy import MidSurfaceGeometry, cache_function
 from shellpy.materials.functionally_graded_material import FunctionallyGradedMaterial
-from shellpy.materials.linear_elastic_material import LinearElasticMaterial
+from shellpy.materials.isotropic_homogeneous_linear_elastic_material import IsotropicHomogeneousLinearElasticMaterial
 
 
-@dispatch(MidSurfaceGeometry, LinearElasticMaterial, np.ndarray, np.ndarray, np.ndarray)
+@dispatch(MidSurfaceGeometry, IsotropicHomogeneousLinearElasticMaterial, np.ndarray, np.ndarray, np.ndarray)
 @cache_function
-def constitutive_tensor_for_fosd(mid_surface_geometry: MidSurfaceGeometry, material: LinearElasticMaterial, xi1, xi2,
+def constitutive_tensor_for_fosd(mid_surface_geometry: MidSurfaceGeometry, material: IsotropicHomogeneousLinearElasticMaterial, xi1, xi2,
                                  xi3):
     n_xy = np.shape(xi1)
-    n_xyz = n_xy + np.shape(xi3)
+    n_xyz = n_xy + (np.shape(xi3)[-1],)
 
     metric_tensor_contravariant_components = mid_surface_geometry.metric_tensor_contravariant_components_extended(
         xi1, xi2)
@@ -49,7 +49,7 @@ def constitutive_tensor_for_fosd(mid_surface_geometry: MidSurfaceGeometry, mater
 def constitutive_tensor_for_fosd(mid_surface_geometry: MidSurfaceGeometry, material: FunctionallyGradedMaterial, xi1, xi2,
                                  xi3):
     n_xy = np.shape(xi1)
-    n_xyz = n_xy + np.shape(xi3)
+    n_xyz = n_xy + (np.shape(xi3)[-1],)
 
     metric_tensor_contravariant_components = mid_surface_geometry.metric_tensor_contravariant_components_extended(
         xi1, xi2)

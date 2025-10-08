@@ -2,133 +2,163 @@ import numpy as np
 
 
 class LaminateOrthotropicMaterial:
-    def __init__(self, laminas):
+    def __init__(self, laminas, thickness):
         """
         laminas: lista de objetos Lamina (de baixo para cima)
         """
         self.laminas = laminas
-        self.total_thickness = sum(l.thickness for l in laminas)
+        self.thickness = thickness
 
-        if not np.isclose(self.total_thickness, 2.0, atol=1e-8):
-            raise ValueError(
-                f"Thickness must be 2, but {self.total_thickness}"
-            )
-
-        self.mass_per_area = self._compute_mass()
-
-    def _compute_mass(self):
+    def _compute_average_density(self):
         """Massa por unidade de área do laminado."""
-        return sum(l.density * l.thickness for l in self.laminas)
+        return sum(l.density * l.thickness for l in self.laminas) * self.total_thickness
 
-    def angle(self, xi3_norm):
+    def lamina_index(self, xi1, xi2, xi3):
         """
-        Retorna o ângulo da lâmina em que xi3 está localizado.
-        Se xi3 for um array, retorna um array de ângulos.
-        """
-        xi3_norm = np.atleast_1d(xi3_norm)  # garante array
-        z_bot = -self.total_thickness / 2
+        Retorna o índice da lâmina correspondente a cada ponto (xi1, xi2, xi3).
 
-        # limites acumulados das lâminas
+        - xi1, xi2 podem ser escalares ou arrays compatíveis.
+        - xi3 pode ser escalar, 1D (n,) ou já ter shape xi1.shape + (n,).
+        - O retorno tem o mesmo shape de xi3_exp (xi3 broadcastado para xi1.shape + (n,)).
+        """
+
+        xi3 = np.asarray(xi3)
+
+        # Broadcast de xi3 para shape (xi1.shape + (n,)) se necessário
+        if xi3.shape[:-1] != np.shape(xi1):
+            xi3_exp = np.broadcast_to(xi3, np.shape(xi1) + (xi3.shape[-1],))
+        else:
+            xi3_exp = xi3
+
+        # Espessura total física local (shape == np.shape(xi1))
+        t_total = np.asarray(self.thickness(xi1, xi2))
+
+        if np.any(t_total <= 0):
+            raise ValueError("A espessura total deve ser positiva em todos os pontos.")
+
+        # Normaliza xi3 para o intervalo [-1, 1]
+        t_total_exp = t_total[..., np.newaxis]  # shape (..., 1)
+        xi3_norm = 2.0 * xi3_exp / t_total_exp
+
+        # Limites superiores normalizados de cada lâmina
+        z = -1.0
         z_tops = []
-        z = z_bot
         for l in self.laminas:
             z += l.thickness
             z_tops.append(z)
+        z_tops = np.array(z_tops)
 
-        alphas = []
-        for val in xi3_norm:
-            for l, z_top in zip(self.laminas, z_tops):
-                if val <= z_top:
-                    alphas.append(l.angle)
-                    break
+        # Inicializa saída (com -1 para detectar fora do intervalo)
+        index = np.full_like(xi3_norm, fill_value=-1, dtype=int)
+
+        # Preenche o índice da lâmina
+        z_low = -1.0
+        for i, z_top in enumerate(z_tops):
+            if i < len(z_tops) - 1:
+                mask = (xi3_norm >= z_low) & (xi3_norm < z_top)
             else:
-                raise ValueError(f"xi3={val} fora do intervalo do laminado.")
+                mask = (xi3_norm >= z_low) & (xi3_norm <= z_top)
+            index[mask] = i
+            z_low = z_top
 
-        alphas = np.array(alphas)
-        return alphas.reshape(xi3_norm.shape)  # mesma shape de entrada
+        # Verifica se há pontos fora do intervalo [-1, 1]
+        if np.any(index == -1):
+            raise ValueError("Alguns valores de xi3 estão fora do intervalo da espessura total do laminado.")
 
-    def orthotropic_voigt_matrix(self, xi3_norm):
+        return index
+
+    def angle(self, xi1, xi2, xi3):
         """
-        Retorna matriz constitutiva (6x6) para cada ponto xi3_norm.
-        Output: ndarray com shape (6,6) + xi3_norm.shape
+        Retorna o ângulo da lâmina correspondente a cada ponto (xi1, xi2, xi3).
+
+        - xi1, xi2 podem ser escalares ou arrays compatíveis.
+        - xi3 pode ser escalar ou array multidimensional.
+        - O retorno tem o mesmo shape de xi3 broadcastado para xi1.shape + (n,).
         """
-        xi3_norm = np.atleast_1d(xi3_norm)  # garante array
-        z_bot = -self.total_thickness / 2
+        # Obtém o índice da lâmina para cada xi3
+        indices = self.lamina_index(xi1, xi2, xi3)  # shape igual ao xi3 broadcastado
 
-        # limites acumulados das lâminas
-        z_tops = []
-        z = z_bot
-        for l in self.laminas:
-            z += l.thickness
-            z_tops.append(z)
+        # Array de ângulos das lâminas
+        angles = np.array([l.angle for l in self.laminas])
 
-        C_all = []
-        for xi3 in xi3_norm:
-            # encontra a lâmina
-            for l, z_top in zip(self.laminas, z_tops):
-                if xi3 <= z_top:
-                    lamina = l
-                    break
-            else:
-                raise ValueError(f"xi3={xi3} fora do intervalo do laminado.")
+        # Retorna o ângulo correspondente a cada ponto
+        return angles[indices]
 
-            # extrai propriedades
+    def orthotropic_voigt_matrix(self, xi1, xi2, xi3):
+        """
+        Retorna a matriz constitutiva ortotrópica (6x6) para cada ponto xi3.
+        Output: ndarray com shape (6,6) + xi3.shape
+        """
+        # Obtém o índice da lâmina correspondente a cada ponto
+        index = self.lamina_index(xi1, xi2, xi3)  # shape = xi3 broadcastado
+
+        # Shape final do array de saída
+        shape_out = (6, 6) + np.shape(index)
+        C_all = np.zeros(shape_out, dtype=float)
+
+        # Monta as matrizes C para cada lâmina
+        C_laminas = []
+        for lamina in self.laminas:
             E1, E2, E3 = lamina.E_11, lamina.E_22, lamina.E_33
-            nu12, nu21 = lamina.nu_12, lamina.nu_21
-            nu13, nu31 = lamina.nu_13, lamina.nu_31
-            nu23, nu32 = lamina.nu_23, lamina.nu_32
+            nu12 = lamina.nu_12
+            nu13 = lamina.nu_13
+            nu23 = lamina.nu_23
 
-            # aqui você pode definir G12,G13,G23 (depende se já tem ou precisa calcular)
-            # por enquanto coloco placeholders:
-            G12 = E1 / (2 * (1 + nu12))
-            G13 = E1 / (2 * (1 + nu13))
-            G23 = E2 / (2 * (1 + nu23))
+            G12 = lamina.G_12
+            G13 = lamina.G_13
+            G23 = lamina.G_23
 
-            # fator determinante
-            Delta = (1 - nu12 * nu21 - nu23 * nu32 - nu13 * nu31
-                     - 2 * nu12 * nu23 * nu31)
+            nu21 = nu12 * E2 / E1
+            nu31 = nu13 * E3 / E1
+            nu32 = nu23 * E3 / E2
 
-            # monta matriz constitutiva
             C = np.zeros((6, 6))
+            C[0, 0] = (1 / E1)
+            C[0, 1] = -nu21 / E2
+            C[0, 2] = -nu31 / E3
 
-            C[0, 0] = E1 * (1 - nu23 * nu32) / Delta
-            C[0, 1] = E1 * (nu21 + nu23 * nu31) / Delta
-            C[0, 2] = E1 * (nu31 + nu21 * nu32) / Delta
+            C[1, 0] = -nu12 / E1
+            C[1, 1] = 1 / E2
+            C[1, 2] = -nu32 / E3
 
-            C[1, 0] = C[0, 1]
-            C[1, 1] = E2 * (1 - nu13 * nu31) / Delta
-            C[1, 2] = E2 * (nu32 + nu31 * nu12) / Delta
+            C[2, 0] = -nu13 / E1
+            C[2, 1] = -nu23 / E2
+            C[2, 2] = 1 / E3
 
-            C[2, 0] = C[0, 2]
-            C[2, 1] = C[1, 2]
-            C[2, 2] = E3 * (1 - nu12 * nu21) / Delta
+            C[3, 3] = 1 / G23 * (6/5)
+            C[4, 4] = 1 / G13 * (6/5)
+            C[5, 5] = 1 / G12
 
-            C[3, 3] = G23
-            C[4, 4] = G13
-            C[5, 5] = G12
+            C_laminas.append(np.linalg.inv(C))
 
-            C_all.append(C)
+        C_laminas = np.array(C_laminas)  # shape = (n_laminas, 6, 6)
 
-        # empilha e reordena no formato desejado
-        C_all = np.stack(C_all, axis=-1)  # shape (6,6,N)
-        return C_all.reshape((6, 6) + xi3_norm.shape)
+        # Preenche C_all usando os índices de cada ponto
+        for i_lam, C in enumerate(C_laminas):
+            mask = (index == i_lam)
+            if np.any(mask):
+                # Broadcasting para todos os pontos que pertencem à lâmina
+                C_all[:, :, mask] = C[:, :, np.newaxis]
+
+        return C_all
 
 
 class Lamina:
-    def __init__(self, E_11, E_22, E_33, nu_12, nu_21, nu_13, nu_31, nu_23, nu_32, density, theta, thickness):
+    def __init__(self, E_11, E_22, E_33, nu_12, nu_13, nu_23, G_12, G_13, G_23, density, angle, thickness):
         self.E_11 = E_11
         self.E_22 = E_22
         self.E_33 = E_33
 
         self.nu_12 = nu_12
-        self.nu_21 = nu_21
         self.nu_13 = nu_13
-        self.nu_31 = nu_31
         self.nu_23 = nu_23
-        self.nu_32 = nu_32
+
+        self.G_12 = G_12
+        self.G_13 = G_13
+        self.G_23 = G_23
 
         self.density = density
 
-        self.angle = theta
+        self.angle = angle
 
         self.thickness = thickness

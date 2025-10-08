@@ -2,10 +2,10 @@ import numpy as np
 from shellpy import MidSurfaceGeometry
 
 
-def transformation_matrix_fosd2_global(mid_surface_geometry: MidSurfaceGeometry, xi1, xi2, xi3):
+def transformation_matrix_fosd2_global(mid_surface_geometry: MidSurfaceGeometry, xi1, xi2, xi3, material_base=None):
 
-    xi1 = np.atleast_1d(xi1)
-    xi2 = np.atleast_1d(xi2)
+    xi1 = np.atleast_2d(xi1)
+    xi2 = np.atleast_2d(xi2)
     xi3 = np.atleast_1d(xi3)
 
     # Mid-surface basis
@@ -13,16 +13,15 @@ def transformation_matrix_fosd2_global(mid_surface_geometry: MidSurfaceGeometry,
     reciprocal_base = mid_surface_geometry.reciprocal_base(xi1, xi2)
 
     # Material directions in global frame
-    e1_material = np.array((1, 0, 0))
-    e2_material = np.array((0, 1, 0))
-    e3_material = np.array((0, 0, 1))
-    material_base = np.stack((e1_material, e2_material, e3_material), axis=0)
+    if material_base is None:
+        e1_material = np.array((1, 0, 0))
+        e2_material = np.array((0, 1, 0))
+        e3_material = np.array((0, 0, 1))
+        material_base = np.stack((e1_material, e2_material, e3_material), axis=0)
 
     # Obtain the inverse shifter tensor (3x3 in-plane approximation)
-    inverse_shift_tensor = mid_surface_geometry.shifter_tensor_inverse_approximation(xi1, xi2, xi3)
-    inverse_shift_tensor_extended = np.zeros((3, 3) + xi1.shape + xi3.shape)
-    inverse_shift_tensor_extended[0:2, 0:2] = inverse_shift_tensor
-    inverse_shift_tensor_extended[2, 2] = 1
+    inverse_shift_tensor_extended = mid_surface_geometry.shifter_tensor_inverse_approximation_extended(xi1, xi2, xi3)
+    inverse_shift_tensor_extended = inverse_shift_tensor_extended.reshape((3, 3) + xi1.shape + (xi3.shape[-1],))
 
     # Convert tuples/lists to 3x3 arrays
     reciprocal_base = np.stack(reciprocal_base, axis=0)
@@ -34,7 +33,6 @@ def transformation_matrix_fosd2_global(mid_surface_geometry: MidSurfaceGeometry,
                                       inverse_shift_tensor_extended,
                                       reciprocal_base
                                       )
-
     # permutation matrix: transformation from 9x1 vector to 6x1 Voigt notation
     permutation_voigt = np.zeros((6, 9))
     permutation_voigt[0, 0] = 1
@@ -62,25 +60,23 @@ def transformation_matrix_fosd2_global(mid_surface_geometry: MidSurfaceGeometry,
     auxiliar_tensor = np.einsum("ab...,cd...->acbd...",
                                 transformation_matrix,
                                 transformation_matrix)
-
-    auxiliar_tensor = auxiliar_tensor.reshape(9, 9, -1)
-
-    auxiliar_tensor = auxiliar_tensor.reshape((9, 9) + xi1.shape + xi3.shape)
+    shape_rest = auxiliar_tensor.shape[4:]
+    auxiliar_tensor = auxiliar_tensor.reshape(9, 9, *shape_rest)
 
     transformation_matrix = np.einsum('ij,jk...,kl->il...',
                                       permutation_voigt,
                                       auxiliar_tensor,
                                       inverse_permutation_voigt)
 
-    return transformation_matrix
+    return np.squeeze(transformation_matrix)
 
 
-def transformation_matrix_fosd2_alpha(mid_surface_geometry: MidSurfaceGeometry, alpha, xi1, xi2, xi3):
+def transformation_matrix_fosd2_local(mid_surface_geometry: MidSurfaceGeometry, xi1, xi2, xi3, alpha):
 
-    alpha = np.atleast_1d(alpha)
-    xi1 = np.atleast_1d(xi1)
-    xi2 = np.atleast_1d(xi2)
+    xi1 = np.atleast_2d(xi1)
+    xi2 = np.atleast_2d(xi2)
     xi3 = np.atleast_1d(xi3)
+    alpha = np.atleast_1d(alpha)
 
     # Mid-surface basis
     natural_base = mid_surface_geometry.natural_base(xi1, xi2)  # shape (3, ...xi1.shape)
@@ -103,25 +99,18 @@ def transformation_matrix_fosd2_alpha(mid_surface_geometry: MidSurfaceGeometry, 
     cos_a = np.cos(alpha)
     sin_a = np.sin(alpha)
 
-    e1_material_rot = np.einsum('i...,z->i...z', e1_material, cos_a) + np.einsum('i...,z->i...z', e2_material, sin_a)
-    e2_material_rot = np.einsum('i...,z->i...z', e1_material, -sin_a) + np.einsum('i...,z->i...z', e2_material, cos_a)
-    e3_material_rot = np.repeat(e3_material[..., None], xi3.size, axis=-1)
-
-    e1_material_rot = e1_material_rot.reshape((3,) + xi1.shape + xi3.shape)
-    e2_material_rot = e2_material_rot.reshape((3,) + xi1.shape + xi3.shape)
-    e3_material_rot = e3_material_rot.reshape((3,) + xi1.shape + xi3.shape)
+    e1_material_rot = np.einsum('i...,...z->i...z', e1_material, cos_a) + np.einsum('i...,...z->i...z', e2_material, sin_a)
+    e2_material_rot = np.einsum('i...,...z->i...z', e1_material, -sin_a) + np.einsum('i...,...z->i...z', e2_material, cos_a)
+    e3_material_rot = np.repeat(e3_material[..., None], xi3.shape[-1], axis=-1)
 
     material_base = np.stack((e1_material_rot, e2_material_rot, e3_material_rot), axis=0)
 
     # Obtain the inverse shifter tensor (3x3 in-plane approximation)
-    inverse_shift_tensor = mid_surface_geometry.shifter_tensor_inverse_approximation(xi1, xi2, xi3)
-    inverse_shift_tensor_extended = np.zeros((3, 3) + xi1.shape + xi3.shape)
-    inverse_shift_tensor_extended[0:2, 0:2] = inverse_shift_tensor
-    inverse_shift_tensor_extended[2, 2] = 1
+    inverse_shift_tensor_extended = mid_surface_geometry.shifter_tensor_inverse_approximation_extended(xi1, xi2, xi3)
+    inverse_shift_tensor_extended = inverse_shift_tensor_extended.reshape((3, 3)+xi1.shape+(xi3.shape[-1],))
 
     # Convert tuples/lists to 3x3 arrays
     reciprocal_base = np.stack(reciprocal_base, axis=0)
-    reciprocal_base = reciprocal_base.reshape((3, 3) + xi1.shape)
 
     # Determine transformation_matrix
     transformation_matrix = np.einsum('ik...z,lj...z, lk...->ij...z',
@@ -157,14 +146,12 @@ def transformation_matrix_fosd2_alpha(mid_surface_geometry: MidSurfaceGeometry, 
     auxiliar_tensor = np.einsum("ab...,cd...->acbd...",
                                 transformation_matrix,
                                 transformation_matrix)
-
-    auxiliar_tensor = auxiliar_tensor.reshape(9, 9, -1)
-
-    auxiliar_tensor = auxiliar_tensor.reshape((9, 9)+xi1.shape+xi3.shape)
+    shape_rest = auxiliar_tensor.shape[4:]
+    auxiliar_tensor = auxiliar_tensor.reshape(9, 9, *shape_rest)
 
     transformation_matrix = np.einsum('ij,jk...,kl->il...',
                                       permutation_voigt,
                                       auxiliar_tensor,
                                       inverse_permutation_voigt)
 
-    return transformation_matrix
+    return np.squeeze(transformation_matrix)

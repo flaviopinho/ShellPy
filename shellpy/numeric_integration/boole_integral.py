@@ -1,33 +1,57 @@
 import numpy as np
-
 from shellpy import cache_function
 from shellpy.numeric_integration.default_integral_division import n_integral_default_x
-
 
 @cache_function
 def boole_weights_simple_integral(edges, n_x=n_integral_default_x):
     """
-    This function calculates the Boole's rule integration weights and integration points
-    using the given number of subdivisions.
+    Calculates Boole's rule integration weights and points for given edges.
+    Works for scalar or array edges.
 
-    :param edges: A tuple object defining the edges of the domain Exemple (-h/2, h/2).
-    :param n_x: The number of subdivisions to use (default is 20).
-    :return: The integration points (x) and the corresponding weights (W).
+    Parameters
+    ----------
+    edges : tuple
+        A tuple (a, b) defining the integration limits.
+        a and b can be scalars or ndarrays of the same shape.
+    n_x : int
+        Number of Boole's rule segments (default is n_integral_default_x).
+
+    Returns
+    -------
+    x : ndarray
+        Integration points with shape (..., n2_x + 1).
+    W : ndarray
+        Corresponding integration weights with the same shape.
     """
 
+    a, b = edges
+    a = np.asarray(a)
+    b = np.asarray(b)
+
     n2_x = n_x * 4  # Total number of subdivisions (4n)
+    shape_h = np.broadcast_shapes(a.shape, b.shape)
 
-    # Generate the points x (we need 4n + 1 points)
-    x = np.linspace(*edges, n2_x + 1)  # Generate x points for the integration domain
+    # Normalized positions between 0 and 1 for all integration points
+    xi = np.linspace(0, 1, n2_x + 1)
 
-    # Apply the weights according to Boole's rule
-    weights_base = np.array([14, 32, 12, 32])  # Base pattern of weights for Boole's rule
-    weights_1d_x = np.tile(weights_base, n_x)  # Repeat the base pattern n times
-    weights_1d_x = np.append(weights_1d_x, 7)  # Add the final weight (7) at the end
-    weights_1d_x[0] = 7  # Set the first weight to 7 (adjustment for mid_surface_domain)
+    # Expand to match shape_h
+    a_exp = np.expand_dims(a, axis=-1)
+    b_exp = np.expand_dims(b, axis=-1)
+    xi_exp = xi.reshape((1,) * len(shape_h) + (-1,))
 
-    h1 = (edges[1] - edges[0]) / n2_x
+    # Compute integration points
+    x = a_exp + (b_exp - a_exp) * xi_exp
 
-    W = (2 * h1 / 45) * weights_1d_x
+    # Base weights according to Boole's rule
+    weights_base = np.array([14, 32, 12, 32])
+    weights_1d_x = np.tile(weights_base, n_x)
+    weights_1d_x = np.append(weights_1d_x, 7)
+    weights_1d_x[0] = 7
+
+    # Step size (can be array)
+    h1 = (b - a) / n2_x
+    h1_exp = np.expand_dims(h1, axis=-1)
+
+    W = (2 * h1_exp / 45) * weights_1d_x
 
     return x, W

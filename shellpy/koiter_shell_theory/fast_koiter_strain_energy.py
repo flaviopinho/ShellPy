@@ -34,7 +34,7 @@ def fast_koiter_strain_energy(shell: Shell,
     xi1, xi2, Wxy = double_integral_weights(shell.mid_surface_domain, n_x, n_y, integral_method)
 
     # Compute thickness and integration points along the thickness direction
-    h = shell.thickness()
+    h = shell.thickness(xi1, xi2)
     xi3, Wz = integral_method((-h / 2, h / 2), n_z)
 
     # Get the number of degrees of freedom for the displacement expansion
@@ -48,9 +48,9 @@ def fast_koiter_strain_energy(shell: Shell,
     C = plane_stress_constitutive_tensor_for_koiter_theory(shell.mid_surface_geometry, shell.material, xi1, xi2, xi3)
 
     # Precompute integration of the constitutive tensor along the thickness direction
-    C0 = 0.5 * np.einsum('ijklxyz, z, xyz, z->ijklxy', C, xi3 ** 0, det_shifter_tensor, Wz)
-    C1 = 0.5 * np.einsum('ijklxyz, z, xyz, z->ijklxy', C, xi3 ** 1, det_shifter_tensor, Wz)
-    C2 = 0.5 * np.einsum('ijklxyz, z, xyz, z->ijklxy', C, xi3 ** 2, det_shifter_tensor, Wz)
+    C0 = 0.5 * np.einsum('ijklxyz, xyz, xyz, xyz->ijklxy', C, xi3 ** 0, det_shifter_tensor, Wz)
+    C1 = 0.5 * np.einsum('ijklxyz, xyz, xyz, xyz->ijklxy', C, xi3 ** 1, det_shifter_tensor, Wz)
+    C2 = 0.5 * np.einsum('ijklxyz, xyz, xyz, xyz->ijklxy', C, xi3 ** 2, det_shifter_tensor, Wz)
 
     Wxy = sqrtG * Wxy  # Adjust integration weights for the mid-surface
 
@@ -118,7 +118,7 @@ def fast_koiter_quadratic_strain_energy(shell: Shell,
     xi1, xi2, Wxy = double_integral_weights(shell.mid_surface_domain, n_x, n_y, integral_method)
 
     # Get the thickness of the shell at each point in the domain
-    h = shell.thickness()
+    h = shell.thickness(xi1, xi2)
 
     xi3, Wz = integral_method((-h / 2, h / 2), n_z)
 
@@ -136,9 +136,9 @@ def fast_koiter_quadratic_strain_energy(shell: Shell,
     # Calculate the constitutive tensor C for the thin shell material
     C = plane_stress_constitutive_tensor_for_koiter_theory(shell.mid_surface_geometry, shell.material, xi1, xi2, xi3)
 
-    C0 = 1 / 2 * np.einsum('ijklxyz, z, xyz, z->ijklxy', C, xi3 ** 0, det_shifter_tensor, Wz)
-    C1 = 1 / 2 * np.einsum('ijklxyz, z, xyz, z->ijklxy', C, xi3 ** 1, det_shifter_tensor, Wz)
-    C2 = 1 / 2 * np.einsum('ijklxyz, z, xyz, z->ijklxy', C, xi3 ** 2, det_shifter_tensor, Wz)
+    C0 = 1 / 2 * np.einsum('ijklxyz, xyz, xyz, xyz->ijklxy', C, xi3 ** 0, det_shifter_tensor, Wz)
+    C1 = 1 / 2 * np.einsum('ijklxyz, xyz, xyz, xyz->ijklxy', C, xi3 ** 1, det_shifter_tensor, Wz)
+    C2 = 1 / 2 * np.einsum('ijklxyz, xyz, xyz, xyz->ijklxy', C, xi3 ** 2, det_shifter_tensor, Wz)
 
     Wxy = sqrtG * Wxy
 

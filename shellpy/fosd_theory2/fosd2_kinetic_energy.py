@@ -8,7 +8,7 @@ from shellpy.numeric_integration.boole_integral import boole_weights_simple_inte
 from shellpy.numeric_integration.integral_weights import double_integral_weights
 
 
-def fosd_kinetic_energy(shell: Shell, n_x, n_y, n_z, integral_method=boole_weights_simple_integral):
+def fosd2_kinetic_energy(shell: Shell, n_x, n_y, n_z, integral_method=boole_weights_simple_integral):
 
     # Get integration points and weights for the double integral over the mid-surface domain
     xi1, xi2, Wxy = double_integral_weights(shell.mid_surface_domain, n_x, n_y, integral_method)

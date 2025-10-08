@@ -1,15 +1,20 @@
+from typing import Any
+
 import numpy as np
 from multipledispatch import dispatch
 
 from shellpy import cache_function, MidSurfaceGeometry
-from shellpy.materials.linear_elastic_material import LinearElasticMaterial
+from shellpy.materials.isotropic_homogeneous_linear_elastic_material import IsotropicHomogeneousLinearElasticMaterial
 
 
-@dispatch(MidSurfaceGeometry, LinearElasticMaterial, np.ndarray, np.ndarray, np.ndarray)
+@dispatch(MidSurfaceGeometry, IsotropicHomogeneousLinearElasticMaterial, object, object, object)
 @cache_function
-def plane_stress_constitutive_tensor_for_koiter_theory(mid_surface_geometry: MidSurfaceGeometry, material: LinearElasticMaterial, xi1, xi2, xi3=0):
+def plane_stress_constitutive_tensor_for_koiter_theory(mid_surface_geometry: MidSurfaceGeometry, material: IsotropicHomogeneousLinearElasticMaterial, xi1, xi2, xi3=0):
+    xi1 = np.atleast_2d(xi1)
+    xi2 = np.atleast_2d(xi2)
     n_xy = np.shape(xi1)
-    n_xyz = n_xy + np.shape(xi3)
+    xi3 = np.atleast_1d(xi3)
+    n_xyz = n_xy + (np.shape(xi3)[-1],)
 
     # If no metric tensor is provided, initialize it as a 2x2 identity tensor for the default case.
     metric_tensor = mid_surface_geometry.metric_tensor_contravariant_components(xi1, xi2)
@@ -32,5 +37,5 @@ def plane_stress_constitutive_tensor_for_koiter_theory(mid_surface_geometry: Mid
 
     contitutive_tensor2 = np.repeat(contitutive_tensor[:, :, :, :, :, :, np.newaxis], n_xyz[2], axis=6)
 
-    return contitutive_tensor2
+    return np.squeeze(contitutive_tensor2)
 

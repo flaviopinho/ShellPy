@@ -52,7 +52,7 @@ def koiter_linear_strain_components(mid_surface_geometry: MidSurfaceGeometry,
     f1 = np.einsum('sa...,bs...->ab...', K, gamma)
     f2 = np.einsum('sb...,as...->ab...', K, gamma)
 
-    rho = rho - 1/2 * (f1+f2)
+    rho = rho - 0 * (f1+f2)
 
     return gamma, rho  # Return linear strain (gamma) and (rho)
 

@@ -118,7 +118,6 @@ class MidSurfaceGeometry:
                 curvature_tensor_mixed_components_[alpha, beta] = zero + reciprocal_base_[alpha].dot(
                     natural_base_first_derivative_[(2, beta)])
 
-
         # Store numerical functions for fast evaluation
         self._metric_tensor_covariant_components = sym.lambdify((xi1_, xi2_),
                                                                 metric_tensor_covariant_components_,
@@ -218,7 +217,7 @@ class MidSurfaceGeometry:
         These components describe the inner product of the natural basis vectors.
         """
         G = np.zeros((3, 3) + np.shape(xi1))
-        G[0:2,0:2] = self._metric_tensor_covariant_components(xi1, xi2)
+        G[0:2, 0:2] = self._metric_tensor_covariant_components(xi1, xi2)
         G[2, 2] = 1
         return G
 
@@ -229,7 +228,7 @@ class MidSurfaceGeometry:
         These components are the inverse of the covariant metric tensor.
         """
         G = np.zeros((3, 3) + np.shape(xi1))
-        G[0:2,0:2] = self._metric_tensor_contravariant_components(xi1, xi2)
+        G[0:2, 0:2] = self._metric_tensor_contravariant_components(xi1, xi2)
         G[2, 2] = 1
         return G
 
@@ -267,72 +266,389 @@ class MidSurfaceGeometry:
 
     @cache_method
     def gaussian_curvature(self, xi1, xi2):
+        """
+        Compute the Gaussian curvature of the surface.
+
+        The Gaussian curvature is obtained as the determinant of the curvature tensor
+        expressed in mixed components :math:`K^i_j`.
+
+        Parameters
+        ----------
+        xi1 : array_like
+            First surface coordinate.
+        xi2 : array_like
+            Second surface coordinate.
+
+        Returns
+        -------
+        ndarray
+            The Gaussian curvature :math:`K_G` evaluated at the given surface coordinates.
+
+        Notes
+        -----
+        The computation uses the relation:
+        .. math::
+            K_G = \\det(K^i_j)
+
+        """
+        # Get the curvature tensor in mixed components
         curvature = self.curvature_tensor_mixed_components(xi1, xi2)
         shape = list(range(curvature.ndim))
 
+        # Gaussian curvature = det(K^i_j)
         _gaussian_curvature = np.linalg.det(curvature.transpose(shape[2:] + shape[0:2]))
 
         return _gaussian_curvature
 
     def mean_curvature(self, xi1, xi2):
+        """
+        Compute the mean curvature of the surface.
+
+        The mean curvature is obtained as one half of the trace of the curvature tensor
+        expressed in mixed components :math:`K^i_j`.
+
+        Parameters
+        ----------
+        xi1 : array_like
+            First surface coordinate.
+        xi2 : array_like
+            Second surface coordinate.
+
+        Returns
+        -------
+        ndarray
+            The mean curvature :math:`H` evaluated at the given surface coordinates.
+
+        Notes
+        -----
+        The computation follows:
+        .. math::
+            H = \frac{1}{2} \\mathrm{tr}(K^i_j)
+        """
+        # Get the curvature tensor in mixed components
         curvature = self.curvature_tensor_mixed_components(xi1, xi2)
 
+        # Mean curvature = 0.5 * trace(K^i_j)
         _mean_curvature = 0.5 * np.einsum('aa...->...', curvature)
 
         return _mean_curvature
 
     @cache_method
     def shifter_tensor(self, xi1, xi2, xi3):
+        """
+        Compute the shifter tensor that maps quantities between the mid-surface
+        and a generic surface located at a distance xi3 along the normal direction.
+
+        The tensor is defined as:
+        math::
+            \\mathbf{A} = \\mathbf{I} + \\xi_3 \\mathbf{K}
+
+        where :math:`\\mathbf{K}` is the curvature tensor with mixed components.
+
+        Parameters
+        ----------
+        xi1 : array_like
+            First surface coordinate.
+        xi2 : array_like
+            Second surface coordinate.
+        xi3 : array_like or float
+            Normal coordinate (distance from the mid-surface).
+
+        Returns
+        -------
+        ndarray
+            The shifter tensor :math:`A^i_j`, with shape (2, 2, *xi1.shape, n).
+
+        Notes
+        -----
+        This tensor relates tangent vectors between the reference mid-surface
+        and a surface at an offset :math:`\\xi_3`:
+        math::
+            \\mathbf{a}_i = A_i^j \\mathbf{a}_j^0
+        """
+        xi1 = np.atleast_2d(xi1)
+        xi2 = np.atleast_2d(xi2)
+        xi3 = np.atleast_1d(xi3)
+
+        # Identity tensor in the tangent plane
         delta = np.eye(2, 2)
         curvature = self.curvature_tensor_mixed_components(xi1, xi2)
-        result = np.einsum('abxy,z->abxyz', curvature, xi3)
 
-        delta_expanded = np.einsum('ab, ...->ab...', delta, np.ones(np.shape(xi1)+np.shape(xi3)))
+        # Expand xi3 to match xi1, xi2 shapes if necessary
+        if xi3.shape[:-1] != np.shape(xi1):
+            xi3_exp = np.broadcast_to(xi3, np.shape(xi1) + (xi3.shape[-1],))
+        else:
+            xi3_exp = xi3
 
-        return result + delta_expanded
+        # curvature: (2, 2, *xi1.shape)
+        # xi3_exp: (*xi1.shape, n)
+        result = curvature[..., np.newaxis] * xi3_exp[np.newaxis, np.newaxis, ...]
+
+        # Number of extra dimensions after (2,2)
+        n_extra = result.ndim - 2
+        delta_expanded = delta.reshape(2, 2, *([1] * n_extra)) + np.zeros_like(result)
+
+        # Shifter tensor: A = I + xi3 * K
+        return np.squeeze(result + delta_expanded)
 
     @cache_method
     def shifter_tensor_inverse(self, xi1, xi2, xi3):
-        shifter = self.shifter_tensor(xi1, xi2, xi3)  # Obtém o tensor shifter
+        """
+        Compute the exact inverse of the shifter tensor.
+
+        The inverse shifter tensor is defined as:
+        .. math::
+            \\mathbf{A}^{-1} = (\\mathbf{I} + \\xi_3 \\mathbf{K})^{-1}
+
+        where :math:`\\mathbf{K}` is the curvature tensor with mixed components.
+
+        Parameters
+        ----------
+        xi1 : array_like
+            First surface coordinate.
+        xi2 : array_like
+            Second surface coordinate.
+        xi3 : array_like or float
+            Normal coordinate (distance from the mid-surface).
+
+        Returns
+        -------
+        ndarray
+            The inverse shifter tensor :math:`A^{-1}`, with shape (2, 2, *xi1.shape, n).
+
+        Notes
+        -----
+        The computation is performed by transposing the tensor to bring
+        the (2x2) matrices to the last two dimensions before applying
+        `np.linalg.inv`, then transposing back to the original order.
+
+        """
+        shifter = self.shifter_tensor(xi1, xi2, xi3)
         shape = list(range(shifter.ndim))
 
-        a = shape[0]
-        b = shape[1]
+        # Swap the first two dimensions with the last two
+        a, b = shape[0], shape[1]
+        shape[0], shape[1] = shape[-2], shape[-1]
+        shape[-2], shape[-1] = a, b
 
-        shape[0] = shape[-2]
-        shape[1] = shape[-1]
-
-        shape[-2] = a
-        shape[-1] = b
-
+        # Invert the (2x2) matrices and restore the original axis order
         shifter_inv = np.linalg.inv(shifter.transpose(shape)).transpose(shape)
 
-        return np.swapaxes(shifter_inv, 0, 1)
+        # Swap axes to maintain consistent ordering (a,b,...)
+        return np.squeeze(np.swapaxes(shifter_inv, 0, 1))
 
     @cache_method
     def shifter_tensor_inverse_approximation(self, xi1, xi2, xi3):
+        """
+        Compute an approximate inverse of the shifter tensor using a
+        truncated series expansion.
+
+        The approximation is based on the Neumann series:
+        .. math::
+            (\\mathbf{I} + \\xi_3 \\mathbf{K})^{-1} \\approx
+            \\mathbf{I} - \\xi_3 \\mathbf{K} + \\xi_3^2 \\mathbf{K}^2
+            - \\xi_3^3 \\mathbf{K}^3 + \\xi_3^4 \\mathbf{K}^4
+
+        Parameters
+        ----------
+        xi1 : array_like
+            First surface coordinate.
+        xi2 : array_like
+            Second surface coordinate.
+        xi3 : array_like or float
+            Normal coordinate (distance from the mid-surface).
+
+        Returns
+        -------
+        ndarray
+            Approximate inverse of the shifter tensor :math:`A^{-1}_{approx}`,
+            with shape (2, 2, *xi1.shape, n).
+
+        Notes
+        -----
+        This approximation is valid when the curvature is small, i.e.
+        :math:`|\\xi_3 \\kappa| \\l 1`. It avoids explicit matrix inversion
+        and is computationally cheaper.
+        """
         delta = np.eye(2, 2)
-        delta_expanded = np.einsum('ab,...->ab...', delta, np.ones(np.shape(xi1)+np.shape(xi3)))
+        xi1 = np.atleast_2d(xi1)
+        xi2 = np.atleast_2d(xi2)
+        xi3 = np.atleast_1d(xi3)
+        delta_expanded = np.einsum('ab,...->ab...', delta, np.ones(np.shape(xi1) + (np.shape(xi3)[-1],)))
 
-        #Remenber!!! Transpose is required
+        # Broadcast xi3 to match xi1, xi2 if necessary
+        if xi3.shape[:-1] != np.shape(xi1):
+            xi3_exp = np.broadcast_to(xi3, np.shape(xi1) + (xi3.shape[-1],))
+        else:
+            xi3_exp = xi3
+
+        # Get curvature tensor
         curvature = self.curvature_tensor_mixed_components(xi1, xi2)
-        aux1 = np.einsum('...,z->...z', curvature, xi3)
-        aux2 = np.einsum('ag...z, gb..., z->ba...z', aux1, curvature, xi3)
-        aux3 = np.einsum('ao...z, ob..., z->ba...z', aux2, curvature, xi3)
-        aux4 = np.einsum('ao...z, ob..., z->ba...z', aux3, curvature, xi3)
 
-        return delta_expanded - aux1 + aux2 - aux3 + aux4
+        # Series expansion terms
+        aux1 = np.einsum('...,...z->...z', curvature, xi3)
+        aux2 = np.einsum('ag...z, gb..., ...z->ab...z', aux1, curvature, xi3_exp)
+        aux3 = np.einsum('ao...z, ob..., ...z->ab...z', aux2, curvature, xi3_exp)
+        aux4 = np.einsum('ao...z, ob..., ...z->ab...z', aux3, curvature, xi3_exp)
+
+        # Truncated Neumann series up to 4th order
+        shifter_inv = delta_expanded - aux1 + aux2 - aux3 + aux4
+
+        return np.squeeze(np.swapaxes(shifter_inv, 0, 1))
+
+    @cache_method
+    def shifter_tensor_extended(self, xi1, xi2, xi3):
+        """
+        Extend the 2D shifter tensor to 3D form.
+
+        The extended shifter tensor is defined as:
+        .. math::
+            \tilde{\\mathbf{A}} =
+            \begin{bmatrix}
+            \\mathbf{A} & 0 \\
+            0 & 1
+            \\end{bmatrix}
+
+        Parameters
+        ----------
+        xi1 : array_like
+            First surface coordinate.
+        xi2 : array_like
+            Second surface coordinate.
+        xi3 : array_like or float
+            Normal coordinate (distance from the mid-surface).
+
+        Returns
+        -------
+        ndarray
+            Extended shifter tensor :math:`\tilde{A}`, with shape (3, 3, *xi1.shape, n).
+        """
+        xi1 = np.atleast_2d(xi1)
+        xi2 = np.atleast_2d(xi2)
+        xi3 = np.atleast_1d(xi3)
+        shape_a = (2, 2) + np.shape(xi1) + (xi3.shape[-1],)
+        shape_b = (3, 3) + np.shape(xi1) + (xi3.shape[-1],)
+        result = np.zeros(shape_b)
+        result[0:2, 0:2] = np.reshape(self.shifter_tensor(xi1, xi2, xi3), shape_a)
+        result[2, 2] = 1
+        return np.squeeze(result)
+
+    @cache_method
+    def shifter_tensor_inverse_extended(self, xi1, xi2, xi3):
+        """
+        Extend the inverse of the shifter tensor to 3D form.
+
+        The extended inverse tensor is defined as:
+        .. math::
+            \tilde{\\mathbf{A}}^{-1} =
+            \begin{bmatrix}
+            \\mathbf{A}^{-1} & 0 \\
+            0 & 1
+            \\end{bmatrix}
+
+        Parameters
+        ----------
+        xi1 : array_like
+            First surface coordinate.
+        xi2 : array_like
+            Second surface coordinate.
+        xi3 : array_like or float
+            Normal coordinate (distance from the mid-surface).
+
+        Returns
+        -------
+        ndarray
+            Extended inverse shifter tensor :math:`\tilde{A}^{-1}`, with shape (3, 3, *xi1.shape, n).
+        """
+        xi1 = np.atleast_2d(xi1)
+        xi2 = np.atleast_2d(xi2)
+        xi3 = np.atleast_1d(xi3)
+        shape_a = (2, 2) + np.shape(xi1) + (xi3.shape[-1],)
+        shape_b = (3, 3) + np.shape(xi1) + (xi3.shape[-1],)
+        result = np.zeros(shape_b)
+        result[0:2, 0:2] = np.reshape(self.shifter_tensor_inverse(xi1, xi2, xi3), shape_a)
+        result[2, 2] = 1
+        return np.squeeze(result)
+
+    @cache_method
+    def shifter_tensor_inverse_approximation_extended(self, xi1, xi2, xi3):
+        """
+        Extend the approximate inverse of the shifter tensor to 3D form.
+
+        Parameters
+        ----------
+        xi1 : array_like
+            First surface coordinate.
+        xi2 : array_like
+            Second surface coordinate.
+        xi3 : array_like or float
+            Normal coordinate (distance from the mid-surface).
+
+        Returns
+        -------
+        ndarray
+            Extended approximate inverse shifter tensor :math:`\tilde{A}^{-1}_{approx}`,
+            with shape (3, 3, *xi1.shape, n).
+
+        Notes
+        -----
+        This version uses the approximate inverse based on the truncated
+        Neumann series expansion.
+        """
+        xi1 = np.atleast_2d(xi1)
+        xi2 = np.atleast_2d(xi2)
+        xi3 = np.atleast_1d(xi3)
+        shape_a = (2, 2) + np.shape(xi1) + (xi3.shape[-1],)
+        shape_b = (3, 3) + np.shape(xi1) + (xi3.shape[-1],)
+        result = np.zeros(shape_b)
+        result[0:2, 0:2] = np.reshape(self.shifter_tensor_inverse_approximation(xi1, xi2, xi3), shape_a)
+        result[2, 2] = 1
+        return np.squeeze(result)
 
     @cache_method
     def determinant_shifter_tensor(self, xi1, xi2, xi3):
+        """
+        Compute the determinant of the shifter tensor.
+
+        The determinant relates the surface area element between the
+        mid-surface and a parallel surface at distance :math:`\\xi_3`:
+        .. math::
+            \\det(\\mathbf{A}) = 1 + 2H\\xi_3 + K_G \\xi_3^2
+
+        where :math:`H` is the mean curvature and :math:`K_G` is the Gaussian curvature.
+
+        Parameters
+        ----------
+        xi1 : array_like
+            First surface coordinate.
+        xi2 : array_like
+            Second surface coordinate.
+        xi3 : array_like or float
+            Normal coordinate (distance from the mid-surface).
+
+        Returns
+        -------
+        ndarray
+            Determinant of the shifter tensor :math:`\\det(\\mathbf{A})`,
+            with shape (*xi1.shape, n).
+        """
+        xi1 = np.atleast_2d(xi1)
+        xi2 = np.atleast_2d(xi2)
+        xi3 = np.atleast_1d(xi3)
+
         trace_K = 2 * self.mean_curvature(xi1, xi2)
         gaussian_curvature = self.gaussian_curvature(xi1, xi2)
-        shifter_det = (np.ones(np.shape(xi1) + np.shape(xi3)) +
-                       np.einsum('xy, z->xyz', trace_K, xi3) +
-                       np.einsum('xy, z->xyz', gaussian_curvature, xi3 ** 2))
 
-        return shifter_det
+        # Expand xi3 for broadcasting
+        if xi3.shape[:-1] != np.shape(xi1):
+            xi3_exp = np.broadcast_to(xi3, np.shape(xi1) + (xi3.shape[-1],))
+        else:
+            xi3_exp = xi3
 
+        # Determinant of A = 1 + trace(K)*xi3 + det(K)*xi3^2
+        shifter_det = 1 + trace_K[..., np.newaxis] * xi3_exp + gaussian_curvature[..., np.newaxis] * xi3_exp ** 2
+
+        return np.squeeze(shifter_det)
 
     def __call__(self, xi1, xi2):
         """

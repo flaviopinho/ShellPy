@@ -6,27 +6,30 @@ from mpl_toolkits.mplot3d import Axes3D
 # === DEFINIÇÃO DA SUPERFÍCIE ===
 def R(xi1_, xi2_):
     # Define geometric parameters of the shell
-    x = xi1_
-    y = xi2_
-    z = 0
+    RR = 127.5E-3
+    a = 152.4E-3
+    b = 76.2E-3
+    z = np.sqrt(RR ** 2 + -(xi2_ - b / 2) ** 2)
 
-    return x, y, z
+    return xi1_, xi2_, z
 
 
 # === PARÂMETROS ===
 
+a = 152.4E-3
+b = 76.2E-3
 
-u1, u2 = 0, 2.5
-v1, v2 = 0, 5
+u1, u2 = 0, a
+v1, v2 = 0, b
 nu, nv = 50, 50
 periodic_u = False
 periodic_v = False
 
 # === PROPRIEDADES DO MATERIAL ===
-E = 27000E6  # Módulo de elasticidade [Pa]
-nu_mat = 0.2  # Coeficiente de Poisson
+E = 206E9  # Módulo de elasticidade [Pa]
+nu_mat = 0.3  # Coeficiente de Poisson
 rho = 7800  # Densidade [kg/m³]
-thickness = 0.15  # Espessura da casca [m]
+thickness = 0.001  # Espessura da casca [m]
 
 # === GERAÇÃO DA MALHA ===
 num_u_nodes = nu if periodic_u else nu + 1
@@ -85,7 +88,7 @@ ax.set_box_aspect([ub - lb for lb, ub in (getattr(ax, f'get_{a}lim')() for a in 
 plt.show()
 
 # === ESCRITA DO ARQUIVO ABAQUS .inp ===
-with open("malha_abaqus_placa.inp", "w") as f:
+with open("malha_abaqus_casca.inp", "w") as f:
     f.write("*HEADING\n")
     f.write("Modelo de Casca Gerado Automaticamente\n")
     f.write("Sistema de Unidades: SI (m, kg, s)\n")

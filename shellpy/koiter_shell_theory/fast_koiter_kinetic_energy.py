@@ -36,7 +36,7 @@ def fast_koiter_kinetic_energy(shell: Shell,
     xi1, xi2, Wxy = double_integral_weights(shell.mid_surface_domain, n_x, n_y, integral_method)
 
     # Get the thickness of the shell at each integration point
-    h = shell.thickness()
+    h = shell.thickness(xi1, xi2)
 
     # Integration points and weights along the thickness direction (xi3)
     xi3, Wz = integral_method((-h / 2, h / 2), n_z)
@@ -61,9 +61,9 @@ def fast_koiter_kinetic_energy(shell: Shell,
     Wxy = sqrtG * Wxy
 
     # Compute weighted integral coefficients used in kinetic energy calculations
-    W0 = 1 / 2 * np.einsum('xyz, xy, z, xyz, z->xy', rho, Wxy, xi3 ** 0, det_shifter_tensor, Wz)
-    W1 = 1 / 2 * np.einsum('xyz, xy, z, xyz, z->xy', rho, Wxy, xi3 ** 1, det_shifter_tensor, Wz)
-    W2 = 1 / 2 * np.einsum('xyz, xy, z, xyz, z->xy', rho, Wxy, xi3 ** 2, det_shifter_tensor, Wz)
+    W0 = 1 / 2 * np.einsum('xyz, xy, xyz, xyz, xyz->xy', rho, Wxy, xi3 ** 0, det_shifter_tensor, Wz)
+    W1 = 1 / 2 * np.einsum('xyz, xy, xyz, xyz, xyz->xy', rho, Wxy, xi3 ** 1, det_shifter_tensor, Wz)
+    W2 = 1 / 2 * np.einsum('xyz, xy, xyz, xyz, xyz->xy', rho, Wxy, xi3 ** 2, det_shifter_tensor, Wz)
 
     # Initialize an array to hold the displacement fields for each degree of freedom and spatial point
     # Shape: (n_dof, 3 spatial directions, xi1 grid size, xi2 grid size)
