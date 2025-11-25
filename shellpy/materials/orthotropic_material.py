@@ -56,8 +56,8 @@ class OrthotropicMaterial:
         C[2, 1] = -nu23 / E2
         C[2, 2] = 1 / E3
 
-        C[3, 3] = 1 / G23 * (6 / 5)
-        C[4, 4] = 1 / G13 * (6 / 5)
+        C[3, 3] = 1 / G23
+        C[4, 4] = 1 / G13
         C[5, 5] = 1 / G12
 
         return np.linalg.inv(C)

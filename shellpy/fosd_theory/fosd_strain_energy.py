@@ -6,10 +6,11 @@ from shellpy import Shell
 from shellpy.fosd_theory.fosd_strain_tensor import fosd_linear_strain_components, fosd_nonlinear_strain_components
 from shellpy.materials.constitutive_tensor_fosd import constitutive_tensor_for_fosd
 from shellpy.numeric_integration.boole_integral import boole_weights_simple_integral
+from shellpy.numeric_integration.gauss_integral import gauss_weights_simple_integral
 from shellpy.numeric_integration.integral_weights import double_integral_weights
 
 
-def fosd_strain_energy(shell: Shell, n_x, n_y, n_z, integral_method=boole_weights_simple_integral):
+def fosd_strain_energy(shell: Shell, n_x, n_y, n_z, integral_method=gauss_weights_simple_integral):
     # Get integration points and weights for the double integral over the mid-surface domain
     xi1, xi2, Wxy = double_integral_weights(shell.mid_surface_domain, n_x, n_y, integral_method)
 
@@ -45,10 +46,10 @@ def fosd_strain_energy(shell: Shell, n_x, n_y, n_z, integral_method=boole_weight
     # Calculate the constitutive tensor C for the thin shell material
     C = constitutive_tensor_for_fosd(shell.mid_surface_geometry, shell.material, xi1, xi2, xi3)
 
-    C[0:2, 2, 0:2, 2] = 5 / 6 * C[0:2, 2, 0:2, 2]
-    C[2, 0:2, 0:2, 2] = 5 / 6 * C[2, 0:2, 0:2, 2]
-    C[0:2, 2, 2, 0:2] = 5 / 6 * C[0:2, 2, 2, 0:2]
-    C[2, 0:2, 2, 0:2] = 5 / 6 * C[2, 0:2, 2, 0:2]
+    # C[0:2, 2, 0:2, 2] = 5 / 6 * C[0:2, 2, 0:2, 2]
+    # C[2, 0:2, 0:2, 2] = 5 / 6 * C[2, 0:2, 0:2, 2]
+    # C[0:2, 2, 2, 0:2] = 5 / 6 * C[0:2, 2, 2, 0:2]
+    # C[2, 0:2, 2, 0:2] = 5 / 6 * C[2, 0:2, 2, 0:2]
 
     C0 = 1 / 2 * np.einsum('ijklxyz, xyz, xyz, xyz->ijklxy', C, xi3 ** 0, det_shifter_tensor, Wz)
     C1 = 1 / 2 * np.einsum('ijklxyz, xyz, xyz, xyz->ijklxy', C, xi3 ** 1, det_shifter_tensor, Wz)
@@ -139,11 +140,11 @@ def fosd_strain_energy(shell: Shell, n_x, n_y, n_z, integral_method=boole_weight
     print('Calculating cubic strain energy functional...')
     start = time()
     cubic_energy_tensor = 2 * np.einsum('mabxy, noabxy, xy->mno', L0_lin, epsilon0_nl, Wxy1,
-                                    optimize=True)
+                                        optimize=True)
     cubic_energy_tensor += 2 * np.einsum('mabxy, noabxy, xy->mno', L1_lin, epsilon1_nl, Wxy1,
-                                     optimize=True)
+                                         optimize=True)
     cubic_energy_tensor += 2 * np.einsum('mabxy, noabxy, xy->mno', L2_lin, epsilon2_nl, Wxy1,
-                                     optimize=True)
+                                         optimize=True)
 
     stop = time()
     print('time= ', stop - start)
@@ -162,7 +163,7 @@ def fosd_strain_energy(shell: Shell, n_x, n_y, n_z, integral_method=boole_weight
     return quadratic_energy_tensor, cubic_energy_tensor, quartic_energy_tensor
 
 
-def fosd_quadratic_strain_energy(shell: Shell, n_x, n_y, n_z, integral_method=boole_weights_simple_integral):
+def fosd_quadratic_strain_energy(shell: Shell, n_x, n_y, n_z, integral_method=gauss_weights_simple_integral):
     # Get integration points and weights for the double integral over the mid-surface domain
     xi1, xi2, Wxy = double_integral_weights(shell.mid_surface_domain, n_x, n_y, integral_method)
 
@@ -171,37 +172,18 @@ def fosd_quadratic_strain_energy(shell: Shell, n_x, n_y, n_z, integral_method=bo
 
     # Shape of xi1 (discretized domain in terms of xi1 and xi2)
     n_xy = np.shape(xi1)
-    n_xyz = np.shape(xi1) + (np.shape(xi3)[-1],)
 
     # Number of degrees of freedom (dof) for the displacement expansion
     n_dof = shell.displacement_expansion.number_of_degrees_of_freedom()
-
-    # Compute the contravariant metric tensor components and sqrt(G) for the shell geometry
-    metric_tensor_contravariant_components = shell.mid_surface_geometry.metric_tensor_contravariant_components_extended(
-        xi1, xi2)
 
     sqrtG = shell.mid_surface_geometry.sqrtG(xi1, xi2)
 
     det_shifter_tensor = shell.mid_surface_geometry.determinant_shifter_tensor(xi1, xi2, xi3)
 
-    shifter_tensor_inverse = shell.mid_surface_geometry.shifter_tensor_inverse_approximation(xi1, xi2, xi3)
-
     Wxy1 = sqrtG * Wxy
-
-    metric_tensor2 = np.zeros((3, 3) + n_xyz)
-    metric_tensor2[0:2, 0:2] = np.einsum('oaxyz, gbxyz, ogxy -> abxyz',
-                                         shifter_tensor_inverse,
-                                         shifter_tensor_inverse,
-                                         metric_tensor_contravariant_components[0:2, 0:2])
-    metric_tensor2[2, 2] = 1
 
     # Calculate the constitutive tensor C for the thin shell material
     C = constitutive_tensor_for_fosd(shell.mid_surface_geometry, shell.material, xi1, xi2, xi3)
-
-    C[0:2, 2, 0:2, 2] = 5 / 6 * C[0:2, 2, 0:2, 2]
-    C[2, 0:2, 0:2, 2] = 5 / 6 * C[2, 0:2, 0:2, 2]
-    C[0:2, 2, 2, 0:2] = 5 / 6 * C[0:2, 2, 2, 0:2]
-    C[2, 0:2, 2, 0:2] = 5 / 6 * C[2, 0:2, 2, 0:2]
 
     C0 = 1 / 2 * np.einsum('ijklxyz, xyz, xyz, xyz->ijklxy', C, xi3 ** 0, det_shifter_tensor, Wz)
     C1 = 1 / 2 * np.einsum('ijklxyz, xyz, xyz, xyz->ijklxy', C, xi3 ** 1, det_shifter_tensor, Wz)
@@ -238,6 +220,13 @@ def fosd_quadratic_strain_energy(shell: Shell, n_x, n_y, n_z, integral_method=bo
 
         print(f'Calculating linear components {i} of {n_dof}')
 
+    epsilon0_lin[:, 0:2, 2, ...] *= (5.0 / 6.0)
+    epsilon0_lin[:, 2, 0:2, ...] *= (5.0 / 6.0)
+    epsilon1_lin[:, 0:2, 2, ...] *= (5.0 / 6.0)
+    epsilon1_lin[:, 2, 0:2, ...] *= (5.0 / 6.0)
+    epsilon2_lin[:, 0:2, 2, ...] *= (5.0 / 6.0)
+    epsilon2_lin[:, 2, 0:2, ...] *= (5.0 / 6.0)
+
     # Calculate the quadratic strain energy functional
     print('Calculating quadratic strain energy functional...')
     start = time()
@@ -248,6 +237,5 @@ def fosd_quadratic_strain_energy(shell: Shell, n_x, n_y, n_z, integral_method=bo
     quadratic_energy_tensor += np.einsum('mabxy, nabxy, xy->mn', L2_lin, epsilon2_lin, Wxy1,
                                          optimize=True)
     stop = time()
-
 
     return quadratic_energy_tensor

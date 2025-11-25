@@ -20,7 +20,7 @@ def transformation_matrix_fosd2_global(mid_surface_geometry: MidSurfaceGeometry,
         material_base = np.stack((e1_material, e2_material, e3_material), axis=0)
 
     # Obtain the inverse shifter tensor (3x3 in-plane approximation)
-    inverse_shift_tensor_extended = mid_surface_geometry.shifter_tensor_inverse_approximation_extended(xi1, xi2, xi3)
+    inverse_shift_tensor_extended = mid_surface_geometry.shifter_tensor_inverse_extended(xi1, xi2, xi3)
     inverse_shift_tensor_extended = inverse_shift_tensor_extended.reshape((3, 3) + xi1.shape + (xi3.shape[-1],))
 
     # Convert tuples/lists to 3x3 arrays
@@ -33,6 +33,7 @@ def transformation_matrix_fosd2_global(mid_surface_geometry: MidSurfaceGeometry,
                                       inverse_shift_tensor_extended,
                                       reciprocal_base
                                       )
+
     # permutation matrix: transformation from 9x1 vector to 6x1 Voigt notation
     permutation_voigt = np.zeros((6, 9))
     permutation_voigt[0, 0] = 1
@@ -106,7 +107,7 @@ def transformation_matrix_fosd2_local(mid_surface_geometry: MidSurfaceGeometry, 
     material_base = np.stack((e1_material_rot, e2_material_rot, e3_material_rot), axis=0)
 
     # Obtain the inverse shifter tensor (3x3 in-plane approximation)
-    inverse_shift_tensor_extended = mid_surface_geometry.shifter_tensor_inverse_approximation_extended(xi1, xi2, xi3)
+    inverse_shift_tensor_extended = mid_surface_geometry.shifter_tensor_inverse_extended(xi1, xi2, xi3)
     inverse_shift_tensor_extended = inverse_shift_tensor_extended.reshape((3, 3)+xi1.shape+(xi3.shape[-1],))
 
     # Convert tuples/lists to 3x3 arrays

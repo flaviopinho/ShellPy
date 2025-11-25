@@ -6,6 +6,7 @@ from shellpy.materials.shell_density import shell_density
 from shellpy.numeric_integration.boole_integral import boole_weights_simple_integral
 from shellpy.numeric_integration.default_integral_division import n_integral_default_x, n_integral_default_y, \
     n_integral_default_z
+from shellpy.numeric_integration.gauss_integral import gauss_weights_simple_integral
 from shellpy.numeric_integration.integral_weights import double_integral_weights
 
 
@@ -13,7 +14,7 @@ def fast_koiter_kinetic_energy(shell: Shell,
                                n_x=n_integral_default_x,
                                n_y=n_integral_default_y,
                                n_z=n_integral_default_z,
-                               integral_method=boole_weights_simple_integral):
+                               integral_method=gauss_weights_simple_integral):
     """
     Calculates the kinetic energy of a shell structure using the Koiter approximation.
     This function computes the kinetic energy tensor based on the displacement fields,

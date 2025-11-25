@@ -3,14 +3,16 @@ import numpy as np
 from shellpy import Shell
 from shellpy.fosd_theory.fosd_strain_tensor import fosd_linear_strain_components
 from shellpy.fosd_theory2.fosd2_strain_vector import fosd2_linear_strain_vector
+from shellpy.fosd_theory2.shear_correction_factor import shear_correction_factor
+from shellpy.materials.constitutive_matrix_for_fosd_in_shell_frame import constitutive_matrix_for_fosd_in_shell_frame
 from shellpy.materials.constitutive_matrix_fosd2 import constitutive_matrix_for_fosd2
+from shellpy.materials.constitutive_matriz_fosd_in_material_frame import constitutive_matrix_for_fosd_in_material_frame
 from shellpy.numeric_integration.boole_integral import boole_weights_simple_integral
+from shellpy.numeric_integration.gauss_integral import gauss_weights_simple_integral
 from shellpy.numeric_integration.integral_weights import double_integral_weights
 
 
-def fosd2_quadratic_strain_energy(shell: Shell, n_x, n_y, n_z, integral_method=boole_weights_simple_integral):
-
-
+def fosd2_quadratic_strain_energy(shell: Shell, n_x, n_y, n_z, integral_method=gauss_weights_simple_integral):
     # Get integration points and weights for the double integral over the mid-surface domain
     xi1, xi2, Wxy = double_integral_weights(shell.mid_surface_domain, n_x, n_y, integral_method)
 
@@ -20,38 +22,34 @@ def fosd2_quadratic_strain_energy(shell: Shell, n_x, n_y, n_z, integral_method=b
 
     # Shape of xi1 (discretized domain in terms of xi1 and xi2)
     n_xy = np.shape(xi1)
-    n_xyz = np.shape(xi1) + (np.shape(xi3)[-1],)
 
     # Number of degrees of freedom (dof) for the displacement expansion
     n_dof = shell.displacement_expansion.number_of_degrees_of_freedom()
-
-    # Compute the contravariant metric tensor components and sqrt(G) for the shell geometry
-    metric_tensor_contravariant_components = shell.mid_surface_geometry.metric_tensor_contravariant_components_extended(
-        xi1, xi2)
 
     sqrtG = shell.mid_surface_geometry.sqrtG(xi1, xi2)
 
     det_shifter_tensor = shell.mid_surface_geometry.determinant_shifter_tensor(xi1, xi2, xi3)
 
-    shifter_tensor_inverse = shell.mid_surface_geometry.shifter_tensor_inverse_approximation(xi1, xi2, xi3)
-
     Wxy1 = sqrtG * Wxy
 
-    metric_tensor2 = np.zeros((3, 3) + n_xyz)
-    metric_tensor2[0:2, 0:2] = np.einsum('oaxyz, gbxyz, ogxy -> abxyz',
-                                         shifter_tensor_inverse,
-                                         shifter_tensor_inverse,
-                                         metric_tensor_contravariant_components[0:2, 0:2])
-    metric_tensor2[2, 2] = 1
-
     # Calculate the constitutive tensor C for the thin shell material
-    C = constitutive_matrix_for_fosd2(shell.mid_surface_geometry, shell.material, xi1, xi2, xi3)
+    C_local = constitutive_matrix_for_fosd_in_material_frame(shell.mid_surface_geometry, shell.material, xi1, xi2, xi3)
 
-    C0 = 1 / 2 * np.einsum('ijxyz, xyz, xyz, xyz->ijxy', C, xi3 ** 0, det_shifter_tensor, Wz)
-    C1 = 1 / 2 * np.einsum('ijxyz, xyz, xyz, xyz->ijxy', C, xi3 ** 1, det_shifter_tensor, Wz)
-    C2 = 1 / 2 * np.einsum('ijxyz, xyz, xyz, xyz->ijxy', C, xi3 ** 2, det_shifter_tensor, Wz)
-    C3 = 1 / 2 * np.einsum('ijxyz, xyz, xyz, xyz->ijxy', C, xi3 ** 3, det_shifter_tensor, Wz)
-    C4 = 1 / 2 * np.einsum('ijxyz, xyz, xyz, xyz->ijxy', C, xi3 ** 4, det_shifter_tensor, Wz)
+    kappa_x, kappa_y = shear_correction_factor(C_local, xi3, Wz, det_shifter_tensor)
+
+    print('kappa_x = ', kappa_x.mean())
+    print('kappa_y = ', kappa_y.mean())
+
+    C_local[4, 4] = np.einsum('xyz, xy->xyz', C_local[4, 4], kappa_x)
+    C_local[3, 3] = np.einsum('xyz, xy->xyz', C_local[3, 3], kappa_y)
+
+    C = constitutive_matrix_for_fosd_in_shell_frame(shell.mid_surface_geometry, C_local, xi1, xi2, xi3)
+
+    C0 = 1 / 2 * np.einsum('ijxyz, xyz->ijxy', C, xi3 ** 0 * det_shifter_tensor * Wz)
+    C1 = 1 / 2 * np.einsum('ijxyz, xyz->ijxy', C, xi3 ** 1 * det_shifter_tensor * Wz)
+    C2 = 1 / 2 * np.einsum('ijxyz, xyz->ijxy', C, xi3 ** 2 * det_shifter_tensor * Wz)
+    C3 = 1 / 2 * np.einsum('ijxyz, xyz->ijxy', C, xi3 ** 3 * det_shifter_tensor * Wz)
+    C4 = 1 / 2 * np.einsum('ijxyz, xyz->ijxy', C, xi3 ** 4 * det_shifter_tensor * Wz)
 
     # Initialize arrays for linear strain components (gamma_lin) and their associated quantities (rho_lin)
     epsilon0_lin = np.zeros((n_dof, 6) + n_xy)

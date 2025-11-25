@@ -4,7 +4,8 @@ import numpy as np
 from shellpy.multiindex import MultiIndex
 from shellpy.tensor_derivatives import tensor_derivative
 
-if __name__ == "__main__":
+
+def test_tensor_notation():
     rank = 4
     dimension = 5
     shape = (dimension,) * rank
@@ -15,7 +16,7 @@ if __name__ == "__main__":
     start = time.time()
     multiindex1 = MultiIndex.tensor_to_functional_multi_index(tensor)
     stop = time.time()
-    print('tempo1 = ', stop-start)
+    print('tempo1 = ', stop - start)
 
     print('functional')
 
@@ -23,6 +24,9 @@ if __name__ == "__main__":
     v = np.einsum('ijkl, i, j, k, l->', tensor, u, u, u, u)
 
     print(v, v1)
+
+    assert np.allclose(v, v1, rtol=1e-8,
+                       atol=1e-12), f"Expected {v}, got {v1}"
 
     print('force')
 
@@ -35,6 +39,9 @@ if __name__ == "__main__":
     print(v)
     print(v1)
 
+    assert np.allclose(v, v1, rtol=1e-8,
+                       atol=1e-12), f"Expected {v}, got {v1}"
+
     print('jacobian')
 
     J1 = F1.jacobian()
@@ -44,3 +51,10 @@ if __name__ == "__main__":
     dd_tensor = tensor_derivative(d_tensor, 1)
     v = np.einsum('ijkl, k, l->ij', dd_tensor, u, u)
     print(v)
+
+    assert np.allclose(v, v1, rtol=1e-8,
+                       atol=1e-12), f"Expected {v}, got {v1}"
+
+
+if __name__ == "__main__":
+    test_tensor_notation()

@@ -142,15 +142,15 @@ def test_mid_surface():
     Gamma2_expected = np.array(
         [[-4.845661927, -0.9691323852], [-0.9691323852, -5.879403140], [3.944321529, 10.47679315]])
     Gamma3_expected = np.array([[-10.49422128, -2.098844255], [-2.098844255, -12.73298849],
-                                [0.1000000000 * 10 ** (-8), 0.3000000000 * 10 ** (-8)]])
+                                [0, 0]])
     assert np.allclose(Gamma[0], Gamma1_expected, rtol=1e-8,
                        atol=1e-12), f"Expected {Gamma1_expected}, got {Gamma[0]}"
 
     assert np.allclose(Gamma[1], Gamma2_expected, rtol=1e-8,
                        atol=1e-12), f"Expected {Gamma2_expected}, got {Gamma[1]}"
 
-    assert np.allclose(Gamma[2], Gamma3_expected, rtol=1e-7,
-                       atol=1e-8), f"Expected {Gamma3_expected}, got {Gamma[2]}"
+    assert np.allclose(Gamma[2], Gamma3_expected, rtol=1e-8,
+                       atol=1e-12), f"Expected {Gamma3_expected}, got {Gamma[2]}"
 
     print("\nChristoffel symbols derivative")
     dGamma = midsurface.christoffel_symbols_first_derivative(xi1, xi2)

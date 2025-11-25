@@ -138,12 +138,7 @@ class EigenFunctionExpansion(DisplacementExpansion):
         j = vec[2]
         c = self._equations(xi1, xi2, field, i, j, derivative1, derivative2)
         u[k] = c
-        if self.number_of_fields() == 6:
-            v = u[3:6]
-            u = u[0:3]
-            return u, v
-        else:
-            return u
+        return u
 
     def shape_function_first_derivatives(self, n, xi1, xi2):
         """
@@ -162,12 +157,7 @@ class EigenFunctionExpansion(DisplacementExpansion):
         for derivative_index, derivatives in enumerate(((1, 0), (0, 1))):
             du[k, derivative_index] = self._equations(xi1, xi2, field, i, j, *derivatives)
 
-        if self.number_of_fields() == 6:
-            dv = du[3:6]
-            du = du[0:3]
-            return du, dv
-        else:
-            return du
+        return du
 
     def shape_function_second_derivatives(self, n, xi1, xi2):
         """
@@ -188,33 +178,19 @@ class EigenFunctionExpansion(DisplacementExpansion):
                 derivatives = (derivatives_j[0] + derivatives_k[0], derivatives_j[1] + derivatives_k[1])
                 ddu[k, jj, kk] = self._equations(xi1, xi2, field, i, j, *derivatives)
 
-        if self.number_of_fields() == 6:
-            ddv = ddu[3:6]
-            ddu = ddu[0:3]
-            return ddu, ddv
-        else:
-            return ddu
+        return ddu
 
     def __call__(self, *args, **kwargs):
         U = args[0]
         xi1 = args[1]
         xi2 = args[2]
-        if self.number_of_fields() == 3:
-            result = np.zeros((3,) + np.shape(xi1))
 
-            for i in range(self.number_of_degrees_of_freedom()):
-                result = result + self.shape_function(i, xi1, xi2, 0, 0) * U[i]
+        result = np.zeros((self.number_of_fields(),) + np.shape(xi1))
 
-            return result
-        else:
-            u = np.zeros((3,) + np.shape(xi1))
-            v = np.zeros((3,) + np.shape(xi1))
+        for i in range(self.number_of_degrees_of_freedom()):
+            result = result + self.shape_function(i, xi1, xi2, 0, 0) * U[i]
 
-            for i in range(self.number_of_degrees_of_freedom()):
-                u1, v1 = self.shape_function(i, xi1, xi2, 0, 0)
-                u = u + u1 * U[i]
-                v = v + v1 * U[i]
-            return u, v
+        return result
 
     def number_of_fields(self):
         return self._number_of_fields

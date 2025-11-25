@@ -1,8 +1,9 @@
 import sympy as sym
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.linalg import eig
+from scipy.linalg import eig, eigh
 
+from shellpy.expansions.eigen_function_expansion import EigenFunctionExpansion
 from shellpy.expansions.enriched_cosine_expansion import EnrichedCosineExpansion
 from shellpy.koiter_shell_theory import fast_koiter_quadratic_strain_energy
 from shellpy.koiter_shell_theory.fast_koiter_kinetic_energy import fast_koiter_kinetic_energy
@@ -16,37 +17,46 @@ from shellpy import ConstantThickness
 # Main execution block
 if __name__ == "__main__":
 
-    # Define geometric parameters of the shell
-    R = 1
-    beta = np.radians(45)
-    L = 0.3/(np.sin(beta)*np.cos(beta))*R
-    print(L)
-    h = 0.01
-    density = 1
-
-    # Define material properties
-    E = 1  # Young's modulus
-    nu = 0.3  # Poisson’s ratio
-
-    n_int_x = 10
-    n_int_y = 10
+    n_int_x = 15
+    n_int_y = 15
     n_int_z = 4
 
-    # Define the rectangular mid-surface domain of the shell
-    rectangular_domain = RectangularMidSurfaceDomain(0, 0.999*L, 0, 2 * np.pi)
+    factor = 0.5
+    alpha = np.deg2rad(45)
+    L = 1
+    R2 = L * np.sin(alpha) / factor
+    L2 = R2 / np.sin(alpha)
+    L1 = L2 - L
+    R1 = L1 * np.sin(alpha)
+
+    h = 0.01 * R2
+
+    rectangular_domain = RectangularMidSurfaceDomain(L1, L2, 0, 2 * np.pi)
+
+    R_ = sym.Matrix([
+        xi1_ * sym.sin(alpha) * sym.cos(xi2_),  # x
+        xi1_ * sym.sin(alpha) * sym.sin(xi2_),  # y
+        xi1_ * sym.cos(alpha)  # z
+    ])
+    mid_surface_geometry = MidSurfaceGeometry(R_)
+    thickness = ConstantThickness(h)
+
+    density = 2710
+
+    E = 70E9
+    nu = 0.3
 
     # Define the number of terms used in the displacement expansion
-    expansion_size = {"u1": (10, 10),  # Expansion order for displacement u1
-                      "u2": (10, 10),  # Expansion order for displacement u2
-                      "u3": (10, 10)}  # Expansion order for displacement u3
+    expansion_size = {"u1": (20, 20),  # Expansion order for displacement u1
+                      "u2": (20, 20),  # Expansion order for displacement u2
+                      "u3": (20, 20)}  # Expansion order for displacement u3
 
     # Define boundary conditions
-    # Campled - Free
     boundary_conditions_u1 = {"xi1": ("S", "S"),
                               "xi2": ("R", "R")}
     boundary_conditions_u2 = {"xi1": ("S", "S"),
                               "xi2": ("R", "R")}
-    boundary_conditions_u3 = {"xi1": ("S", "S"),
+    boundary_conditions_u3 = {"xi1": ("C", "C"),
                               "xi2": ("R", "R")}
 
     boundary_conditions = {"u1": boundary_conditions_u1,
@@ -55,15 +65,8 @@ if __name__ == "__main__":
 
 
     # Define the displacement field using an enriched cosine expansion
-    displacement_field = EnrichedCosineExpansion(expansion_size, rectangular_domain, boundary_conditions)
+    displacement_field = EigenFunctionExpansion(expansion_size, rectangular_domain, boundary_conditions)
 
-    # Define the symbolic representation of the mid-surface geometry
-    # The surface is assumed to be a portion of a sphere
-    R_ = sym.Matrix([xi1_, (R-xi1_*sym.tan(beta))*sym.cos(xi2_), (R-xi1_*sym.tan(beta))*sym.sin(xi2_)])
-
-    # Create objects representing the shell geometry, thickness, and material properties
-    mid_surface_geometry = MidSurfaceGeometry(R_)
-    thickness = ConstantThickness(h)
     material = IsotropicHomogeneousLinearElasticMaterial(E, nu, density)
 
     # Instantiate the shell object with all the defined properties
@@ -80,8 +83,11 @@ if __name__ == "__main__":
     M = tensor_derivative(tensor_derivative(T, 0), 1)  # Second derivative of kinetic energy (mass matrix)
     K = tensor_derivative(tensor_derivative(U2p, 0), 1)  # Second derivative of strain energy (stiffness matrix)
 
+    # Number of modes to be analyzed
+    n_modes = 10
+
     # Solve the eigenvalue problem for natural frequencies and mode shapes
-    eigen_vals, eigen_vectors = eig(K, M, right=True, left=False)
+    eigen_vals, eigen_vectors = eigh(K, M, subset_by_index=[0, n_modes-1])
     sorted_indices = np.argsort(eigen_vals.real)  # Sort eigenvalues in ascending order
 
     # Extract sorted eigenvalues and eigenvectors
@@ -91,10 +97,7 @@ if __name__ == "__main__":
     # Compute natural frequencies (Hz)
     omega = np.sqrt(eigen_vals.real)
 
-    freq = omega * R * np.sqrt(density/E*(1-nu**2))
-
-    # Number of modes to be analyzed
-    n_modes = 4
+    freq = omega * R2 * np.sqrt(density/E*(1-nu**2))
 
     # Print the first five natural frequencies
     print("Normalized natural frequencies:", freq[0:n_modes:1])

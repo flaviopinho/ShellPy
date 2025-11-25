@@ -52,7 +52,7 @@ def cache_method(func):
         # Compute the result and store it in the instance's cache
         result = func(self, *args, **kwargs)
         self.cache[cache_key] = result
-        print("Caching method result: ", len(self.cache), func.__name__)
+        #print("Caching method result: ", len(self.cache), func.__name__)
         return result
 
     return wrapper
@@ -77,7 +77,7 @@ def cache_function(func):
         # Execute the function and store the result in the global cache
         result = func(*args, **kwargs)
         cache_global[cache_key] = result
-        print("Caching function result: ", len(cache_global), func.__name__)
+        #print("Caching function result: ", len(cache_global), func.__name__)
 
         return result
 

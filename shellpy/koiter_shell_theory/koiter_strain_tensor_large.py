@@ -1,7 +1,8 @@
 import numpy as np
 
 from shellpy import cache_function
-from shellpy import displacement_covariant_derivatives
+from shellpy import displacement_first_covariant_derivatives
+from shellpy import displacement_second_covariant_derivatives
 from shellpy import DisplacementExpansion
 from shellpy import MidSurfaceGeometry
 
@@ -14,8 +15,17 @@ def koiter_nonlinear_strain_components_quadratic(mid_surface_geometry: MidSurfac
     # Compute the displacement covariant derivatives for two different degrees of freedom (i and j)
     # dcu1, ddcu1: displacement and second derivatives for displacement DOF i
     # dcu2, ddcu2: displacement and second derivatives for displacement DOF j
-    dcu1, ddcu1 = displacement_covariant_derivatives(mid_surface_geometry, displacement_expansion, i, xi1, xi2)
-    dcu2, ddcu2 = displacement_covariant_derivatives(mid_surface_geometry, displacement_expansion, j, xi1, xi2)
+    u1 = displacement_expansion.shape_function(i, xi1, xi2)
+    du1 = displacement_expansion.shape_function_first_derivatives(i, xi1, xi2)
+    # ddu1 = displacement_expansion.shape_function_second_derivatives(i, xi1, xi2)
+    dcu1 = displacement_first_covariant_derivatives(mid_surface_geometry, u1, du1, xi1, xi2)
+    # ddcu1 = displacement_second_covariant_derivatives(mid_surface_geometry, u1, du1, ddu1, i, xi1, xi2)
+
+    u2 = displacement_expansion.shape_function(j, xi1, xi2)
+    du2 = displacement_expansion.shape_function_first_derivatives(j, xi1, xi2)
+    # ddu2 = displacement_expansion.shape_function_second_derivatives(j, xi1, xi2)
+    dcu2 = displacement_first_covariant_derivatives(mid_surface_geometry, u2, du2, xi1, xi2)
+    # ddcu2 = displacement_second_covariant_derivatives(mid_surface_geometry, u2, du2, ddu2, i, xi1, xi2)
 
     # Get the contravariant components of the metric tensor (G^{alpha beta}) for the mid-surface geometry
     metric_tensor_contravariant_components2 = mid_surface_geometry.metric_tensor_contravariant_components_extended(xi1,
@@ -73,9 +83,23 @@ def koiter_nonlinear_strain_components_cubic(mid_surface_geometry: MidSurfaceGeo
     # Compute the displacement covariant derivatives for two different degrees of freedom (i and j)
     # dcu1, ddcu1: displacement and second derivatives for displacement DOF i
     # dcu2, ddcu2: displacement and second derivatives for displacement DOF j
-    dcu1, ddcu1 = displacement_covariant_derivatives(mid_surface_geometry, displacement_expansion, i, xi1, xi2)
-    dcu2, ddcu2 = displacement_covariant_derivatives(mid_surface_geometry, displacement_expansion, j, xi1, xi2)
-    dcu3, ddcu3 = displacement_covariant_derivatives(mid_surface_geometry, displacement_expansion, k, xi1, xi2)
+    u1 = displacement_expansion.shape_function(i, xi1, xi2)
+    du1 = displacement_expansion.shape_function_first_derivatives(i, xi1, xi2)
+    # ddu1 = displacement_expansion.shape_function_second_derivatives(i, xi1, xi2)
+    dcu1 = displacement_first_covariant_derivatives(mid_surface_geometry, u1, du1, xi1, xi2)
+    # ddcu1 = displacement_second_covariant_derivatives(mid_surface_geometry, u1, du1, ddu1, i, xi1, xi2)
+
+    u2 = displacement_expansion.shape_function(j, xi1, xi2)
+    du2 = displacement_expansion.shape_function_first_derivatives(j, xi1, xi2)
+    # ddu2 = displacement_expansion.shape_function_second_derivatives(j, xi1, xi2)
+    dcu2 = displacement_first_covariant_derivatives(mid_surface_geometry, u2, du2, xi1, xi2)
+    # ddcu2 = displacement_second_covariant_derivatives(mid_surface_geometry, u2, du2, ddu2, i, xi1, xi2)
+
+    u3 = displacement_expansion.shape_function(k, xi1, xi2)
+    du3 = displacement_expansion.shape_function_first_derivatives(k, xi1, xi2)
+    ddu3 = displacement_expansion.shape_function_second_derivatives(k, xi1, xi2)
+    # dcu3 = displacement_first_covariant_derivatives(mid_surface_geometry, u3, du3, xi1, xi2)
+    ddcu3 = displacement_second_covariant_derivatives(mid_surface_geometry, u3, du3, ddu3, i, xi1, xi2)
 
     # Get the contravariant components of the metric tensor (G^{alpha beta}) for the mid-surface geometry
     metric_tensor_contravariant_components2 = mid_surface_geometry.metric_tensor_contravariant_components_extended(xi1,

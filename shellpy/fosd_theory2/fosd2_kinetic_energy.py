@@ -5,10 +5,11 @@ import numpy as np
 from shellpy import Shell
 from shellpy.materials.shell_density import shell_density
 from shellpy.numeric_integration.boole_integral import boole_weights_simple_integral
+from shellpy.numeric_integration.gauss_integral import gauss_weights_simple_integral
 from shellpy.numeric_integration.integral_weights import double_integral_weights
 
 
-def fosd2_kinetic_energy(shell: Shell, n_x, n_y, n_z, integral_method=boole_weights_simple_integral):
+def fosd2_kinetic_energy(shell: Shell, n_x, n_y, n_z, integral_method=gauss_weights_simple_integral):
 
     # Get integration points and weights for the double integral over the mid-surface domain
     xi1, xi2, Wxy = double_integral_weights(shell.mid_surface_domain, n_x, n_y, integral_method)
@@ -32,23 +33,14 @@ def fosd2_kinetic_energy(shell: Shell, n_x, n_y, n_z, integral_method=boole_weig
 
     det_shifter_tensor = shell.mid_surface_geometry.determinant_shifter_tensor(xi1, xi2, xi3)
 
-    shifter_tensor_inverse = shell.mid_surface_geometry.shifter_tensor_inverse_approximation(xi1, xi2, xi3)
-
     Wxy1 = sqrtG * Wxy
-
-    metric_tensor2 = np.zeros((3, 3) + n_xyz)
-    metric_tensor2[0:2, 0:2] = np.einsum('oaxyz, gbxyz, ogxy -> abxyz',
-                                         shifter_tensor_inverse,
-                                         shifter_tensor_inverse,
-                                         metric_tensor_contravariant_components[0:2, 0:2])
-    metric_tensor2[2, 2] = 1
 
     # Calculate the constitutive tensor C for the thin shell material
     rho = shell_density(shell.material, xi1, xi2, xi3)
 
-    W0 = 1 / 2 * np.einsum('xyz, xyz, xyz, xyz, xy->xy', rho, xi3 ** 0, det_shifter_tensor, Wz, Wxy1)
-    W1 = 1 / 2 * np.einsum('xyz, xyz, xyz, xyz, xy->xy', rho, xi3 ** 1, det_shifter_tensor, Wz, Wxy1)
-    W2 = 1 / 2 * np.einsum('xyz, xyz, xyz, xyz, xy->xy', rho, xi3 ** 2, det_shifter_tensor, Wz, Wxy1)
+    W0 = 1 / 2 * np.einsum('xyz, xy->xy', rho * xi3 ** 0 * det_shifter_tensor * Wz, Wxy1)
+    W1 = 1 / 2 * np.einsum('xyz, xy->xy', rho * xi3 ** 1 * det_shifter_tensor * Wz, Wxy1)
+    W2 = 1 / 2 * np.einsum('xyz, xy->xy', rho * xi3 ** 2 * det_shifter_tensor * Wz, Wxy1)
 
     # Initialize arrays for linear strain components (gamma_lin) and their associated quantities (rho_lin)
     u = np.zeros((n_dof, 3) + n_xy)
@@ -56,7 +48,9 @@ def fosd2_kinetic_energy(shell: Shell, n_x, n_y, n_z, integral_method=boole_weig
 
     # Loop through the degrees of freedom to compute linear strain components for each dof
     for i in range(n_dof):
-        u[i], v[i] = shell.displacement_expansion.shape_function(i, xi1, xi2)
+        U = shell.displacement_expansion.shape_function(i, xi1, xi2)
+        u[i] = U[0:3]
+        v[i] = U[3:6]
 
     print('Calculating quadratic kinetic energy functional...')
     start = time()

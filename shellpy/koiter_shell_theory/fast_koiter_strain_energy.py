@@ -7,6 +7,7 @@ from ..materials.constitutive_tensor_koiter import plane_stress_constitutive_ten
 from ..numeric_integration.boole_integral import boole_weights_simple_integral
 from ..numeric_integration.default_integral_division import n_integral_default_x, n_integral_default_z, \
     n_integral_default_y
+from ..numeric_integration.gauss_integral import gauss_weights_simple_integral
 from ..numeric_integration.integral_weights import double_integral_weights
 
 
@@ -14,7 +15,7 @@ def fast_koiter_strain_energy(shell: Shell,
                               n_x=n_integral_default_x,
                               n_y=n_integral_default_y,
                               n_z=n_integral_default_z,
-                              integral_method=boole_weights_simple_integral):
+                              integral_method=gauss_weights_simple_integral):
     """
     Computes the strain energy functional for a shell structure using the Koiter approximation.
     This includes quadratic, cubic, and quartic strain energy components.

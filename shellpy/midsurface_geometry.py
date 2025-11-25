@@ -486,13 +486,14 @@ class MidSurfaceGeometry:
         curvature = self.curvature_tensor_mixed_components(xi1, xi2)
 
         # Series expansion terms
-        aux1 = np.einsum('...,...z->...z', curvature, xi3)
+        aux1 = np.einsum('...,...z->...z', curvature, xi3_exp)
         aux2 = np.einsum('ag...z, gb..., ...z->ab...z', aux1, curvature, xi3_exp)
         aux3 = np.einsum('ao...z, ob..., ...z->ab...z', aux2, curvature, xi3_exp)
         aux4 = np.einsum('ao...z, ob..., ...z->ab...z', aux3, curvature, xi3_exp)
+        aux5 = np.einsum('ao...z, ob..., ...z->ab...z', aux4, curvature, xi3_exp)
 
         # Truncated Neumann series up to 4th order
-        shifter_inv = delta_expanded - aux1 + aux2 - aux3 + aux4
+        shifter_inv = delta_expanded - aux1 + aux2 - aux3 + aux4 - aux5
 
         return np.squeeze(np.swapaxes(shifter_inv, 0, 1))
 
@@ -646,7 +647,8 @@ class MidSurfaceGeometry:
             xi3_exp = xi3
 
         # Determinant of A = 1 + trace(K)*xi3 + det(K)*xi3^2
-        shifter_det = 1 + trace_K[..., np.newaxis] * xi3_exp + gaussian_curvature[..., np.newaxis] * xi3_exp ** 2
+        shifter_det = np.einsum('xy, xyz->xyz',trace_K, xi3_exp)+np.einsum('xy, xyz->xyz',gaussian_curvature, xi3_exp**2)
+        shifter_det = shifter_det + np.ones(np.shape(shifter_det))
 
         return np.squeeze(shifter_det)
 
