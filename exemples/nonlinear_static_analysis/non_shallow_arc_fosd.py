@@ -13,8 +13,9 @@ import numpy as np
 from exemples.nonlinear_static_analysis.residue_jacobian_stability import shell_jacobian, shell_residue, shell_stability
 from shellpy.expansions.enriched_cosine_expansion import EnrichedCosineExpansion
 from shellpy import RectangularMidSurfaceDomain
-from shellpy.fosd_theory.fosd_load_energy import fosd_load_energy
-from shellpy.fosd_theory.fosd_strain_energy import fosd_strain_energy
+from shellpy.fsdt6.load_energy import load_energy
+
+from shellpy.fsdt6.strain_energy import strain_energy
 from shellpy.materials.isotropic_homogeneous_linear_elastic_material import IsotropicHomogeneousLinearElasticMaterial
 from shellpy.tensor_derivatives import tensor_derivative
 from shellpy.shell_loads.shell_conservative_load import ConcentratedForce
@@ -161,6 +162,7 @@ if __name__ == "__main__":
     #displacement_field = GenericPolynomialSeries(np.polynomial.Legendre, expansion_size, rectangular_domain, boundary_conditions)
     #displacement_field = EigenFunctionExpansion(expansion_size, rectangular_domain, boundary_conditions)
 
+
     R_ = sym.Matrix([-R * sym.cos(xi1_), xi2_, R * sym.sin(xi1_)])
     mid_surface_geometry = MidSurfaceGeometry(R_)
     thickness = ConstantThickness(h)
@@ -169,9 +171,9 @@ if __name__ == "__main__":
 
     n_dof = shell.displacement_expansion.number_of_degrees_of_freedom()
 
-    U_ext = fosd_load_energy(shell)
+    U_ext = load_energy(shell)
 
-    U2_int, U3_int, U4_int = fosd_strain_energy(shell, integral_x, integral_y, integral_z)
+    U2_int, U3_int, U4_int = strain_energy(shell, integral_x, integral_y, integral_z)
 
     # Numero de variaveis
     n = displacement_field.number_of_degrees_of_freedom()

@@ -1,3 +1,5 @@
+# Table 6.12
+
 import matplotlib.pyplot as plt
 import sympy as sym
 import numpy as np
@@ -5,8 +7,8 @@ from scipy.linalg import eig
 
 from shellpy.expansions.enriched_cosine_expansion import EnrichedCosineExpansion
 from shellpy import RectangularMidSurfaceDomain
-from shellpy.fosd_theory2.fosd2_kinetic_energy import fosd2_kinetic_energy
-from shellpy.fosd_theory2.fosd2_strain_energy import fosd2_quadratic_strain_energy
+from shellpy.fsdt6.kinetic_energy import kinetic_energy
+from shellpy.fsdt6.strain_energy import quadratic_strain_energy
 from shellpy.materials.laminate_orthotropic_material import Lamina, LaminateOrthotropicMaterial
 from shellpy.tensor_derivatives import tensor_derivative
 from shellpy import Shell
@@ -14,9 +16,9 @@ from shellpy import ConstantThickness
 from shellpy import MidSurfaceGeometry, xi1_, xi2_
 
 if __name__ == "__main__":
-    integral_x = 10
-    integral_y = 10
-    integral_z = 8
+    integral_x = 30
+    integral_y = 30
+    integral_z = 16
 
     R = 127.5E-3
     a = 152.4E-3
@@ -73,16 +75,80 @@ if __name__ == "__main__":
         thickness=1/4  # 1 mm
     )
 
-    material = LaminateOrthotropicMaterial([lamina45m, lamina45p, lamina45p, lamina45m, lamina45m, lamina45p, lamina45p, lamina45m], thickness)
-    #material = IsotropicHomogeneousLinearElasticMaterial(2E11, 0.3, 7850)
+    lamina0 = Lamina(
+        E_11=E1,  # Pa
+        E_22=E2,
+        E_33=E3,
+        nu_12=nu12,
+        nu_13=nu13,
+        nu_23=nu23,
+        G_12=G12,
+        G_13=G13,
+        G_23=G23,
+        density=1500,  # kg/m³
+        angle=0,  # orientação (graus ou rad, depende da convenção)
+        thickness=1 / 4  # 1 mm
+    )
 
-    n_modos = 10
+    lamina30p = Lamina(
+        E_11=E1,  # Pa
+        E_22=E2,
+        E_33=E3,
+        nu_12=nu12,
+        nu_13=nu13,
+        nu_23=nu23,
+        G_12=G12,
+        G_13=G13,
+        G_23=G23,
+        density=1500,
+        angle=np.pi / 6,
+        thickness=1 / 4
+    )
+
+    lamina30m = Lamina(
+        E_11=E1,  # Pa
+        E_22=E2,
+        E_33=E3,
+        nu_12=nu12,
+        nu_13=nu13,
+        nu_23=nu23,
+        G_12=G12,
+        G_13=G13,
+        G_23=G23,
+        density=1500,  # kg/m³
+        angle=-np.pi / 6,  # orientação (graus ou rad, depende da convenção)
+        thickness= 1 / 4  # 1 mm
+    )
+
+    lamina90 = Lamina(
+        E_11=E1,  # Pa
+        E_22=E2,
+        E_33=E3,
+        nu_12=nu12,
+        nu_13=nu13,
+        nu_23=nu23,
+        G_12=G12,
+        G_13=G13,
+        G_23=G23,
+        density=1500,  # kg/m³
+        angle=np.pi,  # orientação (graus ou rad, depende da convenção)
+        thickness=1 / 4  # 1 mm
+    )
+
+    #material = LaminateOrthotropicMaterial([lamina45m, lamina45p, lamina45p, lamina45m, lamina45m, lamina45p, lamina45p, lamina45m], thickness)
+    #material = LaminateOrthotropicMaterial(
+    #    [lamina0, lamina0, lamina30p, lamina30m, lamina30m, lamina30p, lamina0, lamina0], thickness)
+
+    material = LaminateOrthotropicMaterial(
+        [lamina0, lamina45m, lamina45p, lamina90, lamina90, lamina45p, lamina45m, lamina0], thickness)
+
+    n_modos = 15
     expansion_size = {"u1": (n_modos, n_modos),
                       "u2": (n_modos, n_modos),
                       "u3": (n_modos, n_modos),
                       "v1": (n_modos, n_modos),
                       "v2": (n_modos, n_modos),
-                      "v3": (n_modos, n_modos)}
+                      "v3": (0, 0)}
 
     boundary_conditions_u1 = {"xi1": ("S", "F"),
                               "xi2": ("F", "F")}
@@ -111,34 +177,43 @@ if __name__ == "__main__":
 
     n_dof = shell.displacement_expansion.number_of_degrees_of_freedom()
 
-    T = fosd2_kinetic_energy(shell, integral_x, integral_y, integral_z)
-    U2p = fosd2_quadratic_strain_energy(shell, integral_x, integral_y, integral_z)
-
-    #T = fosd_kinetic_energy(shell, integral_x, integral_y, integral_z)
-    #U2p = fosd_quadratic_strain_energy(shell, integral_x, integral_y, integral_z)
+    T = kinetic_energy(shell, integral_x, integral_y, integral_z)
+    U2p = quadratic_strain_energy(shell, integral_x, integral_y, integral_z)
 
     # Compute the mass (M) and stiffness (K) matrices
     M = tensor_derivative(tensor_derivative(T, 0), 1)  # Second derivative of kinetic energy (mass matrix)
     K = tensor_derivative(tensor_derivative(U2p, 0), 1)  # Second derivative of strain energy (stiffness matrix)
 
-    # Solve the eigenvalue problem for natural frequencies and mode shapes
-    eigen_vals, eigen_vectors = eig(K, M, right=True, left=False)
-    sorted_indices = np.argsort(eigen_vals.real)  # Sort eigenvalues in ascending order
-
-    # Extract sorted eigenvalues and eigenvectors
-    eigen_vals = eigen_vals[sorted_indices]
-    eigen_vectors = np.real(eigen_vectors[:, sorted_indices])
-
-    # Compute natural frequencies (Hz)
-    omega = np.sqrt(eigen_vals.real)
-
-    freq = omega /(2*np.pi)
-
     # Number of modes to be analyzed
     n_modes = 5
 
+    # Solve generalized eigenvalue problem
+    eigen_vals, eigen_vectors = eig(K, M)
+    omega = np.sqrt(eigen_vals)
+
+    # Keep only finite eigenvalues (remove NaN or Inf)
+    finite_mask = np.isfinite(omega)
+
+    tolerance = 1e-2
+    real_part_non_zero_mask = np.abs(np.real(omega)) > tolerance
+
+    final_mask = finite_mask & real_part_non_zero_mask
+    omega = omega[final_mask]
+
+    eigen_vectors = eigen_vectors[:, final_mask]
+
+    # Sort eigenvalues in ascending order
+    sorted_indices = np.argsort(omega.real)
+
+    # Extract sorted finite eigenvalues and corresponding eigenvectors
+    omega = omega[sorted_indices].real
+    eigen_vectors = np.real(eigen_vectors[:, sorted_indices])
+
+    # Compute natural frequencies (Hz)
+    freqHz = omega / (2.0 * np.pi)
+
     # Print the first five natural frequencies
-    print("Normalized natural frequencies:", freq[:n_modes])
+    print("Frequencies (Hz):\n", freqHz[0:n_modes:1])
 
     # Generate a mesh grid for visualization of mode shapes
     xi1 = np.linspace(*rectangular_domain.edges["xi1"], 100)
@@ -152,11 +227,11 @@ if __name__ == "__main__":
 
     # Loop through the first few vibration modes
     for i in range(n_modes):
-        mode1, xx = shell.displacement_expansion(eigen_vectors[:, i], x, y)  # Compute mode shape
+        mode1 = shell.displacement_expansion(eigen_vectors[:, i], x, y)  # Compute mode shape
 
         mode = reciprocal_base[0] * mode1[0] + reciprocal_base[1] * mode1[1] + reciprocal_base[2] * mode1[2]
 
-        mode = mode / np.max(np.abs(mode)) * h * 10  # Normalize and scale for visualization
+        mode = mode / np.max(np.abs(mode)) * h  # Normalize and scale for visualization
 
         z = shell.mid_surface_geometry(x, y)  # Compute deformed geometry
 
@@ -168,7 +243,7 @@ if __name__ == "__main__":
                         linewidth=0.1)  # Plot mode shape
 
         # Label axes and set the title with frequency information
-        ax.set_title(f"Mode {i + 1} - Frequency: {freq[i]:.2f}")
+        ax.set_title(f"Mode {i + 1} - Frequency: {freqHz[i]:.2f}")
         ax.set_xlabel("x")
         ax.set_ylabel("y")
         ax.set_zlabel("z")

@@ -1,8 +1,8 @@
 import numpy as np
 from shellpy import MidSurfaceGeometry, xi1_, xi2_
 import sympy as sym
-from shellpy.materials.transformation_matrix_fosd2 import transformation_matrix_fosd2_local, \
-    transformation_matrix_fosd2_global
+
+from shellpy.fsdt6.transformation_matrix import transformation_matrix_local, transformation_matrix
 
 """
 ================================================================================
@@ -44,7 +44,7 @@ def test_transformation_matrix_local():
     R_ = sym.Matrix([xi1_, xi2_, sym.sqrt(R ** 2 - (xi1_ - a / 2) ** 2 - (xi2_ - b / 2) ** 2) - xi1_])
     mid_surface_geometry = MidSurfaceGeometry(R_)
 
-    T = transformation_matrix_fosd2_local(mid_surface_geometry, a / 4, b / 3, -h / 2, np.pi / 3)
+    T = transformation_matrix_local(mid_surface_geometry, a / 4, b / 3, -h / 2, np.pi / 3)
 
     print("Shape of transformation matrix (local):", T.shape)
     print("Transformation matrix (local) at xi3=-h/2:")
@@ -79,27 +79,30 @@ def test_transformation_matrix_global():
     R_ = sym.Matrix([xi1_, xi2_, sym.sqrt(R ** 2 - (xi1_ - a / 2) ** 2 - (xi2_ - b / 2) ** 2) - xi1_])
     mid_surface_geometry = MidSurfaceGeometry(R_)
 
-    T = transformation_matrix_fosd2_global(mid_surface_geometry, a / 4, b / 3, -h / 2)
+    T = transformation_matrix(mid_surface_geometry, (a / 4, b / 3, -h / 2))
 
     print("Shape of transformation matrix (global):", T.shape)
     print("Transformation matrix (global) at xi3=-h/2:")
     print(T)
 
-    T_expected = np.array([[0.430687942718529, 0.00681917577622781, 0.345698377526722, 0.0485528372179369,
-                            0.385860237674365, 0.0541935123986219],
-                           [0.00681917576631841, 0.969893140512478, 0.0193867147677984, -0.137124183389946,
-                            -0.0114978874378339, 0.0813257142587826],
-                           [0.220733782503601, 0.0123558027066543, 0.634914907733362, 0.0885713460181510,
-                            -0.374362350072640, -0.0522239702369327],
-                           [-0.0775943931081713, 0.218941163701205, -0.221891092367853, 0.769251977737807,
-                            0.131216049162062, -0.453517512956347],
-                           [-0.616659966837333, 0.0183582559643412, 0.936993177074309, 0.131155471095558,
-                            0.246686876706306, 0.0341513828991992],
-                           [0.108387024718492, 0.162651428635745, -0.163730948092305, 0.567544844180296,
-                            -0.0428234414645588, 0.653132784899328]])
+    T_expected = np.array([[0.651286910506496, 2.00911720175211 * 10 ** (-7), 1.53313239736414 * 10 ** (-21),
+                            -1.75506201374987 * 10 ** (-14), -3.15991940162516 * 10 ** (-11), 0.000361733567031674],
+                           [0.00695399082243578, 0.989067918836263, 1.61177135039625 * 10 ** (-20),
+                            -1.26259705970524 * 10 ** (-10), -1.05868990637110 * 10 ** (-11), 0.0829335229587712],
+                           [4.55304948350558 * 10 ** (-20), 1.59101235680554 * 10 ** (-20), 1.,
+                            -1.26135338300000 * 10 ** (-10), 2.13378759100000 * 10 ** (-10),
+                            -2.69146019651127 * 10 ** (-20)],
+                           [3.55875620532757 * 10 ** (-11), -2.50887965481682 * 10 ** (-10),
+                            -2.53911114400000 * 10 ** (-10), 0.994518938400000, 0.0833905919300000,
+                            2.01690716453113 * 10 ** (-10)],
+                           [3.44403340953339 * 10 ** (-10), -1.13075732042878 * 10 ** (-13),
+                            -7.83104692200000 * 10 ** (-11), 0.000448231770600000, 0.807023488200000,
+                            -1.01698537561153 * 10 ** (-10)],
+                           [0.134596332764823, 0.000891549969308529, 9.94194925441855 * 10 ** (-21),
+                            -3.89975278713314 * 10 ** (-11), -1.05721294809205 * 10 ** (-10), 0.802637521061201]])
 
     assert np.allclose(T, T_expected, rtol=1e-8,
-                       atol=1e-12), f"Expected {T_expected}, got {T}"
+                       atol=1e-8), f"Expected {T_expected}, got {T}"
 
 
 def test_transformation_matrix_grid1():
@@ -120,7 +123,7 @@ def test_transformation_matrix_grid1():
     xi3 = np.linspace(-h / 2, h / 2, 2).transpose((1, 2, 0))
     alpha = np.random.rand(*xi3.shape)
 
-    T_grid = transformation_matrix_fosd2_local(midsurface, xi1, xi2, xi3, alpha)
+    T_grid = transformation_matrix_local(midsurface, xi1, xi2, xi3, alpha)
 
     for i in range(xi1.shape[0]):
         for j in range(xi2.shape[1]):
@@ -129,7 +132,7 @@ def test_transformation_matrix_grid1():
                 y = xi2[i, j]
                 z = xi3[i, j, k]
                 a = alpha[i, j, k]
-                T = transformation_matrix_fosd2_local(midsurface, x, y, z, a)
+                T = transformation_matrix_local(midsurface, x, y, z, a)
 
                 assert np.allclose(T_grid[:, :, i, j, k], T, rtol=1e-8,
                                    atol=1e-12), f"Expected {T}, got {T_grid[:, :, i, j, k]}"
@@ -152,7 +155,7 @@ def test_transformation_matrix_grid2():
     h = 0.001 + xi1 / 100 + xi2 / 100
     xi3 = np.linspace(-h / 2, h / 2, 2).transpose((1, 2, 0))
 
-    T_grid = transformation_matrix_fosd2_global(midsurface, xi1, xi2, xi3)
+    T_grid = transformation_matrix(midsurface, (xi1, xi2, xi3))
 
     for i in range(xi1.shape[0]):
         for j in range(xi2.shape[1]):
@@ -160,7 +163,7 @@ def test_transformation_matrix_grid2():
                 x = xi1[i, j]
                 y = xi2[i, j]
                 z = xi3[i, j, k]
-                T = transformation_matrix_fosd2_global(midsurface, x, y, z)
+                T = transformation_matrix(midsurface, (x, y, z))
 
                 assert np.allclose(T_grid[:, :, i, j, k], T, rtol=1e-8,
                                    atol=1e-12), f"Expected {T}, got {T_grid[:, :, i, j, k]}"

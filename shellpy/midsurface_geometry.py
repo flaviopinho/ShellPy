@@ -366,6 +366,11 @@ class MidSurfaceGeometry:
         math::
             \\mathbf{a}_i = A_i^j \\mathbf{a}_j^0
         """
+
+        shape_xi3 = np.shape(xi3)
+        last_dim = (shape_xi3[-1],) if shape_xi3 != () else ()
+        shape_init = np.shape(xi1) + last_dim
+
         xi1 = np.atleast_2d(xi1)
         xi2 = np.atleast_2d(xi2)
         xi3 = np.atleast_1d(xi3)
@@ -389,7 +394,7 @@ class MidSurfaceGeometry:
         delta_expanded = delta.reshape(2, 2, *([1] * n_extra)) + np.zeros_like(result)
 
         # Shifter tensor: A = I + xi3 * K
-        return np.squeeze(result + delta_expanded)
+        return np.reshape(result + delta_expanded, (2, 2) + shape_init)
 
     @cache_method
     def shifter_tensor_inverse(self, xi1, xi2, xi3):
@@ -435,7 +440,7 @@ class MidSurfaceGeometry:
         shifter_inv = np.linalg.inv(shifter.transpose(shape)).transpose(shape)
 
         # Swap axes to maintain consistent ordering (a,b,...)
-        return np.squeeze(np.swapaxes(shifter_inv, 0, 1))
+        return np.swapaxes(shifter_inv, 0, 1)
 
     @cache_method
     def shifter_tensor_inverse_approximation(self, xi1, xi2, xi3):
@@ -471,6 +476,11 @@ class MidSurfaceGeometry:
         and is computationally cheaper.
         """
         delta = np.eye(2, 2)
+
+        shape_xi3 = np.shape(xi3)
+        last_dim = (shape_xi3[-1],) if shape_xi3 != () else ()
+        shape_init = np.shape(xi1) + last_dim
+
         xi1 = np.atleast_2d(xi1)
         xi2 = np.atleast_2d(xi2)
         xi3 = np.atleast_1d(xi3)
@@ -495,7 +505,7 @@ class MidSurfaceGeometry:
         # Truncated Neumann series up to 4th order
         shifter_inv = delta_expanded - aux1 + aux2 - aux3 + aux4 - aux5
 
-        return np.squeeze(np.swapaxes(shifter_inv, 0, 1))
+        return np.reshape(np.swapaxes(shifter_inv, 0, 1), (2, 2) + shape_init)
 
     @cache_method
     def shifter_tensor_extended(self, xi1, xi2, xi3):
@@ -524,6 +534,10 @@ class MidSurfaceGeometry:
         ndarray
             Extended shifter tensor :math:`\tilde{A}`, with shape (3, 3, *xi1.shape, n).
         """
+        shape_xi3 = np.shape(xi3)
+        last_dim = (shape_xi3[-1],) if shape_xi3 != () else ()
+        shape_init = np.shape(xi1) + last_dim
+
         xi1 = np.atleast_2d(xi1)
         xi2 = np.atleast_2d(xi2)
         xi3 = np.atleast_1d(xi3)
@@ -532,7 +546,7 @@ class MidSurfaceGeometry:
         result = np.zeros(shape_b)
         result[0:2, 0:2] = np.reshape(self.shifter_tensor(xi1, xi2, xi3), shape_a)
         result[2, 2] = 1
-        return np.squeeze(result)
+        return np.reshape(result, (3, 3) + shape_init)
 
     @cache_method
     def shifter_tensor_inverse_extended(self, xi1, xi2, xi3):
@@ -561,6 +575,10 @@ class MidSurfaceGeometry:
         ndarray
             Extended inverse shifter tensor :math:`\tilde{A}^{-1}`, with shape (3, 3, *xi1.shape, n).
         """
+        shape_xi3 = np.shape(xi3)
+        last_dim = (shape_xi3[-1],) if shape_xi3 != () else ()
+        shape_init = np.shape(xi1) + last_dim
+
         xi1 = np.atleast_2d(xi1)
         xi2 = np.atleast_2d(xi2)
         xi3 = np.atleast_1d(xi3)
@@ -569,7 +587,7 @@ class MidSurfaceGeometry:
         result = np.zeros(shape_b)
         result[0:2, 0:2] = np.reshape(self.shifter_tensor_inverse(xi1, xi2, xi3), shape_a)
         result[2, 2] = 1
-        return np.squeeze(result)
+        return np.reshape(result, (3,3)+shape_init)
 
     @cache_method
     def shifter_tensor_inverse_approximation_extended(self, xi1, xi2, xi3):
@@ -596,6 +614,10 @@ class MidSurfaceGeometry:
         This version uses the approximate inverse based on the truncated
         Neumann series expansion.
         """
+        shape_xi3 = np.shape(xi3)
+        last_dim = (shape_xi3[-1],) if shape_xi3 != () else ()
+        shape_init = np.shape(xi1) + last_dim
+
         xi1 = np.atleast_2d(xi1)
         xi2 = np.atleast_2d(xi2)
         xi3 = np.atleast_1d(xi3)
@@ -604,7 +626,7 @@ class MidSurfaceGeometry:
         result = np.zeros(shape_b)
         result[0:2, 0:2] = np.reshape(self.shifter_tensor_inverse_approximation(xi1, xi2, xi3), shape_a)
         result[2, 2] = 1
-        return np.squeeze(result)
+        return np.reshape(result, (3,3)+shape_init)
 
     @cache_method
     def determinant_shifter_tensor(self, xi1, xi2, xi3):
@@ -633,6 +655,10 @@ class MidSurfaceGeometry:
             Determinant of the shifter tensor :math:`\\det(\\mathbf{A})`,
             with shape (*xi1.shape, n).
         """
+        shape_xi3 = np.shape(xi3)
+        last_dim = (shape_xi3[-1],) if shape_xi3 != () else ()
+        shape_init = np.shape(xi1) + last_dim
+
         xi1 = np.atleast_2d(xi1)
         xi2 = np.atleast_2d(xi2)
         xi3 = np.atleast_1d(xi3)
@@ -647,10 +673,11 @@ class MidSurfaceGeometry:
             xi3_exp = xi3
 
         # Determinant of A = 1 + trace(K)*xi3 + det(K)*xi3^2
-        shifter_det = np.einsum('xy, xyz->xyz',trace_K, xi3_exp)+np.einsum('xy, xyz->xyz',gaussian_curvature, xi3_exp**2)
+        shifter_det = np.einsum('xy, xyz->xyz', trace_K, xi3_exp) + np.einsum('xy, xyz->xyz', gaussian_curvature,
+                                                                              xi3_exp ** 2)
         shifter_det = shifter_det + np.ones(np.shape(shifter_det))
 
-        return np.squeeze(shifter_det)
+        return np.reshape(shifter_det, shape_init)
 
     def __call__(self, xi1, xi2):
         """

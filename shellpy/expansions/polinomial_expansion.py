@@ -48,8 +48,8 @@ class GenericPolynomialSeries(DisplacementExpansion):
         self._coeff = self._determine_coefficients()
 
         self._number_of_fields = len(expansion_size)
-        if self._number_of_fields not in (3, 6):
-            ValueError('Expansion must have 3 or 6 fields.')
+        #if self._number_of_fields not in (3, 6):
+        #    ValueError('Expansion must have 3 or 6 fields.')
 
         self.cache = {}
 

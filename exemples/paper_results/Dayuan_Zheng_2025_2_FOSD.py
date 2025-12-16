@@ -5,8 +5,8 @@ from scipy.linalg import eig, eigh
 
 from shellpy.expansions.enriched_cosine_expansion import EnrichedCosineExpansion
 from shellpy import RectangularMidSurfaceDomain
-from shellpy.fosd_theory2.fosd2_kinetic_energy import fosd2_kinetic_energy
-from shellpy.fosd_theory2.fosd2_strain_energy import fosd2_quadratic_strain_energy
+from shellpy.fsdt6.kinetic_energy import kinetic_energy
+from shellpy.fsdt6.strain_energy import quadratic_strain_energy
 from shellpy.materials.isotropic_homogeneous_linear_elastic_material import IsotropicHomogeneousLinearElasticMaterial
 from shellpy.tensor_derivatives import tensor_derivative
 from shellpy import Shell
@@ -92,8 +92,8 @@ if __name__ == "__main__":
 
     n_dof = shell.displacement_expansion.number_of_degrees_of_freedom()
 
-    T = fosd2_kinetic_energy(shell, integral_x, integral_y, integral_z)
-    U2p = fosd2_quadratic_strain_energy(shell, integral_x, integral_y, integral_z)
+    T = kinetic_energy(shell, integral_x, integral_y, integral_z)
+    U2p = quadratic_strain_energy(shell, integral_x, integral_y, integral_z)
 
     # Compute the mass (M) and stiffness (K) matrices
     M = tensor_derivative(tensor_derivative(T, 0), 1)  # Second derivative of kinetic energy (mass matrix)

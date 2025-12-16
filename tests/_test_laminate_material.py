@@ -2,7 +2,7 @@ import numpy as np
 from shellpy import MidSurfaceGeometry, xi1_, xi2_, ConstantThickness
 import sympy as sym
 from shellpy.materials.laminate_orthotropic_material import Lamina, LaminateOrthotropicMaterial
-from shellpy.materials.transformation_matrix_fosd2 import transformation_matrix_fosd2_local
+from shellpy.fosd_theory6.fsdt6_transformation_matrix import transformation_matrix_fosd2_local
 
 if __name__ == "__main__":
 

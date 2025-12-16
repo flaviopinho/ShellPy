@@ -16,9 +16,8 @@ if __name__ == "__main__":
     boundary_conditions = simply_supported
 
     # === PARÂMETROS ===
-
-    aRx = 1
-    aRy = -1
+    aRx = 0.1
+    aRy = 0.1
     p = 0
     ah = 10
 
@@ -29,7 +28,7 @@ if __name__ == "__main__":
 
     h = a / ah
 
-    number_of_layers = 10
+    number_of_layers = 20
 
     rectangular_domain = RectangularMidSurfaceDomain(0, a, 0, b)
 
@@ -42,7 +41,7 @@ if __name__ == "__main__":
 
     u1, u2 = rectangular_domain.edges["xi1"]
     v1, v2 = rectangular_domain.edges["xi2"]
-    n_u, n_v, n_w = 50, 50, number_of_layers
+    n_u, n_v, n_w = 30, 30, number_of_layers
 
     periodic_u = False
     periodic_v = False
@@ -177,8 +176,12 @@ if __name__ == "__main__":
         ])
         ax.plot(coords[:, 0], coords[:, 1], coords[:, 2], color='black', linewidth=0.5)
 
+    base = f"Hiroyuki_Matsunaga_2008_FGM_C3D20_{ah:.2f}_{aRx:.2f}_{aRy:.2f}_{p:.2f}"
+    safe_base = base.replace('.', 'p')
+    filename = f"{safe_base}.inp"
+
     # === ESCRITA DO ARQUIVO ABAQUS .inp ===
-    with open("Hiroyuki_Matsunaga_2008_FGM_C3D20_05_H_10_04.inp", "w") as f:
+    with open(filename, "w") as f:
         f.write("*HEADING\n")
         f.write("Modelo de Casca Gerado Automaticamente\n")
         f.write("Sistema de Unidades: SI (m, kg, s)\n")

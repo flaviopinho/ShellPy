@@ -2,8 +2,6 @@ import sympy as sym
 import numpy as np
 
 from shellpy.expansions.eigen_function_expansion import EigenFunctionExpansion
-from shellpy.fosd_theory.fosd_strain_tensor import fosd_linear_strain_components
-from shellpy.fosd_theory2.fosd2_strain_vector import fosd2_linear_strain_vector
 from shellpy import RectangularMidSurfaceDomain, displacement_first_covariant_derivatives
 from shellpy import MidSurfaceGeometry, xi1_, xi2_
 

@@ -1,7 +1,5 @@
 import numpy as np
 
-import numpy as np
-
 
 def test_voigt_notation():
     """Test if the 4th-order constitutive tensor satisfies minor and major symmetries."""
