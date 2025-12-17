@@ -16,36 +16,35 @@ from shellpy import ConstantThickness
 from shellpy import MidSurfaceGeometry, xi1_, xi2_
 
 if __name__ == "__main__":
-    integral_x = 20
-    integral_y = 20
-    integral_z = 8
+    integral_x = 40
+    integral_y = 40
+    integral_z = 10
 
-    R = 127.5E-3
-    a = 152.4E-3
-    b = 76.2E-3
-    h = 8 * 0.13E-3
+    a = 1
+    b = 1
+    h = 4 * 12.5e-3
 
     rectangular_domain = RectangularMidSurfaceDomain(0, a, 0, b)
 
-    R_ = sym.Matrix([xi1_, xi2_, sym.sqrt(R ** 2 + -(xi2_ - b / 2) ** 2)])
+    R_ = sym.Matrix([xi1_, xi2_, 0])
     mid_surface_geometry = MidSurfaceGeometry(R_)
     thickness = ConstantThickness(h)
 
     density = 1500
 
-    E1 = 128E9
-    E2 = 11E9
-    E3 = 11E9
+    E1 = 103.421e9
+    E2 = 6.89476e9
+    E3 = 6.89476e9
 
-    nu12 = 0.25
-    nu13 = 0.25
-    nu23 = 0.45
+    nu12 = 0.3
+    nu13 = 0.3
+    nu23 = 0.42
 
-    G12 = 4.48E9
-    G13 = 4.48E9
-    G23 = 1.53E9
+    G12 = 3.44738e9
+    G13 = 3.44738e9
+    G23 = 2.41317e9
 
-    lamina45p = Lamina(
+    lamina10p = Lamina(
         E_11=E1,  # Pa
         E_22=E2,
         E_33=E3,
@@ -55,12 +54,12 @@ if __name__ == "__main__":
         G_12=G12,
         G_13=G13,
         G_23=G23,
-        density=1500,
-        angle=np.pi/4,
-        thickness=1/4
+        density=density,
+        angle=np.deg2rad(10),
+        thickness=2 / 5
     )
 
-    lamina45m = Lamina(
+    lamina5p = Lamina(
         E_11=E1,  # Pa
         E_22=E2,
         E_33=E3,
@@ -70,9 +69,9 @@ if __name__ == "__main__":
         G_12=G12,
         G_13=G13,
         G_23=G23,
-        density=1500,  # kg/m³
-        angle=-np.pi/4,  # orientação (graus ou rad, depende da convenção)
-        thickness=1/4  # 1 mm
+        density=density,  # kg/m³
+        angle=np.deg2rad(5),  # orientação (graus ou rad, depende da convenção)
+        thickness=2 / 5  # 1 mm
     )
 
     lamina0 = Lamina(
@@ -85,12 +84,12 @@ if __name__ == "__main__":
         G_12=G12,
         G_13=G13,
         G_23=G23,
-        density=1500,  # kg/m³
+        density=density,  # kg/m³
         angle=0,  # orientação (graus ou rad, depende da convenção)
-        thickness=1 / 4  # 1 mm
+        thickness=2 / 5  # 1 mm
     )
 
-    lamina30p = Lamina(
+    lamina5m = Lamina(
         E_11=E1,  # Pa
         E_22=E2,
         E_33=E3,
@@ -100,12 +99,12 @@ if __name__ == "__main__":
         G_12=G12,
         G_13=G13,
         G_23=G23,
-        density=1500,
-        angle=np.pi / 6,
-        thickness=1 / 4
+        density=density,
+        angle=-np.deg2rad(5),
+        thickness=2 / 5
     )
 
-    lamina30m = Lamina(
+    lamina10m = Lamina(
         E_11=E1,  # Pa
         E_22=E2,
         E_33=E3,
@@ -115,31 +114,13 @@ if __name__ == "__main__":
         G_12=G12,
         G_13=G13,
         G_23=G23,
-        density=1500,  # kg/m³
-        angle=-np.pi / 6,  # orientação (graus ou rad, depende da convenção)
-        thickness= 1 / 4  # 1 mm
+        density=density,  # kg/m³
+        angle=-np.deg2rad(10),  # orientação (graus ou rad, depende da convenção)
+        thickness= 2 / 5  # 1 mm
     )
 
-    lamina90 = Lamina(
-        E_11=E1,  # Pa
-        E_22=E2,
-        E_33=E3,
-        nu_12=nu12,
-        nu_13=nu13,
-        nu_23=nu23,
-        G_12=G12,
-        G_13=G13,
-        G_23=G23,
-        density=1500,  # kg/m³
-        angle=np.pi,  # orientação (graus ou rad, depende da convenção)
-        thickness=1 / 4  # 1 mm
-    )
-
-    #material = LaminateOrthotropicMaterial([lamina45m, lamina45p, lamina45p, lamina45m, lamina45m, lamina45p, lamina45p, lamina45m], thickness)
-    #material = LaminateOrthotropicMaterial(
-    #    [lamina0, lamina0, lamina30p, lamina30m, lamina30m, lamina30p, lamina0, lamina0], thickness)
     material = LaminateOrthotropicMaterial(
-        [lamina0, lamina45m, lamina45p, lamina90, lamina90, lamina45p, lamina45m, lamina0], thickness)
+        [lamina10p, lamina5p, lamina0, lamina5m, lamina10m], thickness)
 
     n_modos = 15
     expansion_size = {"u1": (n_modos, n_modos),
@@ -173,8 +154,8 @@ if __name__ == "__main__":
     displacement_field = EnrichedCosineExpansion(expansion_size, rectangular_domain, boundary_conditions)
 
     eas_field = LegendreSeries({"u1": (n_modos, n_modos)},
-                                        rectangular_domain,
-                                        {"u1": {"xi1": ("F", "F"), "xi2": ("F", "F")}})
+                               rectangular_domain,
+                               {"u1": {"xi1": ("F", "F"), "xi2": ("F", "F")}})
 
     shell = Shell(mid_surface_geometry, thickness, rectangular_domain, material, displacement_field, None)
 

@@ -86,20 +86,13 @@ def stiffness_matrix(shell: Shell, eas_field, n_x=20, n_y=20, n_z=10, integral_m
 
     print(f'Calculating enhanced assumed strain')
 
-    epsilon_alpha = enhanced_assumed_strain(eas_field, (xi1, xi2, xi3), Wxy1, det_shifter_tensor * Wz)
+    epsilon_alpha = enhanced_assumed_strain(eas_field, (xi1, xi2, xi3), Wxy1)
 
-    L_alpha = np.einsum('ijxyz, njxyz->nixyz', C[np.ix_([2], [2])], epsilon_alpha, optimize=True)
+    L_alpha = np.einsum('ijxy, njxy->nixy', C2[np.ix_([2], [2])], epsilon_alpha, optimize=True)
 
-    L_lin_z = (np.einsum('ijxyz, mjxy, xyz->mixyz', C[[2]], epsilon0_lin,
-                         xi3 ** 0, optimize=True) +
-               np.einsum('ijxyz, mjxy, xyz->mixyz', C[[2]], epsilon1_lin,
-                         xi3, optimize=True) +
-               np.einsum('ijxyz, mjxy, xyz->mixyz', C[[2]], epsilon2_lin,
-                         xi3 ** 2, optimize=True))
-
-    B = np.einsum('mixyz, nixyz, xyz, xy->nm', L_lin_z, epsilon_alpha, det_shifter_tensor * Wz, Wxy1,
+    B = np.einsum('mixy, nixy, xy->nm', L1_lin[:,[2]], epsilon_alpha, Wxy1,
                   optimize=True)
-    A = np.einsum('mixyz, nixyz, xyz, xy->mn', L_alpha, epsilon_alpha, det_shifter_tensor * Wz, Wxy1,
+    A = np.einsum('mixy, nixy, xy->mn', L_alpha, epsilon_alpha, Wxy1,
                   optimize=True)
 
     K2 = B.T @ np.linalg.solve(A, B)
