@@ -27,13 +27,14 @@ def load_energy_density(i: int, load, shell):
     position = load.position
 
     # Get the displacement shape function for the given DOF and position
-    U, V = shell.displacement_expansion.shape_function(i, position[0], position[1])
+    U = shell.displacement_expansion.shape_function(i, position[0], position[1])
+    u = U[0:3]
 
     # Compute the reciprocal base vectors at the given position on the shell's mid-surface
     N1, N2, N3 = shell.mid_surface_geometry.reciprocal_base(position[0], position[1])
 
     # Compute the displacement field by combining the shape functions and the reciprocal base vectors
-    U = U[0] * N1 + U[1] * N2 + U[2] * N3
+    U = u[0] * N1 + u[1] * N2 + u[2] * N3
 
     # Calculate the load energy density as the negative dot product of the load vector and the displacement field
     return -np.dot(np.ravel(load.load_vector), (np.ravel(U)))

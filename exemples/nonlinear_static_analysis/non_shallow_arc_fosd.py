@@ -30,7 +30,7 @@ import continuation
 def arc_output_results(shell, xi1, xi2, x, *args):
     u = x[:-1]
     p = x[-1]
-    U, _ = shell.displacement_expansion(u, xi1, xi2)
+    U = shell.displacement_expansion(u, xi1, xi2)
     N1, N2, N3 = shell.mid_surface_geometry.reciprocal_base(xi1, xi2)
     U = U[0] * N1 + U[1] * N2 + U[2] * N3
 
@@ -55,7 +55,7 @@ def plot_shell_arc(shell, u):
     reciprocal_base = shell.mid_surface_geometry.reciprocal_base(x, y)
 
     # Calculate the deformed shape (mode) using the displacement expansion.
-    mode1,  _ = shell.displacement_expansion(u, x, y)   # Compute mode shape
+    mode1 = shell.displacement_expansion(u, x, y)   # Compute mode shape
     mode1 = mode1
     mode = reciprocal_base[0] * mode1[0] + reciprocal_base[1] * mode1[1] + reciprocal_base[2] * mode1[2]
 

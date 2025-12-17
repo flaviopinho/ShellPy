@@ -49,7 +49,7 @@ def kinetic_energy(shell: Shell, n_x=20, n_y=20, n_z=10, integral_method=gauss_w
     for i in range(n_dof):
         U = shell.displacement_expansion.shape_function(i, xi1, xi2)
         u[i] = U[0:3]
-        v[i] = U[3:5]
+        v[i, 0:2] = U[3:5]
 
     print('Calculating quadratic kinetic energy functional...')
     start = time()

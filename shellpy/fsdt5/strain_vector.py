@@ -13,9 +13,11 @@ def linear_strain_vector(mid_surface_geometry: MidSurfaceGeometry,
     U = displacement_expansion.shape_function(i, xi1, xi2)
     dU = displacement_expansion.shape_function_first_derivatives(i, xi1, xi2)
     u = U[0:3]
-    v = U[3:5]
+    v = np.zeros(np.shape(u))
+    v[0:2] = U[3:5]
     du = dU[0:3]
-    dv = dU[3:5]
+    dv = np.zeros(np.shape(du))
+    dv[0:2] = dU[3:5]
     dcu = displacement_first_covariant_derivatives(
         mid_surface_geometry, u, du, xi1, xi2
     )

@@ -14,13 +14,13 @@ def constitutive_matrix_in_material_frame(mid_surface_geometry, material, positi
     # -----------------------------
     # Constitutive matrix in the local material frame (isotropic case, Voigt 6x6)
     # -----------------------------
-    E = material.E()
-    nu = material.nu()
+    E = material.E
+    nu = material.nu
 
     D = E / ((1 + nu) * (1 - 2 * nu))
 
     # Initialize matrix with zeros, shape (6,6)+E.shape
-    C = np.zeros((6, 6) + E.shape)
+    C = np.zeros((6, 6))
 
     # Fill in normal components
     C[0, 0] = (1 - nu) * D

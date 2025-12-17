@@ -225,11 +225,11 @@ def strain_energy(shell: Shell, n_x=20, n_y=20, n_z=10, integral_method=gauss_we
 
     print('Calculating cubic strain energy functional...')
     start = time()
-    cubic_energy_tensor = np.einsum('mabxy, noabxy, xy->mno', L0_lin, epsilon0_nl, Wxy1,
+    cubic_energy_tensor = np.einsum('maxy, noaxy, xy->mno', L0_lin, epsilon0_nl, Wxy1,
                                     optimize=True)
-    cubic_energy_tensor += np.einsum('mabxy, noabxy, xy->mno', L1_lin, epsilon1_nl, Wxy1,
+    cubic_energy_tensor += np.einsum('maxy, noaxy, xy->mno', L1_lin, epsilon1_nl, Wxy1,
                                      optimize=True)
-    cubic_energy_tensor += np.einsum('mabxy, noabxy, xy->mno', L2_lin, epsilon2_nl, Wxy1,
+    cubic_energy_tensor += np.einsum('maxy, noaxy, xy->mno', L2_lin, epsilon2_nl, Wxy1,
                                      optimize=True)
 
     stop = time()
@@ -237,11 +237,11 @@ def strain_energy(shell: Shell, n_x=20, n_y=20, n_z=10, integral_method=gauss_we
 
     print('Calculating quartic strain energy functional...')
     start = time()
-    quartic_energy_tensor = 0.5 * np.einsum('mnabxy, opabxy, xy->mnop', L0_nl, epsilon0_nl, Wxy1,
+    quartic_energy_tensor = 0.5 * np.einsum('mnaxy, opaxy, xy->mnop', L0_nl, epsilon0_nl, Wxy1,
                                             optimize=True)
-    quartic_energy_tensor += 0.5 * np.einsum('mnabxy, opabxy, xy->mnop', L1_nl, epsilon1_nl, Wxy1,
+    quartic_energy_tensor += 0.5 * np.einsum('mnaxy, opaxy, xy->mnop', L1_nl, epsilon1_nl, Wxy1,
                                              optimize=True)
-    quartic_energy_tensor += 0.5 * np.einsum('mnabxy, opabxy, xy->mnop', L2_nl, epsilon2_nl, Wxy1,
+    quartic_energy_tensor += 0.5 * np.einsum('mnaxy, opaxy, xy->mnop', L2_nl, epsilon2_nl, Wxy1,
                                              optimize=True)
     stop = time()
     print('time= ', stop - start)
