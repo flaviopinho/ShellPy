@@ -1,4 +1,11 @@
-# Table 6.12
+#Refined shear correction factors for composite-layered FE shell elements to
+#enhance the accuracy of their modal analysis results
+#Hak Gu Lee a,*
+#, Dong-KuK Choi a
+#, Daeyong Kwon b,*
+#, Semyung Park
+
+# Table 6
 
 import matplotlib.pyplot as plt
 import sympy as sym

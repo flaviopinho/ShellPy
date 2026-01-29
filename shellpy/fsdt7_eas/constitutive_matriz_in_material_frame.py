@@ -14,30 +14,32 @@ def constitutive_matrix_in_material_frame(mid_surface_geometry, material, positi
     # -----------------------------
     # Constitutive matrix in the local material frame (isotropic case, Voigt 6x6)
     # -----------------------------
-    E = material.E()
-    nu = material.nu()
+    E = material.E
+    nu = material.nu
 
-    D = E / ((1 + nu) * (1 - 2 * nu))
+    G = E / (2 * (1 + nu))
 
     # Initialize matrix with zeros, shape (6,6)+E.shape
-    C = np.zeros((6, 6) + E.shape)
+    C = np.zeros((6, 6))
 
     # Fill in normal components
-    C[0, 0] = (1 - nu) * D
-    C[1, 1] = (1 - nu) * D
-    C[2, 2] = (1 - nu) * D
+    C[0, 0] = (1 / E)
+    C[0, 1] = -nu / E
+    C[0, 2] = -nu / E
 
-    C[0, 1] = nu * D
-    C[1, 0] = nu * D
-    C[0, 2] = nu * D
-    C[2, 0] = nu * D
-    C[1, 2] = nu * D
-    C[2, 1] = nu * D
+    C[1, 0] = -nu / E
+    C[1, 1] = 1 / E
+    C[1, 2] = -nu / E
 
-    # Shear components
-    C[3, 3] = (1 - 2 * nu) * D
-    C[4, 4] = (1 - 2 * nu) * D
-    C[5, 5] = (1 - 2 * nu) * D
+    C[2, 0] = -nu / E
+    C[2, 1] = -nu / E
+    C[2, 2] = 1 / E
+
+    C[3, 3] = 1 / G
+    C[4, 4] = 1 / G
+    C[5, 5] = 1 / G
+
+    C = np.linalg.inv(C)
 
     return C
 

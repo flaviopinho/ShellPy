@@ -1,18 +1,20 @@
+# Vibrations of a trucated conical shell with linear thickness variation
+# Comparative results avalible in https://doi.org/10.1016/j.tws.2025.113160
+# Reported nondimensional frequency 0.8932 (1893.48 Hz)
+
 import sympy as sym
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.linalg import eig, eigh
 
-from shellpy.expansions.eigen_function_expansion import EigenFunctionExpansion
 from shellpy.expansions.enriched_cosine_expansion import EnrichedCosineExpansion
-from shellpy.koiter_shell_theory import fast_koiter_quadratic_strain_energy
-from shellpy.koiter_shell_theory.fast_koiter_kinetic_energy import fast_koiter_kinetic_energy
+from shellpy.sanders_koiter import fast_koiter_quadratic_strain_energy
+from shellpy.sanders_koiter.fast_koiter_kinetic_energy import fast_koiter_kinetic_energy
 from shellpy import RectangularMidSurfaceDomain
 from shellpy import xi1_, xi2_, MidSurfaceGeometry
 from shellpy import Shell
 from shellpy.materials.isotropic_homogeneous_linear_elastic_material import IsotropicHomogeneousLinearElasticMaterial
 from shellpy.tensor_derivatives import tensor_derivative
-from shellpy import ConstantThickness
 
 # Main execution block
 if __name__ == "__main__":
@@ -33,12 +35,10 @@ if __name__ == "__main__":
     p = 1
     q = 1
 
-
     def thickness(xi1, xi2):
         p = 1
         q = 1
         return H*(p+q*xi1)
-
 
     rectangular_domain = RectangularMidSurfaceDomain(L1, L2, 0, 2 * np.pi)
 
@@ -53,27 +53,12 @@ if __name__ == "__main__":
     E = 70E9
     nu = 0.3
 
-    mode_2 = np.array(range(1,4))
-    print(mode_2)
-
     n_modos_1 = 20
-    n_modos_2 = len(mode_2)
+    n_modos_2 = 20
 
     expansion_size = {"u1": (n_modos_1, n_modos_2),
                       "u2": (n_modos_1, n_modos_2),
                       "u3": (n_modos_1, n_modos_2)}
-
-    mapping = []
-    dof = 0
-    for key, value in expansion_size.items():
-        displacement_field = key
-        m = value[0]
-        n = value[1]
-        for i in range(1, n_modos_1 + 1):
-            for j in mode_2:
-                _i = i
-                _j = j
-                mapping.append((displacement_field, _i, _j))
 
     boundary_conditions_u1 = {"xi1": ("S", "S"),
                               "xi2": ("R", "R")}
@@ -87,7 +72,7 @@ if __name__ == "__main__":
                            "u3": boundary_conditions_u3}
 
     # Define the displacement field using an enriched cosine expansion
-    displacement_field = EnrichedCosineExpansion(expansion_size, rectangular_domain, boundary_conditions, mapping)
+    displacement_field = EnrichedCosineExpansion(expansion_size, rectangular_domain, boundary_conditions)
 
     material = IsotropicHomogeneousLinearElasticMaterial(E, nu, density)
 

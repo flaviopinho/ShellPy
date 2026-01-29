@@ -11,10 +11,10 @@ def enhanced_assumed_strain(eas_field: DisplacementExpansion, integration_points
     n_dof = eas_field.number_of_degrees_of_freedom()
     M_zz = np.zeros((n_dof, 1)+np.shape(xi1))
     for i in range(n_dof):
-        aux = eas_field.shape_function(i, xi1, xi2)[0]
+        aux = eas_field.shape_function(i, xi1, xi2)
         integral = np.einsum('xy, xy->', aux, W_xy)
         print(integral)
-        M_zz[i, 0] = aux - integral*shell_area
+        M_zz[i, 0] = aux #- integral*shell_area
 
     return M_zz
 

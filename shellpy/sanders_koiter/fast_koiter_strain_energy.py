@@ -3,7 +3,7 @@ import numpy as np
 
 from shellpy import Shell
 from .koiter_strain_tensor import koiter_linear_strain_components, koiter_nonlinear_strain_components_total
-from shellpy.koiter_shell_theory.constitutive_tensor_koiter import plane_stress_constitutive_tensor_for_koiter_theory
+from shellpy.sanders_koiter.constitutive_tensor_koiter import plane_stress_constitutive_tensor_for_koiter_theory
 from ..numeric_integration.boole_integral import boole_weights_simple_integral
 from ..numeric_integration.default_integral_division import n_integral_default_x, n_integral_default_z, \
     n_integral_default_y

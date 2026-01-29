@@ -150,3 +150,235 @@ fully_campled_fsdt5 = {"u1": {"xi1": ("S", "S"),
                               "xi2": ("S", "S")},
                        "v3": {"xi1": ("S", "S"),
                               "xi2": ("S", "S")}}
+
+# --- Condições de contorno FSDT6 por acrônimo (ordem: xi1=0, xi1=a, xi2=0, xi2=b)
+#   F (livre):      nenhuma restrição; φ livre na borda.
+#   S (apoio):      valor nulo na borda, φ(edge)=0.
+#   C (engastado):  valor e derivada normal nulos: φ(edge)=0 e dφ/dn(edge)=0.
+# Para cada dof, {"xi1": (ξ1=0, ξ1=a), "xi2": (ξ2=0, ξ2=b)}.
+
+# CCSS: engastado em xi1; apoio simples em xi2
+CCSS_fsdt6 = {"u1": {"xi1": ("S", "S"), "xi2": ("S", "S")},
+              "u2": {"xi1": ("S", "S"), "xi2": ("F", "F")},
+              "u3": {"xi1": ("C", "C"), "xi2": ("S", "S")},
+              "v1": {"xi1": ("S", "S"), "xi2": ("F", "F")},
+              "v2": {"xi1": ("S", "S"), "xi2": ("F", "F")},
+              "v3": {"xi1": ("S", "S"), "xi2": ("F", "F")}}
+
+# SSCC: apoio simples em xi1; engastado em xi2
+SSCC_fsdt6 = {"u1": {"xi1": ("F", "F"), "xi2": ("S", "S")},
+              "u2": {"xi1": ("S", "S"), "xi2": ("S", "S")},
+              "u3": {"xi1": ("S", "S"), "xi2": ("C", "C")},
+              "v1": {"xi1": ("F", "F"), "xi2": ("S", "S")},
+              "v2": {"xi1": ("F", "F"), "xi2": ("S", "S")},
+              "v3": {"xi1": ("F", "F"), "xi2": ("S", "S")}}
+
+# CSCS: C em xi1=0, S em xi1=a; C em xi2=0, S em xi2=b
+CSCS_fsdt6 = {"u1": {"xi1": ("S", "F"), "xi2": ("S", "S")},
+              "u2": {"xi1": ("S", "S"), "xi2": ("S", "F")},
+              "u3": {"xi1": ("C", "S"), "xi2": ("C", "S")},
+              "v1": {"xi1": ("S", "F"), "xi2": ("S", "F")},
+              "v2": {"xi1": ("S", "F"), "xi2": ("S", "F")},
+              "v3": {"xi1": ("S", "F"), "xi2": ("S", "F")}}
+
+# SCSC: S em xi1=0, C em xi1=a; S em xi2=0, C em xi2=b
+SCSC_fsdt6 = {"u1": {"xi1": ("F", "S"), "xi2": ("S", "S")},
+              "u2": {"xi1": ("S", "S"), "xi2": ("F", "S")},
+              "u3": {"xi1": ("S", "C"), "xi2": ("S", "C")},
+              "v1": {"xi1": ("F", "S"), "xi2": ("F", "S")},
+              "v2": {"xi1": ("F", "S"), "xi2": ("F", "S")},
+              "v3": {"xi1": ("F", "S"), "xi2": ("F", "S")}}
+
+# CCCC: engastado nas 4 bordas
+CCCC_fsdt6 = {"u1": {"xi1": ("S", "S"), "xi2": ("S", "S")},
+              "u2": {"xi1": ("S", "S"), "xi2": ("S", "S")},
+              "u3": {"xi1": ("C", "C"), "xi2": ("C", "C")},
+              "v1": {"xi1": ("S", "S"), "xi2": ("S", "S")},
+              "v2": {"xi1": ("S", "S"), "xi2": ("S", "S")},
+              "v3": {"xi1": ("S", "S"), "xi2": ("S", "S")}}
+
+# SSSS: apoio simples nas 4 bordas
+SSSS_fsdt6 = {"u1": {"xi1": ("F", "F"), "xi2": ("S", "S")},
+              "u2": {"xi1": ("S", "S"), "xi2": ("F", "F")},
+              "u3": {"xi1": ("S", "S"), "xi2": ("S", "S")},
+              "v1": {"xi1": ("F", "F"), "xi2": ("F", "F")},
+              "v2": {"xi1": ("F", "F"), "xi2": ("F", "F")},
+              "v3": {"xi1": ("F", "F"), "xi2": ("F", "F")}}
+
+# CCFF: engastado em xi1; livre em xi2
+CCFF_fsdt6 = {"u1": {"xi1": ("S", "S"), "xi2": ("F", "F")},
+              "u2": {"xi1": ("S", "S"), "xi2": ("F", "F")},
+              "u3": {"xi1": ("C", "C"), "xi2": ("F", "F")},
+              "v1": {"xi1": ("S", "S"), "xi2": ("F", "F")},
+              "v2": {"xi1": ("S", "S"), "xi2": ("F", "F")},
+              "v3": {"xi1": ("S", "S"), "xi2": ("F", "F")}}
+
+# FFCC: livre em xi1; engastado em xi2
+FFCC_fsdt6 = {"u1": {"xi1": ("F", "F"), "xi2": ("S", "S")},
+              "u2": {"xi1": ("F", "F"), "xi2": ("S", "S")},
+              "u3": {"xi1": ("F", "F"), "xi2": ("C", "C")},
+              "v1": {"xi1": ("F", "F"), "xi2": ("S", "S")},
+              "v2": {"xi1": ("F", "F"), "xi2": ("S", "S")},
+              "v3": {"xi1": ("F", "F"), "xi2": ("S", "S")}}
+
+# CFCF: C em xi1=0, F em xi1=a; C em xi2=0, F em xi2=b
+CFCF_fsdt6 = {"u1": {"xi1": ("S", "F"), "xi2": ("S", "F")},
+              "u2": {"xi1": ("S", "F"), "xi2": ("S", "F")},
+              "u3": {"xi1": ("C", "F"), "xi2": ("C", "F")},
+              "v1": {"xi1": ("S", "F"), "xi2": ("S", "F")},
+              "v2": {"xi1": ("S", "F"), "xi2": ("S", "F")},
+              "v3": {"xi1": ("S", "F"), "xi2": ("S", "F")}}
+
+# FCFC: F em xi1=0, C em xi1=a; F em xi2=0, C em xi2=b
+FCFC_fsdt6 = {"u1": {"xi1": ("F", "S"), "xi2": ("F", "S")},
+              "u2": {"xi1": ("F", "S"), "xi2": ("F", "S")},
+              "u3": {"xi1": ("F", "C"), "xi2": ("F", "C")},
+              "v1": {"xi1": ("F", "S"), "xi2": ("F", "S")},
+              "v2": {"xi1": ("F", "S"), "xi2": ("F", "S")},
+              "v3": {"xi1": ("F", "S"), "xi2": ("F", "S")}}
+
+simply_supported_fsdt5 = {"u1": {"xi1": ("F", "F"),
+                                 "xi2": ("S", "S")},
+                          "u2": {"xi1": ("S", "S"),
+                                 "xi2": ("F", "F")},
+                          "u3": {"xi1": ("S", "S"),
+                                 "xi2": ("S", "S")},
+                          "v1": {"xi1": ("F", "F"),
+                                 "xi2": ("F", "F")},
+                          "v2": {"xi1": ("F", "F"),
+                                 "xi2": ("F", "F")},
+                          "v3": {"xi1": ("F", "F"),
+                                 "xi2": ("F", "F")}}
+
+fully_campled_fsdt5 = {"u1": {"xi1": ("S", "S"),
+                              "xi2": ("S", "S")},
+                       "u2": {"xi1": ("S", "S"),
+                              "xi2": ("S", "S")},
+                       "u3": {"xi1": ("C", "C"),
+                              "xi2": ("C", "C")},
+                       "v1": {"xi1": ("S", "S"),
+                              "xi2": ("S", "S")},
+                       "v2": {"xi1": ("S", "S"),
+                              "xi2": ("S", "S")},
+                       "v3": {"xi1": ("S", "S"),
+                              "xi2": ("S", "S")}}
+
+# SSSS: Simply Supported em todas as bordas
+SSSS = {"u1": {"xi1": ("F", "F"),
+               "xi2": ("S", "S")},
+        "u2": {"xi1": ("S", "S"),
+               "xi2": ("F", "F")},
+        "u3": {"xi1": ("S", "S"),
+               "xi2": ("S", "S")}}
+
+# CCCC: Clamped (engastado) em todas as bordas
+CCCC = {"u1": {"xi1": ("C", "C"),
+               "xi2": ("C", "C")},
+        "u2": {"xi1": ("C", "C"),
+               "xi2": ("C", "C")},
+        "u3": {"xi1": ("C", "C"),
+               "xi2": ("C", "C")}}
+
+# SSCC: Simply Supported nas bordas xi1, Clamped nas bordas xi2
+SSCC = {"u1": {"xi1": ("F", "F"),
+               "xi2": ("C", "C")},
+        "u2": {"xi1": ("S", "S"),
+               "xi2": ("C", "C")},
+        "u3": {"xi1": ("S", "S"),
+               "xi2": ("C", "C")}}
+
+# CCSS: Clamped nas bordas xi1, Simply Supported nas bordas xi2
+CCSS = {"u1": {"xi1": ("C", "C"),
+               "xi2": ("S", "S")},
+        "u2": {"xi1": ("C", "C"),
+               "xi2": ("F", "F")},
+        "u3": {"xi1": ("C", "C"),
+               "xi2": ("S", "S")}}
+
+# SCCC: Simply Supported na primeira borda xi1, Clamped nas outras
+SCCC = {"u1": {"xi1": ("F", "C"),
+               "xi2": ("C", "C")},
+        "u2": {"xi1": ("S", "C"),
+               "xi2": ("C", "C")},
+        "u3": {"xi1": ("S", "C"),
+               "xi2": ("C", "C")}}
+
+# CSSS: Clamped na primeira borda xi1, Simply Supported nas outras
+CSSS = {"u1": {"xi1": ("C", "F"),
+               "xi2": ("S", "S")},
+        "u2": {"xi1": ("C", "S"),
+               "xi2": ("F", "F")},
+        "u3": {"xi1": ("C", "S"),
+               "xi2": ("S", "S")}}
+
+# SCSC: Simply Supported nas bordas xi1=0 e xi2=b, Clamped nas outras
+SCSC = {"u1": {"xi1": ("F", "C"),
+               "xi2": ("C", "S")},
+        "u2": {"xi1": ("S", "C"),
+               "xi2": ("C", "F")},
+        "u3": {"xi1": ("S", "C"),
+               "xi2": ("C", "S")}}
+
+# CSCS: Simply Supported nas bordas xi1=a e xi2=0, Clamped nas outras
+CSCS = {"u1": {"xi1": ("C", "F"),
+               "xi2": ("S", "C")},
+        "u2": {"xi1": ("C", "S"),
+               "xi2": ("F", "C")},
+        "u3": {"xi1": ("C", "S"),
+               "xi2": ("S", "C")}}
+
+# SSFF: Simply Supported nas bordas xi1, Free nas bordas xi2
+SSFF = {"u1": {"xi1": ("F", "F"),
+               "xi2": ("F", "F")},
+        "u2": {"xi1": ("S", "S"),
+               "xi2": ("F", "F")},
+        "u3": {"xi1": ("S", "S"),
+               "xi2": ("F", "F")}}
+
+# FFSS: Free nas bordas xi1, Simply Supported nas bordas xi2
+FFSS = {"u1": {"xi1": ("F", "F"),
+               "xi2": ("S", "S")},
+        "u2": {"xi1": ("F", "F"),
+               "xi2": ("F", "F")},
+        "u3": {"xi1": ("F", "F"),
+               "xi2": ("S", "S")}}
+
+# CCFS: Clamped nas bordas xi1, Free na primeira borda xi2, Simply Supported na segunda borda xi2
+CCFS = {"u1": {"xi1": ("C", "C"),
+               "xi2": ("F", "S")},
+        "u2": {"xi1": ("C", "C"),
+               "xi2": ("F", "F")},
+        "u3": {"xi1": ("C", "C"),
+               "xi2": ("F", "S")}}
+
+# CFCF: Clamped na primeira borda xi1, Free na segunda borda xi1, alternando
+CFCF = {"u1": {"xi1": ("C", "F"),
+               "xi2": ("C", "F")},
+        "u2": {"xi1": ("C", "F"),
+               "xi2": ("C", "F")},
+        "u3": {"xi1": ("C", "F"),
+               "xi2": ("C", "F")}}
+
+# CCFF: Clamped nas bordas xi1, Free nas bordas xi2
+CCFF = {"u1": {"xi1": ("C", "C"),
+               "xi2": ("F", "F")},
+        "u2": {"xi1": ("C", "C"),
+               "xi2": ("F", "F")},
+        "u3": {"xi1": ("C", "C"),
+               "xi2": ("F", "F")}}
+
+# FFCC: Free nas bordas xi1, Clamped nas bordas xi2
+FFCC = {"u1": {"xi1": ("F", "F"),
+               "xi2": ("C", "C")},
+        "u2": {"xi1": ("F", "F"),
+               "xi2": ("C", "C")},
+        "u3": {"xi1": ("F", "F"),
+               "xi2": ("C", "C")}}
+
+# FCFC: Free na primeira borda xi1, Clamped na segunda borda xi1, alternando
+FCFC = {"u1": {"xi1": ("F", "C"),
+               "xi2": ("F", "C")},
+        "u2": {"xi1": ("F", "C"),
+               "xi2": ("F", "C")},
+        "u3": {"xi1": ("F", "C"),
+               "xi2": ("F", "C")}}

@@ -14,12 +14,12 @@ from shellpy import MidSurfaceGeometry, xi1_, xi2_
 from shellpy import RectangularMidSurfaceDomain
 
 if __name__ == "__main__":
-    integral_x = 20
-    integral_y = 20
+    integral_x = 40
+    integral_y = 40
     integral_z = 16
 
     aRx = 1
-    aRy = -1
+    aRy = 1
     p = 4
     ah = 10
 
@@ -35,7 +35,9 @@ if __name__ == "__main__":
     R_ = sym.Matrix([
         xi1_,  # x
         xi2_,  # y
-        1/(2*Rx)*(xi1_-a/2)**2+1/(2*Ry)*(xi2_-b/2)**2  # z
+        0  # plate
+        # 1 / (2 * Rx) * (xi1_ - a / 2) ** 2 # cylindrical
+        # 1 / (2 * Rx) * (xi1_ - a / 2) ** 2 + 1 / (2 * Ry) * (xi2_ - b / 2) ** 2  # z # doubly curved
     ])
     mid_surface_geometry = MidSurfaceGeometry(R_)
     thickness = ConstantThickness(h)
@@ -52,7 +54,7 @@ if __name__ == "__main__":
 
     material = FunctionallyGradedMaterial(E_C, E_M, nu_C, nu_M, rho_C, rho_M, Vc)
 
-    n_modos_1 = 15
+    n_modos_1 = 10
     expansion_size = {"u1": (n_modos_1, n_modos_1),
                       "u2": (n_modos_1, n_modos_1),
                       "u3": (n_modos_1, n_modos_1),

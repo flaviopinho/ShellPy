@@ -19,7 +19,7 @@ if __name__ == "__main__":
     boundary_conditions_u2 = {"xi1": ("F", "F"),
                               "xi2": ("F", "F")}
     boundary_conditions_u3 = {"xi1": ("S", "C"),
-                              "xi2": ("C", "S")}
+                              "xi2": ("R", "R")}
 
     boundary_conditions = {"u1": boundary_conditions_u1,
                            "u2": boundary_conditions_u2,
@@ -27,7 +27,7 @@ if __name__ == "__main__":
 
     expansion = EigenFunctionExpansion(expansion_size, edges, boundary_conditions)
 
-    k = 2
+    k = 5
     print("n_dof = ", expansion.number_of_degrees_of_freedom())
     trig_func = lambda _xi1, _xi2: expansion.shape_function(k, _xi1, _xi2)
     print("du = ", expansion.shape_function_first_derivatives(k, a / 4, b / 4))

@@ -1,4 +1,11 @@
-# Table 6.12
+#Refined shear correction factors for composite-layered FE shell elements to
+#enhance the accuracy of their modal analysis results
+#Hak Gu Lee a,*
+#, Dong-KuK Choi a
+#, Daeyong Kwon b,*
+#, Semyung Park
+
+# Table 6
 
 import matplotlib.pyplot as plt
 import sympy as sym
@@ -165,7 +172,7 @@ if __name__ == "__main__":
     K = stiffness_matrix(shell, eas_field, integral_x, integral_y, integral_z)
 
     # Number of modes to be analyzed
-    n_modes = 5
+    n_modes = 10
 
     # Solve generalized eigenvalue problem
     eigen_vals, eigen_vectors = eig(K, M)

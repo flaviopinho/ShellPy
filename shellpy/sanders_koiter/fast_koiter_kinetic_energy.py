@@ -68,6 +68,7 @@ def fast_koiter_kinetic_energy(shell: Shell,
     # Initialize an array to hold the displacement fields for each degree of freedom and spatial point
     # Shape: (n_dof, 3 spatial directions, xi1 grid size, xi2 grid size)
     displacement_fields = np.zeros((n_dof, 3, n[0], n[1]))
+    displacement_derivative = np.zeros((n_dof, 3, 2, n[0], n[1]))
 
     # Initialize an array to store the linear components of the third moment tensor m^3 = mu_i M^i
     # Shape: (n_dof, 3 spatial directions, xi1 grid size, xi2 grid size)
@@ -77,10 +78,11 @@ def fast_koiter_kinetic_energy(shell: Shell,
     for i in range(n_dof):
         # Compute the displacement field associated with the ith shape function at each integration point
         displacement_fields[i] = shell.displacement_expansion.shape_function(i, xi1, xi2)
+        displacement_derivative[i] = shell.displacement_expansion.shape_function_first_derivatives(i, xi1, xi2)
 
         # Compute the covariant derivatives of the displacement field
         dcu = displacement_first_covariant_derivatives(shell.mid_surface_geometry,
-                                                    shell.displacement_expansion, i, xi1, xi2)
+                                                    displacement_fields[i], displacement_derivative[i], xi1, xi2)
 
         # Convert covariant derivatives to contravariant form using the metric tensor
         dcu_contra = np.einsum('mi...,i...->m...', G, dcu)

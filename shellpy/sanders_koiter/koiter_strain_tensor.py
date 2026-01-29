@@ -17,7 +17,7 @@ def koiter_linear_strain_components(mid_surface_geometry: MidSurfaceGeometry,
     du = displacement_expansion.shape_function_first_derivatives(i, xi1, xi2)
     ddu = displacement_expansion.shape_function_second_derivatives(i, xi1, xi2)
     dcu = displacement_first_covariant_derivatives(mid_surface_geometry, u, du, xi1, xi2)
-    ddcu = displacement_second_covariant_derivatives(mid_surface_geometry, u, du, ddu, i, xi1, xi2)
+    ddcu = displacement_second_covariant_derivatives(mid_surface_geometry, u, du, ddu, xi1, xi2)
 
     # Extract the third component of the displacement (u3) and its derivatives
     # u3: third displacement component (out-of-plane direction)

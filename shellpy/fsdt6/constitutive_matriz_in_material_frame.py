@@ -58,7 +58,7 @@ def constitutive_matrix_in_material_frame(mid_surface_geometry: MidSurfaceGeomet
     nu = material.nu(xi3)
     G = E / (2 * (1 + nu))
     C = np.zeros((6, 6) + E.shape)
-    plane_stress = True
+    plane_stress = False
     if plane_stress:
         E3 = material.E(xi3)*10
         nu13 = 0.01
@@ -174,7 +174,7 @@ def constitutive_matrix_in_material_frame(mid_surface_geometry: MidSurfaceGeomet
 
         C = np.zeros((6, 6))
 
-        plane_stress = True
+        plane_stress = False
         if plane_stress:
             C[0, 0] = E1 / (1 - nu12 * nu21)
             C[1, 1] = E2 / (1 - nu12 * nu21)
@@ -221,69 +221,3 @@ def constitutive_matrix_in_material_frame(mid_surface_geometry: MidSurfaceGeomet
 
     return C_all
 
-
-def rotation_matrix(alpha_rad):
-
-    c = np.cos(alpha_rad)
-    s = np.sin(alpha_rad)
-
-    T = np.array([
-        [c**2, s**2, 0, 0, 0, 2 * c * s],
-        [s**2, c**2, 0, 0, 0, -2 * c * s],
-        [0, 0, 1, 0, 0, 0],
-        [0, 0, 0, c, -s, 0],
-        [0, 0, 0, s, c, 0],
-        [-c * s, c * s, 0, 0, 0, c**2 - s**2]
-    ])
-
-    return T
-
-
-def T_sigma(angle):
-    c = np.cos(angle)
-    s = np.sin(angle)
-    T = np.zeros((6, 6))
-
-    T[0, 0] = c ** 2
-    T[0, 1] = s ** 2
-    T[0, 5] = 2 * s * c
-
-    T[1, 0] = s ** 2
-    T[1, 1] = c ** 2
-    T[1, 5] = -2 * s * c
-
-    T[5, 0] = -s * c
-    T[5, 1] = s * c
-    T[5, 5] = c ** 2 - s ** 2
-
-    T[2, 2] = 1  # σ_zz não muda
-    T[3, 3] = c
-    T[3, 4] = s
-    T[4, 3] = -s
-    T[4, 4] = c
-    return T
-
-
-def T_epsilon(angle):
-    c = np.cos(angle)
-    s = np.sin(angle)
-    T = np.zeros((6, 6))
-
-    T[0, 0] = c ** 2
-    T[0, 1] = s ** 2
-    T[0, 5] = s * c
-
-    T[1, 0] = s ** 2
-    T[1, 1] = c ** 2
-    T[1, 5] = -s * c
-
-    T[5, 0] = -2 * s * c
-    T[5, 1] = 2 * s * c
-    T[5, 5] = c ** 2 - s ** 2
-
-    T[2, 2] = 1
-    T[3, 3] = c
-    T[3, 4] = s
-    T[4, 3] = -s
-    T[4, 4] = c
-    return T

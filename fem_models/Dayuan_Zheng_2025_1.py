@@ -55,7 +55,7 @@ if __name__ == "__main__":
 
     u1, u2 = rectangular_domain.edges["xi1"]
     v1, v2 = rectangular_domain.edges["xi2"]
-    n_u, n_v = 100, 100
+    n_u, n_v = 100, 200
 
     periodic_u = False
     periodic_v = True

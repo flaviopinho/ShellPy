@@ -9,6 +9,7 @@ import sympy as sym
 
 from fem_models.generate_boundary_conditions import generate_bc_lines
 from fem_models.generate_boundary_transformation import generate_boundary_transformation
+from fem_models.generate_kinematic_constraint import generate_kinematic_constraint
 from shellpy import RectangularMidSurfaceDomain, xi1_, xi2_, simply_supported, MidSurfaceGeometry
 
 if __name__ == "__main__":
@@ -16,9 +17,9 @@ if __name__ == "__main__":
     boundary_conditions = simply_supported
 
     # === PARÂMETROS ===
-    aRx = 0.1
-    aRy = 0.1
-    p = 0
+    aRx = 1
+    aRy = 9.99
+    p = 4
     ah = 10
 
     a = 1
@@ -28,20 +29,20 @@ if __name__ == "__main__":
 
     h = a / ah
 
-    number_of_layers = 20
+    number_of_layers = 10
 
     rectangular_domain = RectangularMidSurfaceDomain(0, a, 0, b)
 
     R_ = sym.Matrix([
         xi1_,  # x
         xi2_,  # y
-        0 #1 / (2 * Rx) * (xi1_ - a / 2) ** 2 + 1 / (2 * Ry) * (xi2_ - b / 2) ** 2  # z
+        1 / (2 * Rx) * (xi1_ - a / 2) ** 2 # + 1 / (2 * Ry) * (xi2_ - b / 2) ** 2  # z
     ])
     mid_surface_geometry = MidSurfaceGeometry(R_)
 
     u1, u2 = rectangular_domain.edges["xi1"]
     v1, v2 = rectangular_domain.edges["xi2"]
-    n_u, n_v, n_w = 30, 30, number_of_layers
+    n_u, n_v, n_w = 50, 50, number_of_layers
 
     periodic_u = False
     periodic_v = False
@@ -223,6 +224,8 @@ if __name__ == "__main__":
         for elem in elements:
             f.write(
                 f"{elem[0]}, {elem[1]}, {elem[2]}, {elem[3]}, {elem[4]}, {elem[5]}, {elem[6]}, {elem[7]}, {elem[8]}, {elem[9]}, {elem[10]}, {elem[11]}, {elem[12]}, {elem[13]}, {elem[14]}, {elem[15]}, {elem[16]}, {elem[17]}, {elem[18]}, {elem[19]}, {elem[20]}\n")
+
+        generate_kinematic_constraint(f, node_ids, num_u_nodes, num_v_nodes, num_w_nodes)
 
         for k in range(n_w):
             f.write(f"*ELSET, ELSET=EL_{k}, GENERATE\n")

@@ -14,8 +14,8 @@ from shellpy import MidSurfaceGeometry, xi1_, xi2_
 from shellpy import RectangularMidSurfaceDomain
 
 if __name__ == "__main__":
-    integral_x = 20
-    integral_y = 20
+    integral_x = 40
+    integral_y = 40
     integral_z = 16
 
     aRx = 1
@@ -35,7 +35,9 @@ if __name__ == "__main__":
     R_ = sym.Matrix([
         xi1_,  # x
         xi2_,  # y
-        0 #1/(2*Rx)*(xi1_-a/2)**2+1/(2*Ry)*(xi2_-b/2)**2  # z
+        0  # plate
+        # 1 / (2 * Rx) * (xi1_ - a / 2) ** 2 # cylindrical
+        # 1 / (2 * Rx) * (xi1_ - a / 2) ** 2 + 1 / (2 * Ry) * (xi2_ - b / 2) ** 2  # z # doubly curved
     ])
     mid_surface_geometry = MidSurfaceGeometry(R_)
     thickness = ConstantThickness(h)

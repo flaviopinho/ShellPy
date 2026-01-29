@@ -105,11 +105,14 @@ def stiffness_matrix(shell: Shell, eas_field, n_x=20, n_y=20, n_z=10, integral_m
                                   optimize=True)
     stiffness_matrix += np.einsum('maxy, naxy, xy->mn', L2_lin, epsilon2_lin, Wxy1,
                                   optimize=True)
+
+    stiffness_matrix = (stiffness_matrix + stiffness_matrix.T)/2
+
     stiffness_matrix -= K2
 
-    print(np.linalg.norm(K2 - K2.T))
-    err = np.linalg.norm(stiffness_matrix - stiffness_matrix.T)
-    print("Asymmetry:", err)
+    #print(np.linalg.norm(K2 - K2.T))
+    #err = np.linalg.norm(stiffness_matrix - stiffness_matrix.T)
+    #print("Asymmetry:", err)
 
     stop = time()
     print('time= ', stop - start)
