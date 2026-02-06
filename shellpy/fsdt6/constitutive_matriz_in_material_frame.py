@@ -35,9 +35,9 @@ def constitutive_matrix_in_material_frame(mid_surface_geometry, material, positi
     C[2, 1] = nu * D
 
     # Shear components
-    C[3, 3] = (1 - 2 * nu) * D
-    C[4, 4] = (1 - 2 * nu) * D
-    C[5, 5] = (1 - 2 * nu) * D
+    C[3, 3] = (1 - 2 * nu) / 2 * D
+    C[4, 4] = (1 - 2 * nu) / 2 * D
+    C[5, 5] = (1 - 2 * nu) / 2 * D
 
     return C
 
