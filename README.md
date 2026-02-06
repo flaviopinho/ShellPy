@@ -34,11 +34,10 @@ ShellPy requires the following Python packages:
 Here is a simple example of using ShellPy:
 
 ```python
-import shellpy
-from shellpy.numeric_integration import gauss_quadrature
+from shellpy.numeric_integration.numeric_integration import simple_integral, double_integral
 
 # Example function
-result = gauss_quadrature(lambda x: x**2, a=0, b=1, n=4)
+result = simple_integral(lambda x: x**2, (0, 1), 4)
 print("Result:", result)
 ```
 
