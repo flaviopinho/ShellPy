@@ -57,34 +57,34 @@ pytest shellpy/tests
 
 ```
 ShellPy/
-├── shellpy/
-│   ├── __init__.py
-│   ├── cache_decorator.py
-│   ├── displacement_covariant_derivative.py
-│   ├── displacement_expansion.py
-│   ├── mid_surface_domain.py
-│   ├── midsurface_geometry.py
-│   ├── multiindex.py
-│   ├── shell.py
-│   ├── tensor_derivatives.py
-│   ├── thickness.py
-│   ├── expansions/
-│   ├── fosd_theory/
-│   ├── fosd_theory2/
-│   ├── koiter_shell_theory/
-│   ├── materials/
-│   ├── numeric_integration/
-│   ├── shell_loads/
-│   └── tests/
-├── fem_models/
-├── linear_normal_modes/
-├── linear_static_analysis/
-├── nonlinear_static_analysis/
-├── README.md
-├── LICENSE
-├── setup.py
-├── pyproject.toml
-└── requirements.txt
+├── .idea/ # Configurações do IDE (PyCharm etc.)
+├── shellpy/ # Código-fonte principal da biblioteca
+│ ├── init.py
+│ ├── cache_decorator.py
+│ ├── displacement_covariant_derivative.py
+│ ├── displacement_expansion.py
+│ ├── mid_surface_domain.py
+│ ├── midsurface_geometry.py
+│ ├── multiindex.py
+│ ├── shell.py
+│ ├── tensor_derivatives.py
+│ ├── thickness.py
+│ ├── expansions/ 
+│ ├── fosd_theory/ 
+│ ├── fosd_theory2/ 
+│ ├── koiter_shell_theory/ 
+│ ├── materials/ 
+│ ├── numeric_integration/ 
+│ ├── shell_loads/ 
+│ └── tests/ 
+├── exemples/ 
+├── fem_models/ 
+├── tests/ 
+├── README.md 
+├── LICENSE 
+├── setup.py 
+├── pyproject.toml 
+└── requirements.txt 
 ```
 
 ## 📝 License
