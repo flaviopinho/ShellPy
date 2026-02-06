@@ -5,26 +5,23 @@ previously studied (https://doi.org/10.1016/j.ijnonlinmec.2005.06.009).
 This script determines the nonlinear static response.
 """
 
-import sys
 import matplotlib.pyplot as plt
 import sympy as sym
 import numpy as np
 
+from continuationpy.continuation import Continuation
 from exemples.nonlinear_static_analysis.residue_jacobian_stability import shell_jacobian, shell_residue, shell_stability
 from shellpy.expansions.enriched_cosine_expansion import EnrichedCosineExpansion
 from shellpy import RectangularMidSurfaceDomain
-from shellpy.koiter_shell_theory.koiter_strain_energy_large import \
-    koiter_strain_energy_large_rotations
+
 from shellpy.materials.isotropic_homogeneous_linear_elastic_material import IsotropicHomogeneousLinearElasticMaterial
+from shellpy.sanders_koiter import koiter_load_energy
+from shellpy.sanders_koiter.koiter_strain_energy_large import koiter_strain_energy_large_rotations
 from shellpy.tensor_derivatives import tensor_derivative
-from shellpy.koiter_shell_theory.koiter_load_energy import koiter_load_energy
 from shellpy.shell_loads.shell_conservative_load import ConcentratedForce
 from shellpy import Shell
 from shellpy import ConstantThickness
 from shellpy import MidSurfaceGeometry, xi1_, xi2_
-
-sys.path.append('../../../ContinuationPy/ContinuationPy')
-import continuation
 
 
 def arc_output_results(shell, xi1, xi2, x, *args):
@@ -105,7 +102,6 @@ def plot_shell_arc(shell, u):
 
 
 if __name__ == "__main__":
-
     R = 1
     b = 0.1
     alpha = 35 / 2 * (np.pi / 180)
@@ -155,7 +151,7 @@ if __name__ == "__main__":
     U_ext = koiter_load_energy(shell)
 
     U2_int, U3_int, U4_int = koiter_strain_energy_large_rotations(shell, n_int_x, n_int_y)
-    #U2_int, U3_int, U4_int = fast_koiter_strain_energy(shell, n_int_x, n_int_y)
+    # U2_int, U3_int, U4_int = fast_koiter_strain_energy(shell, n_int_x, n_int_y)
 
     # Numero de variaveis
     n = displacement_field.number_of_degrees_of_freedom()
@@ -194,7 +190,7 @@ if __name__ == "__main__":
                           'boundary': continuation_boundary,
                           'output_function': output}
 
-    continuation = continuation.Continuation(continuation_model)
+    continuation = Continuation(continuation_model)
     continuation.parameters['tol2'] = 1E-6
     continuation.parameters['tol1'] = 1E-6
     continuation.parameters['index1'] = -1

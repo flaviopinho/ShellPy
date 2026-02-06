@@ -5,27 +5,24 @@ previously studied by Pinho et al. (DOI: 10.1016/j.engstruct.2021.113674).
 This script determines the nonlinear static response.
 """
 
-import sys
 import matplotlib.pyplot as plt
 import sympy as sym
 import numpy as np
 
+from continuationpy.continuation import Continuation
 from exemples.nonlinear_static_analysis.residue_jacobian_stability import shell_stability, shell_jacobian, shell_residue
 from shellpy import pinned
 from shellpy.expansions.eigen_function_expansion import EigenFunctionExpansion
 from shellpy import RectangularMidSurfaceDomain
-from shellpy.koiter_shell_theory import fast_koiter_strain_energy
+
 from shellpy.materials.isotropic_homogeneous_linear_elastic_material import IsotropicHomogeneousLinearElasticMaterial
+from shellpy.sanders_koiter import koiter_load_energy, fast_koiter_strain_energy
 from shellpy.tensor_derivatives import tensor_derivative
-from shellpy.koiter_shell_theory.koiter_load_energy import koiter_load_energy
+
 from shellpy.shell_loads.shell_conservative_load import PressureLoad
 from shellpy import Shell
 from shellpy import ConstantThickness
 from shellpy import MidSurfaceGeometry, xi1_, xi2_
-
-sys.path.append('../../../ContinuationPy/ContinuationPy')
-import continuation
-
 
 def non_shallow_sphere_panel_output_results(shell, xi1, xi2, x, *args):
     u = x[:-1]
@@ -199,7 +196,7 @@ if __name__ == "__main__":
                           'boundary': continuation_boundary,
                           'output_function': output}
 
-    continuation = continuation.Continuation(continuation_model)
+    continuation = Continuation(continuation_model)
     continuation.parameters['tol2'] = 0
     continuation.parameters['tol1'] = 1E-5
     continuation.parameters['index1'] = -1

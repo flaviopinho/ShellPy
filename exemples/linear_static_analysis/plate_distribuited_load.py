@@ -7,9 +7,9 @@ from shellpy.expansions.eigen_function_expansion import EigenFunctionExpansion
 from shellpy.expansions.polinomial_expansion import GenericPolynomialSeries
 from shellpy import RectangularMidSurfaceDomain
 from shellpy.materials.isotropic_homogeneous_linear_elastic_material import IsotropicHomogeneousLinearElasticMaterial
+from shellpy.sanders_koiter import koiter_load_energy, fast_koiter_quadratic_strain_energy
 from shellpy.tensor_derivatives import tensor_derivative
-from shellpy.koiter_shell_theory.fast_koiter_strain_energy import fast_koiter_quadratic_strain_energy
-from shellpy.koiter_shell_theory.koiter_load_energy import koiter_load_energy
+
 from shellpy.shell_loads.shell_conservative_load import PressureLoad, ConcentratedForce
 from shellpy import simply_supported
 from shellpy import Shell

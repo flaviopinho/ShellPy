@@ -27,7 +27,10 @@ def fosd_load_energy_density(i: int, load, shell):
     position = load.position
 
     # Get the displacement shape function for the given DOF and position
-    U, V = shell.displacement_expansion.shape_function(i, position[0], position[1])
+
+    UU = shell.displacement_expansion.shape_function(i, position[0], position[1])
+    U = UU[0:3]
+    V = UU[3:6]
 
     # Compute the reciprocal base vectors at the given position on the shell's mid-surface
     N1, N2, N3 = shell.mid_surface_geometry.reciprocal_base(position[0], position[1])

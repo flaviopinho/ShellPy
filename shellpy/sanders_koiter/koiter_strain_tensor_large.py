@@ -17,15 +17,15 @@ def koiter_nonlinear_strain_components_quadratic(mid_surface_geometry: MidSurfac
     # dcu2, ddcu2: displacement and second derivatives for displacement DOF j
     u1 = displacement_expansion.shape_function(i, xi1, xi2)
     du1 = displacement_expansion.shape_function_first_derivatives(i, xi1, xi2)
-    # ddu1 = displacement_expansion.shape_function_second_derivatives(i, xi1, xi2)
+    ddu1 = displacement_expansion.shape_function_second_derivatives(i, xi1, xi2)
     dcu1 = displacement_first_covariant_derivatives(mid_surface_geometry, u1, du1, xi1, xi2)
-    # ddcu1 = displacement_second_covariant_derivatives(mid_surface_geometry, u1, du1, ddu1, i, xi1, xi2)
+    ddcu1 = displacement_second_covariant_derivatives(mid_surface_geometry, u1, du1, ddu1, xi1, xi2)
 
     u2 = displacement_expansion.shape_function(j, xi1, xi2)
     du2 = displacement_expansion.shape_function_first_derivatives(j, xi1, xi2)
-    # ddu2 = displacement_expansion.shape_function_second_derivatives(j, xi1, xi2)
+    ddu2 = displacement_expansion.shape_function_second_derivatives(j, xi1, xi2)
     dcu2 = displacement_first_covariant_derivatives(mid_surface_geometry, u2, du2, xi1, xi2)
-    # ddcu2 = displacement_second_covariant_derivatives(mid_surface_geometry, u2, du2, ddu2, i, xi1, xi2)
+    ddcu2 = displacement_second_covariant_derivatives(mid_surface_geometry, u2, du2, ddu2, xi1, xi2)
 
     # Get the contravariant components of the metric tensor (G^{alpha beta}) for the mid-surface geometry
     metric_tensor_contravariant_components2 = mid_surface_geometry.metric_tensor_contravariant_components_extended(xi1,

@@ -85,7 +85,8 @@ def cache_function(func):
 
 
 def clear_cache(shell = None):
-    cache_global = {}
+    global cache_global
+    cache_global.clear()
     if not shell is None:
         shell.mid_surface_geometry.cache = {}
         shell.material.cache = {}

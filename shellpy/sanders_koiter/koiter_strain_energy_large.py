@@ -2,9 +2,9 @@ from time import time
 import numpy as np
 
 from shellpy import Shell
+from . import plane_stress_constitutive_tensor_for_koiter_theory
 from .koiter_strain_tensor import koiter_linear_strain_components
 from .koiter_strain_tensor_large import koiter_nonlinear_strain_components_quadratic
-from shellpy.koiter_shell_theory.constitutive_tensor_koiter import plane_stress_constitutive_tensor_for_koiter_theory
 from ..numeric_integration.default_integral_division import n_integral_default_x, n_integral_default_z, \
     n_integral_default_y
 from ..numeric_integration.gauss_integral import gauss_weights_simple_integral

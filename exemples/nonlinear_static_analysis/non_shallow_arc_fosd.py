@@ -5,11 +5,11 @@ previously studied (https://doi.org/10.1016/j.ijnonlinmec.2005.06.009).
 This script determines the nonlinear static response.
 """
 
-import sys
 import matplotlib.pyplot as plt
 import sympy as sym
 import numpy as np
 
+from continuationpy.continuation import Continuation
 from exemples.nonlinear_static_analysis.residue_jacobian_stability import shell_jacobian, shell_residue, shell_stability
 from shellpy.expansions.enriched_cosine_expansion import EnrichedCosineExpansion
 from shellpy import RectangularMidSurfaceDomain
@@ -22,10 +22,6 @@ from shellpy.shell_loads.shell_conservative_load import ConcentratedForce
 from shellpy import Shell
 from shellpy import ConstantThickness
 from shellpy import MidSurfaceGeometry, xi1_, xi2_
-
-sys.path.append('../../../ContinuationPy/ContinuationPy')
-import continuation
-
 
 def arc_output_results(shell, xi1, xi2, x, *args):
     u = x[:-1]
@@ -211,7 +207,7 @@ if __name__ == "__main__":
                           'boundary': continuation_boundary,
                           'output_function': output}
 
-    continuation = continuation.Continuation(continuation_model)
+    continuation = Continuation(continuation_model)
     continuation.parameters['tol2'] = 1E-6
     continuation.parameters['tol1'] = 1E-6
     continuation.parameters['index1'] = -1

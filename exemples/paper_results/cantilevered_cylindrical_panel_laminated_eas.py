@@ -1,255 +1,265 @@
-# Table 6.12
+"""
+Free vibration analysis of cantilevered doubly-curved laminated composite shells
+based on:
 
-import matplotlib.pyplot as plt
+M. S. Qatu, A. W. Leissa,
+"Natural frequencies for cantilevered doubly-curved laminated composite
+shallow shells",
+Composite Structures 17 (3) (1991) 227–255.
+
+This script reproduces the numerical framework used to compare different
+lamination schemes for the same shell geometry and boundary conditions.
+The code is structured to automatically run multiple stacking sequences
+using a unified solver pipeline.
+
+Main steps:
+1. Definition of shell geometry and boundary conditions
+2. Orthotropic lamina and laminate modeling
+3. Kinematic approximation using enriched cosine expansions (FSDT + EAS)
+4. Assembly of mass and stiffness matrices
+5. Solution of the generalized eigenvalue problem
+6. Extraction of natural frequencies for comparison with reference results
+"""
+
+# ======================================================================
+# Imports
+# ======================================================================
+
 import sympy as sym
 import numpy as np
 from scipy.linalg import eig
 
+from exemples.paper_results.shell_mode import shell_mode
+from shellpy import (
+    Shell,
+    ConstantThickness,
+    RectangularMidSurfaceDomain,
+    MidSurfaceGeometry,
+    xi1_, xi2_,
+)
+from shellpy.cache_decorator import clear_cache
+
 from shellpy.expansions.enriched_cosine_expansion import EnrichedCosineExpansion
-from shellpy import RectangularMidSurfaceDomain
 from shellpy.expansions.polinomial_expansion import LegendreSeries
+from shellpy.fsdt7_eas.EAS_expansion import EasExpansion
 from shellpy.fsdt7_eas.mass_matrix import mass_matrix
 from shellpy.fsdt7_eas.stiffness_matrix import stiffness_matrix
-from shellpy.materials.laminate_orthotropic_material import Lamina, LaminateOrthotropicMaterial
-from shellpy import Shell
-from shellpy import ConstantThickness
-from shellpy import MidSurfaceGeometry, xi1_, xi2_
+from shellpy.materials.laminate_orthotropic_material import (
+    Lamina,
+    LaminateOrthotropicMaterial,
+)
+
+# ======================================================================
+# Geometry definition
+# ======================================================================
+
+def midsurface_geometry(R, b):
+    """
+    Cylindrical shallow shell geometry used by Qatu & Leissa.
+    """
+    return sym.Matrix([
+        xi1_,
+        xi2_,
+        sym.sqrt(R**2 - (xi2_ - b / 2)**2),
+    ])
+
+# ======================================================================
+# Lamina factory
+# ======================================================================
+
+def orthotropic_lamina(angle, thickness):
+    return Lamina(
+        E_11=128e9,
+        E_22=11e9,
+        E_33=11e9,
+        nu_12=0.25,
+        nu_13=0.25,
+        nu_23=0.45,
+        G_12=4.48e9,
+        G_13=4.48e9,
+        G_23=1.53e9,
+        density=1500,
+        angle=angle,
+        thickness=thickness,
+    )
+
+# ======================================================================
+# Main execution
+# ======================================================================
 
 if __name__ == "__main__":
+
+    # ------------------------------------------------------------------
+    # Numerical integration parameters
+    # ------------------------------------------------------------------
     integral_x = 20
     integral_y = 20
     integral_z = 8
 
-    R = 127.5E-3
-    a = 152.4E-3
-    b = 76.2E-3
-    h = 8 * 0.13E-3
+    # ------------------------------------------------------------------
+    # Geometry and thickness
+    # ------------------------------------------------------------------
+    R = 127.5e-3
+    a = 152.4e-3
+    b = 76.2e-3
+    h = 8 * 0.13e-3
 
     rectangular_domain = RectangularMidSurfaceDomain(0, a, 0, b)
-
-    R_ = sym.Matrix([xi1_, xi2_, sym.sqrt(R ** 2 + -(xi2_ - b / 2) ** 2)])
-    mid_surface_geometry = MidSurfaceGeometry(R_)
+    mid_surface_geometry = MidSurfaceGeometry(midsurface_geometry(R, b))
     thickness = ConstantThickness(h)
 
-    density = 1500
+    # ------------------------------------------------------------------
+    # Lamina definitions
+    # ------------------------------------------------------------------
+    t_ply = 1 / 4
 
-    E1 = 128E9
-    E2 = 11E9
-    E3 = 11E9
+    lamina_0   = orthotropic_lamina(0.0, t_ply)
+    lamina_45p = orthotropic_lamina(+np.pi / 4, t_ply)
+    lamina_45m = orthotropic_lamina(-np.pi / 4, t_ply)
+    lamina_30p = orthotropic_lamina(+np.pi / 6, t_ply)
+    lamina_30m = orthotropic_lamina(-np.pi / 6, t_ply)
+    lamina_90  = orthotropic_lamina(np.pi / 2, t_ply)
 
-    nu12 = 0.25
-    nu13 = 0.25
-    nu23 = 0.45
+    # ------------------------------------------------------------------
+    # Lamination schemes (Table 9 – Qatu & Leissa)
+    # ------------------------------------------------------------------
+    lamination_cases = {
+        "case_A": [lamina_45p, lamina_45m, lamina_45m, lamina_45p,
+                   lamina_45p, lamina_45m, lamina_45m, lamina_45p],
 
-    G12 = 4.48E9
-    G13 = 4.48E9
-    G23 = 1.53E9
+        "case_B": [lamina_0, lamina_0, lamina_30p, lamina_30m,
+                   lamina_30m, lamina_30p, lamina_0, lamina_0],
 
-    lamina45p = Lamina(
-        E_11=E1,  # Pa
-        E_22=E2,
-        E_33=E3,
-        nu_12=nu12,
-        nu_13=nu13,
-        nu_23=nu23,
-        G_12=G12,
-        G_13=G13,
-        G_23=G23,
-        density=1500,
-        angle=np.pi/4,
-        thickness=1/4
+        "case_C": [lamina_0, lamina_45p, lamina_45m, lamina_90,
+                   lamina_90, lamina_45m, lamina_45p, lamina_0],
+    }
+
+    # ------------------------------------------------------------------
+    # Kinematic approximation
+    # ------------------------------------------------------------------
+    n_modes = 15
+
+    expansion_size = {
+        "u1": (n_modes, n_modes),
+        "u2": (n_modes, n_modes),
+        "u3": (n_modes, n_modes),
+        "v1": (n_modes, n_modes),
+        "v2": (n_modes, n_modes),
+        "v3": (n_modes, n_modes),
+    }
+
+    boundary_conditions = {
+        "u1": {"xi1": ("S", "F"), "xi2": ("F", "F")},
+        "u2": {"xi1": ("S", "F"), "xi2": ("F", "F")},
+        "u3": {"xi1": ("C", "F"), "xi2": ("F", "F")},
+        "v1": {"xi1": ("F", "F"), "xi2": ("F", "F")},
+        "v2": {"xi1": ("F", "F"), "xi2": ("F", "F")},
+        "v3": {"xi1": ("F", "F"), "xi2": ("F", "F")},
+    }
+
+    displacement_field = EnrichedCosineExpansion(
+        expansion_size,
+        rectangular_domain,
+        boundary_conditions,
     )
 
-    lamina45m = Lamina(
-        E_11=E1,  # Pa
-        E_22=E2,
-        E_33=E3,
-        nu_12=nu12,
-        nu_13=nu13,
-        nu_23=nu23,
-        G_12=G12,
-        G_13=G13,
-        G_23=G23,
-        density=1500,  # kg/m³
-        angle=-np.pi/4,  # orientação (graus ou rad, depende da convenção)
-        thickness=1/4  # 1 mm
+    eas_field = EasExpansion(
+        {"eas": (n_modes, n_modes)},
+        rectangular_domain,
+        {"eas": {"xi1": ("F", "F"), "xi2": ("F", "F")}},
     )
 
-    lamina0 = Lamina(
-        E_11=E1,  # Pa
-        E_22=E2,
-        E_33=E3,
-        nu_12=nu12,
-        nu_13=nu13,
-        nu_23=nu23,
-        G_12=G12,
-        G_13=G13,
-        G_23=G23,
-        density=1500,  # kg/m³
-        angle=0,  # orientação (graus ou rad, depende da convenção)
-        thickness=1 / 4  # 1 mm
-    )
+    shell = None
 
-    lamina30p = Lamina(
-        E_11=E1,  # Pa
-        E_22=E2,
-        E_33=E3,
-        nu_12=nu12,
-        nu_13=nu13,
-        nu_23=nu23,
-        G_12=G12,
-        G_13=G13,
-        G_23=G23,
-        density=1500,
-        angle=np.pi / 6,
-        thickness=1 / 4
-    )
+    # ------------------------------------------------------------------
+    # Results container
+    # ------------------------------------------------------------------
+    results = {}
 
-    lamina30m = Lamina(
-        E_11=E1,  # Pa
-        E_22=E2,
-        E_33=E3,
-        nu_12=nu12,
-        nu_13=nu13,
-        nu_23=nu23,
-        G_12=G12,
-        G_13=G13,
-        G_23=G23,
-        density=1500,  # kg/m³
-        angle=-np.pi / 6,  # orientação (graus ou rad, depende da convenção)
-        thickness= 1 / 4  # 1 mm
-    )
+    # ------------------------------------------------------------------
+    # Loop over lamination schemes
+    # ------------------------------------------------------------------
+    for name, stacking in lamination_cases.items():
 
-    lamina90 = Lamina(
-        E_11=E1,  # Pa
-        E_22=E2,
-        E_33=E3,
-        nu_12=nu12,
-        nu_13=nu13,
-        nu_23=nu23,
-        G_12=G12,
-        G_13=G13,
-        G_23=G23,
-        density=1500,  # kg/m³
-        angle=np.pi,  # orientação (graus ou rad, depende da convenção)
-        thickness=1 / 4  # 1 mm
-    )
+        print(f"\nRunning lamination case: {name}")
 
-    #material = LaminateOrthotropicMaterial([lamina45m, lamina45p, lamina45p, lamina45m, lamina45m, lamina45p, lamina45p, lamina45m], thickness)
-    #material = LaminateOrthotropicMaterial(
-    #    [lamina0, lamina0, lamina30p, lamina30m, lamina30m, lamina30p, lamina0, lamina0], thickness)
-    material = LaminateOrthotropicMaterial(
-        [lamina0, lamina45m, lamina45p, lamina90, lamina90, lamina45p, lamina45m, lamina0], thickness)
+        clear_cache(shell)
 
-    n_modos = 15
-    expansion_size = {"u1": (n_modos, n_modos),
-                      "u2": (n_modos, n_modos),
-                      "u3": (n_modos, n_modos),
-                      "v1": (n_modos, n_modos),
-                      "v2": (n_modos, n_modos),
-                      "v3": (n_modos, n_modos)}
+        material = LaminateOrthotropicMaterial(stacking, thickness)
 
-    boundary_conditions_u1 = {"xi1": ("S", "F"),
-                              "xi2": ("F", "F")}
-    boundary_conditions_u2 = {"xi1": ("S", "F"),
-                              "xi2": ("F", "F")}
-    boundary_conditions_u3 = {"xi1": ("C", "F"),
-                              "xi2": ("F", "F")}
+        shell = Shell(
+            mid_surface_geometry,
+            thickness,
+            rectangular_domain,
+            material,
+            displacement_field,
+            None,
+        )
 
-    boundary_conditions_v1 = {"xi1": ("S", "F"),
-                              "xi2": ("F", "F")}
-    boundary_conditions_v2 = {"xi1": ("S", "F"),
-                              "xi2": ("F", "F")}
-    boundary_conditions_v3 = {"xi1": ("S", "F"),
-                              "xi2": ("F", "F")}
+        # Mass and stiffness matrices
+        M = mass_matrix(shell, integral_x, integral_y, integral_z)
+        K = stiffness_matrix(shell, eas_field, integral_x, integral_y, integral_z)
 
-    boundary_conditions = {"u1": boundary_conditions_u1,
-                           "u2": boundary_conditions_u2,
-                           "u3": boundary_conditions_u3,
-                           "v1": boundary_conditions_v1,
-                           "v2": boundary_conditions_v2,
-                           "v3": boundary_conditions_v3}
+        # --------------------------------------------------------------
+        # Generalized eigenvalue problem
+        # --------------------------------------------------------------
+        eigen_vals, eigen_vectors = eig(K, M)
 
-    displacement_field = EnrichedCosineExpansion(expansion_size, rectangular_domain, boundary_conditions)
+        # Keep only physical (positive, real) eigenvalues
+        tol = 1e-6
+        mask = np.real(eigen_vals) > tol
 
-    eas_field = LegendreSeries({"u1": (n_modos, n_modos)},
-                                        rectangular_domain,
-                                        {"u1": {"xi1": ("F", "F"), "xi2": ("F", "F")}})
+        eigen_vals = np.real(eigen_vals[mask])
+        eigen_vectors = np.real(eigen_vectors[:, mask])
 
-    shell = Shell(mid_surface_geometry, thickness, rectangular_domain, material, displacement_field, None)
+        # Natural frequencies
+        omega = np.sqrt(eigen_vals)
 
-    n_dof = shell.displacement_expansion.number_of_degrees_of_freedom()
+        # Sort frequencies and corresponding modes
+        idx = np.argsort(omega)
+        omega = omega[idx]
+        eigen_vectors = eigen_vectors[:, idx]
 
-    M = mass_matrix(shell, integral_x, integral_y, integral_z)
-    K = stiffness_matrix(shell, eas_field, integral_x, integral_y, integral_z)
+        freq_hz = omega / (2.0 * np.pi)
 
-    # Number of modes to be analyzed
-    n_modes = 5
+        # Store results
+        results[name] = {
+            "omega": omega,
+            "freq_hz": freq_hz,
+            "eigen_vectors": eigen_vectors,
+            "shell": shell,
+        }
 
-    # Solve generalized eigenvalue problem
-    eigen_vals, eigen_vectors = eig(K, M)
-    omega = np.sqrt(eigen_vals)
+        # Print fundamental frequency
+        print(f"Fundamental frequency (Hz): {freq_hz[0]:.4f}")
 
-    # Keep only finite eigenvalues (remove NaN or Inf)
-    finite_mask = np.isfinite(omega)
+    # ------------------------------------------------------------------
+    # Summary and mode shape visualization
+    # ------------------------------------------------------------------
+    print("\n================= SUMMARY =================")
 
-    tolerance = 1e-2
-    real_part_non_zero_mask = np.abs(np.real(omega)) > tolerance
+    n_plot_modes = 5
 
-    final_mask = finite_mask & real_part_non_zero_mask
-    omega = omega[final_mask]
+    for name, data in results.items():
+        print(f"\nCase: {name}")
+        print("First five frequencies (Hz):")
+        print(data["freq_hz"][:n_plot_modes])
 
-    eigen_vectors = eigen_vectors[:, final_mask]
+        shell = data["shell"]
+        eigen_vectors = data["eigen_vectors"]
 
-    # Sort eigenvalues in ascending order
-    sorted_indices = np.argsort(omega.real)
+        # Plot first modes
+        for mode_id in range(n_plot_modes):
+            phi = eigen_vectors[:, mode_id]
 
-    # Extract sorted finite eigenvalues and corresponding eigenvectors
-    omega = omega[sorted_indices].real
-    eigen_vectors = np.real(eigen_vectors[:, sorted_indices])
+            file_name = f"{name}_mode_{mode_id + 1}.png"
 
-    # Compute natural frequencies (Hz)
-    freqHz = omega / (2.0 * np.pi)
-
-    # Print the first five natural frequencies
-    print("Frequencies (Hz):\n", freqHz[0:n_modes:1])
-
-    # Generate a mesh grid for visualization of mode shapes
-    xi1 = np.linspace(*rectangular_domain.edges["xi1"], 100)
-    xi2 = np.linspace(*rectangular_domain.edges["xi2"], 100)
-    x, y = np.meshgrid(xi1, xi2, indexing='ij')
-
-    reciprocal_base = shell.mid_surface_geometry.reciprocal_base(x, y)
-
-    # Create a figure for mode shape visualization
-    fig, axes = plt.subplots(1, n_modes, figsize=(15, 5), subplot_kw={'projection': '3d'}, constrained_layout=True)
-
-    # Loop through the first few vibration modes
-    for i in range(n_modes):
-        mode1 = shell.displacement_expansion(eigen_vectors[:, i], x, y)  # Compute mode shape
-
-        mode = reciprocal_base[0] * mode1[0] + reciprocal_base[1] * mode1[1] + reciprocal_base[2] * mode1[2]
-
-        mode = mode / np.max(np.abs(mode)) * h  # Normalize and scale for visualization
-
-        z = shell.mid_surface_geometry(x, y)  # Compute deformed geometry
-
-        ax = axes[i]  # Select subplot
-        scmap = plt.cm.ScalarMappable(cmap='jet')  # Define colormap
-        ax.plot_surface(z[0, 0] + mode[0], z[1, 0] + mode[1], z[2, 0] + mode[2],
-                        facecolors=scmap.to_rgba(mode1[2]),
-                        edgecolor='black',
-                        linewidth=0.1)  # Plot mode shape
-
-        # Label axes and set the title with frequency information
-        ax.set_title(f"Mode {i + 1} - Frequency: {freqHz[i]:.2f}")
-        ax.set_xlabel("x")
-        ax.set_ylabel("y")
-        ax.set_zlabel("z")
-
-        # Ensure equal aspect ratio for visualization
-        ax.set_box_aspect([ub - lb for lb, ub in (getattr(ax, f'get_{a}lim')() for a in 'xyz')])
-
-    # Adjust layout and display the plots
-    # plt.tight_layout()
-    plt.show()
+            shell_mode(
+                shell,
+                phi,
+                file_name,
+                n_1=21,
+                n_2=21,
+                n_3=3,
+                max_deformation=5 * h,
+            )

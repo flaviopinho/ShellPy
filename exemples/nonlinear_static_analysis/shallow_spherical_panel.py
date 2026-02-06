@@ -7,30 +7,23 @@ and Pinho et al. (DOI: 10.1016/j.engstruct.2021.113674).  This script determines
 the nonlinear static response.
 """
 
-import sys
 import matplotlib.pyplot as plt
 import sympy as sym
 import numpy as np
 
+from continuationpy.continuation import Continuation
 from exemples.nonlinear_static_analysis.residue_jacobian_stability import shell_residue, shell_jacobian, shell_stability
 # Import custom modules related to shell analysis
 from shellpy.displacement_expansion import simply_supported  # Defines simply supported boundary conditions
 from shellpy.expansions.eigen_function_expansion import EigenFunctionExpansion # Eigenfunction expansion for displacements
 from shellpy.materials.isotropic_homogeneous_linear_elastic_material import IsotropicHomogeneousLinearElasticMaterial
 from shellpy.mid_surface_domain import RectangularMidSurfaceDomain # Defines the geometry of the mid-surface
-from shellpy.koiter_shell_theory import fast_koiter_strain_energy # Computes Koiter's strain energy
+from shellpy.sanders_koiter import koiter_load_energy, fast_koiter_strain_energy
 from shellpy.tensor_derivatives import tensor_derivative # For calculating tensor derivatives (likely for strain)
-from shellpy.koiter_shell_theory.koiter_load_energy import koiter_load_energy # Computes work done by external loads
 from shellpy.shell_loads.shell_conservative_load import ConcentratedForce # Defines a concentrated force
 from shellpy.shell import Shell # Represents the shell structure
 from shellpy.thickness import ConstantThickness # Defines constant thickness
 from shellpy.midsurface_geometry import MidSurfaceGeometry, xi1_, xi2_ # Defines the mid-surface geometry and coordinate system
-
-# Add the path to the ContinuationPy library.  This is assumed to be in a
-# relative directory '../../../ContinuationPy/ContinuationPy'.
-sys.path.append('../../../ContinuationPy/ContinuationPy')
-import continuation # Imports the continuation library for solving nonlinear equations.
-
 
 def shallow_spherical_panel_output_results(shell, xi1, xi2, x, *args):
     """
@@ -238,7 +231,7 @@ if __name__ == "__main__":
               'output_function': output}
 
     # Initialize the continuation process
-    continuation = continuation.Continuation(modelo)
+    continuation = Continuation(modelo)
     continuation.parameters['tol2'] = 0  # Tolerance for convergence
     continuation.parameters['tol1'] = 1E-5  # Step size tolerance
     continuation.parameters['index1'] = -1  # Primary parameter index

@@ -71,24 +71,38 @@ def fosd_nonlinear_strain_components(mid_surface_geometry: MidSurfaceGeometry,
     metric_tensor_contravariant_components = mid_surface_geometry.metric_tensor_contravariant_components_extended(xi1, xi2)
 
     # u_i: The displacement associated with the shape function i at coordinates (xi1, xi2)
-    uI, vI = displacement_expansion.shape_function(i, xi1, xi2)
+    UI = displacement_expansion.shape_function(i, xi1, xi2)
+    uI, vI = UI[0:3], UI[3:6]
 
     # u_{i,alpha}: The first derivatives of the displacement u with respect to the curvilinear coordinates
-    duI, dvI = displacement_expansion.shape_function_first_derivatives(i, xi1, xi2)
+    dUI = displacement_expansion.shape_function_first_derivatives(i, xi1, xi2)
+    duI, dvI = dUI[0:3], dUI[3:6]
 
     # dcu: displacement covariant derivatives
     # ddcu: second covariant derivatives of displacement
-    dcuI, _, dcvI, _ = displacement_covariant_derivatives(mid_surface_geometry, displacement_expansion, i, xi1, xi2)
+    dcuI = displacement_first_covariant_derivatives(
+        mid_surface_geometry, uI, duI, xi1, xi2
+    )
+    dcvI = displacement_first_covariant_derivatives(
+        mid_surface_geometry, vI, dvI, xi1, xi2
+    )
 
     # u_i: The displacement associated with the shape function i at coordinates (xi1, xi2)
-    uJ, vJ = displacement_expansion.shape_function(j, xi1, xi2)
+    UJ = displacement_expansion.shape_function(j, xi1, xi2)
+    uJ, vJ = UJ[0:3], UJ[3:6]
 
     # u_{i,alpha}: The first derivatives of the displacement u with respect to the curvilinear coordinates
-    duJ, dvJ = displacement_expansion.shape_function_first_derivatives(j, xi1, xi2)
+    dUJ = displacement_expansion.shape_function_first_derivatives(i, xi1, xi2)
+    duJ, dvJ = dUI[0:3], dUI[3:6]
 
     # dcu: displacement covariant derivatives
     # ddcu: second covariant derivatives of displacement
-    dcuJ, _, dcvJ, _ = displacement_covariant_derivatives(mid_surface_geometry, displacement_expansion, j, xi1, xi2)
+    dcuJ = displacement_first_covariant_derivatives(
+        mid_surface_geometry, uJ, duJ, xi1, xi2
+    )
+    dcvJ = displacement_first_covariant_derivatives(
+        mid_surface_geometry, vJ, dvJ, xi1, xi2
+    )
 
     epsilon0 = np.zeros((3, 3) + np.shape(xi1))
     epsilon1 = np.zeros((3, 3) + np.shape(xi1))

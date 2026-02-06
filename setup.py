@@ -13,7 +13,7 @@ with open("requirements.txt", encoding="utf-8") as f:
 
 setup(
     name="shellpy",
-    version="0.1.0",
+    version="0.2.0",
     author="Flávio Augusto Xavier Carneiro Pinho",
     description="Python library for shell analysis using the Ritz method and associated numerical techniques",
     long_description=long_description,

@@ -1,31 +1,35 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from shellpy import RectangularMidSurfaceDomain
+from shellpy.expansions.polinomial_expansion import LegendreSeries
 from shellpy.fsdt7_eas.EAS_expansion import EasExpansion
 
 # -----------------------------
-# Domínio da placa
+# Domínio
 # -----------------------------
-a = 2*np.pi
+a = 2 * np.pi
 b = 1.0
 
 domain = RectangularMidSurfaceDomain(0, a, 0, b)
 
-# -----------------------------
-# Expansão
-# -----------------------------
-expansion_size = {
-    "eas": (10, 10)
-}
+expasion_size=(10, 3)
 
-boundary_conditions = {
-    "eas": {"xi1": ("R", "R"), "xi2": ("S", "S")}
-}
-
-expansion = EasExpansion(
-    expansion_size,
+# -----------------------------
+# Expansão EAS
+# -----------------------------
+expansion_eas = EasExpansion(
+    {"eas": expasion_size},
     domain,
-    boundary_conditions
+    {"eas": {"xi1": ("F", "F"), "xi2": ("F", "F")}},
+)
+
+# -----------------------------
+# Expansão Legendre
+# -----------------------------
+expansion_leg = LegendreSeries(
+    {"u1": expasion_size},
+    domain,
+    {"u1": {"xi1": ("F", "F"), "xi2": ("F", "F")}},
 )
 
 # -----------------------------
@@ -37,45 +41,52 @@ xi2 = np.linspace(0, b, ny)
 XI1, XI2 = np.meshgrid(xi1, xi2)
 
 # -----------------------------
-# Vetor de coeficientes
+# Coeficientes
 # -----------------------------
-ndof = expansion.number_of_degrees_of_freedom()
-U = np.random.rand(ndof)
+U = np.random.rand(expansion_eas.number_of_degrees_of_freedom())
+
+print(expansion_leg.number_of_degrees_of_freedom())
+print(expansion_eas.number_of_degrees_of_freedom())
 
 # -----------------------------
-# Avaliação do campo
+# Avaliação dos campos
 # -----------------------------
-u3 = np.zeros_like(XI1)
+u_eas = np.zeros_like(XI1)
+u_leg = np.zeros_like(XI1)
 
-for n in range(ndof):
-    u = expansion.shape_function(n, XI1, XI2)
-    u3 += u * U[n]
+for n in range(len(U)):
+    u_eas += expansion_eas.shape_function(n, XI1, XI2) * U[n]
+
+for n in range(len(U)):
+    u_leg += expansion_leg.shape_function(n, XI1, XI2)[0] * U[n]
+
+print(np.max(np.abs(u_leg - u_eas)))
 
 # -----------------------------
-# Plot
+# Plot comparativo (mesmo eixo)
 # -----------------------------
-fig = plt.figure(figsize=(7, 5))
+fig = plt.figure(figsize=(9, 6))
 ax = fig.add_subplot(111, projection="3d")
 
-surf = ax.plot_surface(
-    XI1, XI2, u3,
+surf_eas = ax.plot_surface(
+    XI1, XI2, u_eas,
     cmap="viridis",
-    linewidth=0,
-    antialiased=True
+    alpha=0.7,
+    linewidth=0
 )
 
-fig.colorbar(surf, ax=ax, shrink=0.6, label=r"$u_3$")
+surf_leg = ax.plot_surface(
+    XI1, XI2, u_leg,
+    cmap="plasma",
+    alpha=0.7,
+    linewidth=0
+)
 
 ax.set_xlabel(r"$\xi_1$")
 ax.set_ylabel(r"$\xi_2$")
-ax.set_zlabel(r"$u_3$")
-ax.set_title("Placa – superfície 3D (Legendre)")
+ax.set_zlabel(r"$u$")
+ax.set_title("Comparação: EAS (viridis) × Legendre (plasma)")
 
 plt.tight_layout()
 plt.show()
 
-erro_periodicidade = np.max(
-    np.abs(u3[:, 0] - u3[:, -1])
-)
-
-print("Erro máximo de periodicidade:", erro_periodicidade)

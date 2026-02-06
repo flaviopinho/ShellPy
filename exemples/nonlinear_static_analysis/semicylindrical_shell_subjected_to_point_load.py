@@ -2,17 +2,17 @@
 
 """
 import os
-import sys
 import matplotlib.pyplot as plt
 import sympy as sym
 import numpy as np
 
+from continuationpy.continuation import Continuation
 from exemples.nonlinear_static_analysis.residue_jacobian_stability import shell_jacobian, shell_residue, shell_stability
 from shellpy.cache_decorator import clear_cache
 from shellpy.expansions.eigen_function_expansion import EigenFunctionExpansion
 from shellpy import RectangularMidSurfaceDomain
-from shellpy.fosd_theory.fosd_load_energy import fosd_load_energy
-from shellpy.fosd_theory.fosd_strain_energy import fosd_strain_energy
+from shellpy.fsdt_tensor.fosd_load_energy import fosd_load_energy
+from shellpy.fsdt_tensor.fosd_strain_energy import fosd_strain_energy
 from shellpy.materials.isotropic_homogeneous_linear_elastic_material import IsotropicHomogeneousLinearElasticMaterial
 from shellpy.tensor_derivatives import tensor_derivative
 from shellpy.shell_loads.shell_conservative_load import ConcentratedForce
@@ -21,14 +21,12 @@ from shellpy import ConstantThickness
 from shellpy import MidSurfaceGeometry, xi1_, xi2_
 import dill
 
-sys.path.append('../../../ContinuationPy/ContinuationPy')
-import continuation
 
 
 def output_results(shell, xi1, xi2, x, *args):
     u = x[:-1]
     p = x[-1]
-    U, _ = shell.displacement_expansion(u, xi1, xi2)
+    U = shell.displacement_expansion(u, xi1, xi2)
     N1, N2, N3 = shell.mid_surface_geometry.reciprocal_base(xi1, xi2)
     U = U[0] * N1 + U[1] * N2 + U[2] * N3
 
@@ -53,8 +51,8 @@ def plot_shell_arc(shell, u):
     reciprocal_base = shell.mid_surface_geometry.reciprocal_base(x, y)
 
     # Calculate the deformed shape (mode) using the displacement expansion.
-    mode1,  _ = shell.displacement_expansion(u, x, y)   # Compute mode shape
-    mode1 = mode1
+    mode1 = shell.displacement_expansion(u, x, y)   # Compute mode shape
+    mode1 = mode1[0:3]
     mode = reciprocal_base[0] * mode1[0] + reciprocal_base[1] * mode1[1] + reciprocal_base[2] * mode1[2]
 
     # Calculate the original (undeformed) mid-surface geometry.
@@ -220,7 +218,7 @@ if __name__ == "__main__":
                           'boundary': continuation_boundary,
                           'output_function': output}
 
-    continuation = continuation.Continuation(continuation_model)
+    continuation = Continuation(continuation_model)
     continuation.parameters['tol2'] = 1E-9
     continuation.parameters['tol1'] = 1E-9
     continuation.parameters['index1'] = -1

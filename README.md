@@ -18,17 +18,16 @@ This will also install all dependencies listed in `requirements.txt`.
 
 ShellPy requires the following Python packages:
 
-* `sympy~=1.12`
-* `numpy~=1.26.4`
-* `matplotlib~=3.8.3`
-* `SciencePlots~=2.1.1`
-* `mpmath~=1.3.0`
-* `multipledispatch~=1.0.0`
-* `scipy~=1.12.0`
-* `pandas~=2.2.3`
-* `sparse~=0.15.1`
-* `setuptools~=69.2.0`
-* `dill~=0.3.8`
+- `numpy~=1.26.4`
+- `scipy~=1.12.0`
+- `sympy~=1.12`
+- `mpmath~=1.3.0`
+- `multipledispatch~=1.0.0`
+- `pandas~=2.2.3`
+- `sparse~=0.15.1`
+- `dill~=0.3.8`
+- `matplotlib~=3.8.3`
+- `pyvista~=0.46.5`
 
 ## 📚 Usage
 

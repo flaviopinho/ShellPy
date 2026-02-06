@@ -1,149 +1,288 @@
-import matplotlib.pyplot as plt
-import sympy as sym
-import numpy as np
-from scipy.linalg import eig, eigh
+"""
+Free vibration analysis of functionally graded plates and shells
+based on a First-Order Shear Deformation Theory with Enhanced Assumed Strains
+(FSDT6/FSDT7 + EAS).
 
+This script performs a linear free-vibration analysis of functionally graded
+plates, cylindrical shells and doubly curved shells using the ShellPy framework.
+The formulation combines an enriched trigonometric kinematic expansion with
+an EAS approach to improve transverse shear and membrane behavior.
+
+The code is structured to automatically run multiple geometric curvature cases
+(flat plate, cylindrical shell and doubly curved shell) using a unified
+solver pipeline.
+
+Main steps:
+1. Definition of mid-surface geometry and curvature cases
+2. Functionally graded material modeling (power-law distribution)
+3. Kinematic approximation using enriched cosine expansions (FSDT)
+4. Assembly of mass and stiffness matrices via numerical integration
+5. Solution of the generalized eigenvalue problem
+6. Extraction of normalized and dimensional natural frequencies
+7. Post-processing and visualization of vibration mode shapes
+"""
+
+
+# ======================================================================
+# Imports
+# ======================================================================
+
+import numpy as np
+import sympy as sym
+from scipy.linalg import eig
+
+# ShellPy core
+from shellpy import (
+    Shell,
+    ConstantThickness,
+    RectangularMidSurfaceDomain,
+    MidSurfaceGeometry,
+    xi1_, xi2_,
+    simply_supported_fsdt6,
+)
+from shellpy.cache_decorator import clear_cache
+
+# Expansions
 from shellpy.expansions.enriched_cosine_expansion import EnrichedCosineExpansion
 from shellpy.expansions.polinomial_expansion import LegendreSeries
+from shellpy.fsdt7_eas.EAS_expansion import EasExpansion
+
+# Matrices
 from shellpy.fsdt7_eas.mass_matrix import mass_matrix
 from shellpy.fsdt7_eas.stiffness_matrix import stiffness_matrix
+
+# Materials
 from shellpy.materials.functionally_graded_material import FunctionallyGradedMaterial
-from shellpy import Shell, simply_supported_fsdt6
-from shellpy import ConstantThickness
-from shellpy import MidSurfaceGeometry, xi1_, xi2_
-from shellpy import RectangularMidSurfaceDomain
+
+# Plot utility
+from exemples.paper_results.shell_mode import shell_mode
+
+
+# ======================================================================
+# Geometry factory
+# ======================================================================
+
+def midsurface_geometry(case, a, b, Rx=None, Ry=None):
+    if case == "plate":
+        return sym.Matrix([xi1_, xi2_, 0])
+
+    elif case == "cylindrical_x":
+        return sym.Matrix([
+            xi1_,
+            xi2_,
+            (xi1_ - a / 2) ** 2 / (2 * Rx),
+        ])
+
+    elif case == "doubly_curved":
+        return sym.Matrix([
+            xi1_,
+            xi2_,
+            (xi1_ - a / 2) ** 2 / (2 * Rx)
+            + (xi2_ - b / 2) ** 2 / (2 * Ry),
+        ])
+
+    else:
+        raise ValueError(f"Unknown geometry case: {case}")
+
+
+# ======================================================================
+# Main execution
+# ======================================================================
 
 if __name__ == "__main__":
+
+    # ------------------------------------------------------------------
+    # Numerical integration parameters
+    # ------------------------------------------------------------------
     integral_x = 40
     integral_y = 40
     integral_z = 16
 
-    aRx = 1
-    aRy = 1
+    # ------------------------------------------------------------------
+    # Geometry and thickness
+    # ------------------------------------------------------------------
+    a = 1.0
+    b = 1.0
+    h = a / 10
+
+    # ------------------------------------------------------------------
+    # Power-law index (FGM)
+    # ------------------------------------------------------------------
     p = 4
-    ah = 10
 
-    a = 1
-    b = 1
-    Rx = a / aRx
-    Ry = a / aRy
-
-    h = a / ah
-
+    # ------------------------------------------------------------------
+    # Mid-surface domain
+    # ------------------------------------------------------------------
     rectangular_domain = RectangularMidSurfaceDomain(0, a, 0, b)
 
-    R_ = sym.Matrix([
-        xi1_,  # x
-        xi2_,  # y
-        0  # plate
-        # 1 / (2 * Rx) * (xi1_ - a / 2) ** 2 # cylindrical
-        # 1 / (2 * Rx) * (xi1_ - a / 2) ** 2 + 1 / (2 * Ry) * (xi2_ - b / 2) ** 2  # z # doubly curved
-    ])
-    mid_surface_geometry = MidSurfaceGeometry(R_)
-    thickness = ConstantThickness(h)
-
-    E_M = 70E9
-    nu_M = 0.3
-    rho_M = 2710
-
-    E_C = 380E9
-    nu_C = 0.3
-    rho_C = 3800
+    # ------------------------------------------------------------------
+    # Material properties
+    # ------------------------------------------------------------------
+    E_M, nu_M, rho_M = 70e9, 0.30, 2710
+    E_C, nu_C, rho_C = 380e9, 0.30, 3800
 
     Vc = lambda z: (0.5 + z / h) ** p
 
-    material = FunctionallyGradedMaterial(E_C, E_M, nu_C, nu_M, rho_C, rho_M, Vc)
+    material = FunctionallyGradedMaterial(
+        E_C, E_M,
+        nu_C, nu_M,
+        rho_C, rho_M,
+        Vc,
+    )
 
-    n_modos_1 = 10
-    expansion_size = {"u1": (n_modos_1, n_modos_1),
-                      "u2": (n_modos_1, n_modos_1),
-                      "u3": (n_modos_1, n_modos_1),
-                      "v1": (n_modos_1, n_modos_1),
-                      "v2": (n_modos_1, n_modos_1),
-                      "v3": (n_modos_1, n_modos_1)}
+    # ------------------------------------------------------------------
+    # Kinematic approximation (FSDT6 + EAS)
+    # ------------------------------------------------------------------
+    n_modes = 15
 
-    displacement_field = EnrichedCosineExpansion(expansion_size, rectangular_domain, simply_supported_fsdt6)
+    expansion_size = {
+        "u1": (n_modes, n_modes),
+        "u2": (n_modes, n_modes),
+        "u3": (n_modes, n_modes),
+        "v1": (n_modes, n_modes),
+        "v2": (n_modes, n_modes),
+        "v3": (n_modes, n_modes),
+    }
 
-    eas_field = LegendreSeries({"u1": (n_modos_1, n_modos_1)},
-                               rectangular_domain,
-                               {"u1": {"xi1": ("F", "F"), "xi2": ("F", "F")}})
+    displacement_field = EnrichedCosineExpansion(
+        expansion_size,
+        rectangular_domain,
+        simply_supported_fsdt6,
+    )
 
-    shell = Shell(mid_surface_geometry, thickness, rectangular_domain, material, displacement_field, None)
+    eas_field = EasExpansion(
+        {"eas": (n_modes, n_modes)},
+        rectangular_domain,
+        {"eas": {"xi1": ("F", "F"), "xi2": ("F", "F")}},
+    )
 
-    n_dof = shell.displacement_expansion.number_of_degrees_of_freedom()
+    thickness = ConstantThickness(h)
 
-    M = mass_matrix(shell, integral_x, integral_y, integral_z)
-    K = stiffness_matrix(shell, eas_field, integral_x, integral_y, integral_z)
+    # ------------------------------------------------------------------
+    # Geometry cases
+    # ------------------------------------------------------------------
+    geometry_cases = {
+        "plate": {"case": "plate", "Rx": None, "Ry": None},
+        "sphere_A": {"case": "doubly_curved", "Rx": 2, "Ry": 2},
+        "sphere_B": {"case": "doubly_curved", "Rx": 1, "Ry": 1},
+        "hyperbolic_A": {"case": "doubly_curved", "Rx": 2, "Ry": -2},
+        "hyperbolic_B": {"case": "doubly_curved", "Rx": 1, "Ry": -1},
+        "cylindrical_A": {"case": "cylindrical_x", "Rx": 2, "Ry": None},
+        "cylindrical_B": {"case": "cylindrical_x", "Rx": 1, "Ry": None},
+    }
 
-    # Number of modes to be analyzed
-    n_modes = 5
+    shell = None
 
-    # Solve generalized eigenvalue problem
-    eigen_vals, eigen_vectors = eig(K, M)
-    omega = np.sqrt(eigen_vals)
+    # ------------------------------------------------------------------
+    # Results container
+    # ------------------------------------------------------------------
+    results = {}
 
-    # Keep only finite eigenvalues (remove NaN or Inf)
-    finite_mask = np.isfinite(omega)
+    # ------------------------------------------------------------------
+    # Loop over geometry cases
+    # ------------------------------------------------------------------
+    for name, params in geometry_cases.items():
 
-    tolerance = 1e-2
-    real_part_non_zero_mask = np.abs(np.real(omega)) > tolerance
+        print(f"\nRunning case: {name}")
 
-    final_mask = finite_mask & real_part_non_zero_mask
-    omega = omega[final_mask]
+        R_ = midsurface_geometry(
+            case=params["case"],
+            a=a,
+            b=b,
+            Rx=params["Rx"],
+            Ry=params["Ry"],
+        )
 
-    eigen_vectors = eigen_vectors[:, final_mask]
+        mid_surface_geometry = MidSurfaceGeometry(R_)
 
-    # Sort eigenvalues in ascending order
-    sorted_indices = np.argsort(omega.real)
+        clear_cache(shell)
 
-    # Extract sorted finite eigenvalues and corresponding eigenvectors
-    omega = omega[sorted_indices].real
-    eigen_vectors = np.real(eigen_vectors[:, sorted_indices])
+        shell = Shell(
+            mid_surface_geometry,
+            thickness,
+            rectangular_domain,
+            material,
+            displacement_field,
+            None,
+        )
 
-    # Compute natural frequencies (Hz)
-    freq = omega * h * np.sqrt(rho_C / E_C)
-    freqHz = omega / (2.0 * np.pi)
+        # --------------------------------------------------------------
+        # Mass and stiffness matrices
+        # --------------------------------------------------------------
+        M = mass_matrix(shell, integral_x, integral_y, integral_z)
+        K = stiffness_matrix(shell, eas_field, integral_x, integral_y, integral_z)
 
-    # Print the first five natural frequencies
-    print("Normalized natural frequencies:\n", freq[0:n_modes:1])
-    print("Frequencies (Hz):\n", freqHz[0:n_modes:1])
+        # --------------------------------------------------------------
+        # Generalized eigenvalue problem
+        # --------------------------------------------------------------
+        eigen_vals, eigen_vectors = eig(K, M)
+        omega = np.sqrt(eigen_vals)
 
-    # Generate a mesh grid for visualization of mode shapes
-    xi1 = np.linspace(*rectangular_domain.edges["xi1"], 100)
-    xi2 = np.linspace(*rectangular_domain.edges["xi2"], 100)
-    x, y = np.meshgrid(xi1, xi2, indexing='ij')
+        # --------------------------------------------------------------
+        # Filtering (physical modes only)
+        # --------------------------------------------------------------
+        tol = 1e-2
+        mask = np.isfinite(omega) & (np.abs(np.real(omega)) > tol)
 
-    reciprocal_base = shell.mid_surface_geometry.reciprocal_base(x, y)
+        omega = np.real(omega[mask])
+        eigen_vectors = np.real(eigen_vectors[:, mask])
 
-    # Create a figure for mode shape visualization
-    fig, axes = plt.subplots(1, n_modes, figsize=(15, 5), subplot_kw={'projection': '3d'}, constrained_layout=True)
+        # --------------------------------------------------------------
+        # Sorting
+        # --------------------------------------------------------------
+        idx = np.argsort(omega)
+        omega = omega[idx]
+        eigen_vectors = eigen_vectors[:, idx]
 
-    # Loop through the first few vibration modes
-    for i in range(n_modes):
-        mode1 = shell.displacement_expansion(eigen_vectors[:, i], x, y)  # Compute mode shape
+        # --------------------------------------------------------------
+        # Frequencies
+        # --------------------------------------------------------------
+        freq_normalized = omega * h * np.sqrt(rho_C / E_C)
+        freq_hz = omega / (2.0 * np.pi)
 
-        mode = reciprocal_base[0] * mode1[0] + reciprocal_base[1] * mode1[1] + reciprocal_base[2] * mode1[2]
+        results[name] = {
+            "omega": omega,
+            "freq_normalized": freq_normalized,
+            "freq_hz": freq_hz,
+            "eigen_vectors": eigen_vectors,
+            "shell": shell,
+        }
 
-        mode = mode / np.max(np.abs(mode)) * h  # Normalize and scale for visualization
+        # --------------------------------------------------------------
+        # Print only first mode (as requested)
+        # --------------------------------------------------------------
+        print("First normalized frequency:", freq_normalized[0])
 
-        z = shell.mid_surface_geometry(x, y)  # Compute deformed geometry
+    # ==================================================================
+    # Final post-processing
+    # ==================================================================
 
-        ax = axes[i]  # Select subplot
-        scmap = plt.cm.ScalarMappable(cmap='jet')  # Define colormap
-        ax.plot_surface(z[0, 0] + mode[0], z[1, 0] + mode[1], z[2, 0] + mode[2],
-                        facecolors=scmap.to_rgba(mode1[2]),
-                        edgecolor='black',
-                        linewidth=0.1)  # Plot mode shape
+    print("\n================= SUMMARY OF RESULTS =================")
 
-        # Label axes and set the title with frequency information
-        ax.set_title(f"Mode {i + 1} - Frequency: {freq[i]:.2f}")
-        ax.set_xlabel("x")
-        ax.set_ylabel("y")
-        ax.set_zlabel("z")
+    for name, data in results.items():
+        print(f"\nCase: {name}")
+        print("Normalized frequencies:")
+        print(data["freq_normalized"][:5])
 
-        # Ensure equal aspect ratio for visualization
-        ax.set_box_aspect([ub - lb for lb, ub in (getattr(ax, f'get_{a}lim')() for a in 'xyz')])
+    # ==================================================================
+    # Mode-shape plots (shell_mode)
+    # ==================================================================
 
-    # Adjust layout and display the plots
-    # plt.tight_layout()
-    plt.show()
+    for name, data in results.items():
+
+        shell = data["shell"]
+        eigen_vectors = data["eigen_vectors"]
+
+        # Plot only first mode (change range if needed)
+        for mode_id in [0]:
+            file_name = f"{name}_mode_{mode_id}.png"
+
+            shell_mode(
+                shell,
+                eigen_vectors[:, mode_id],
+                file_name,
+                n_1=40,
+                n_2=80,
+                n_3=4,
+                max_deformation=0.5 * h,
+            )
