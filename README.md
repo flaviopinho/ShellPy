@@ -28,6 +28,7 @@ ShellPy requires the following Python packages:
 - `dill~=0.3.8`
 - `matplotlib~=3.8.3`
 - `pyvista~=0.46.5`
+- `pytest~=9.0.2`
 
 ## 📚 Usage
 
