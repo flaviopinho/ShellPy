@@ -2,8 +2,9 @@ import numpy as np
 from shellpy import MidSurfaceGeometry, xi1_, xi2_
 import sympy as sym
 
-from shellpy.koiter_shell_theory.constitutive_tensor_koiter import plane_stress_constitutive_tensor_for_koiter_theory
 from shellpy.materials.isotropic_homogeneous_linear_elastic_material import IsotropicHomogeneousLinearElasticMaterial
+from shellpy.sanders_koiter import plane_stress_constitutive_tensor_for_koiter_theory
+
 
 def test_koiter_constitutive_tensor():
     R = 0.1

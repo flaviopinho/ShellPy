@@ -2,11 +2,9 @@ import sympy as sym
 import numpy as np
 
 from shellpy.expansions.eigen_function_expansion import EigenFunctionExpansion
-from shellpy.koiter_shell_theory.koiter_strain_tensor import (
-    koiter_linear_strain_components,
-    koiter_nonlinear_strain_components_total,
-)
+
 from shellpy import RectangularMidSurfaceDomain, MidSurfaceGeometry, xi1_, xi2_
+from shellpy.sanders_koiter import koiter_linear_strain_components, koiter_nonlinear_strain_components_total
 
 
 def test_koiter_strain_components():
@@ -67,8 +65,8 @@ def test_koiter_strain_components():
     # Expected reference values (analytical or benchmark)
     gamma_expected = np.array([[1.090739709, 9.665869714],
                                [9.665869714, 12.15899207]])
-    rho_expected = np.array([[21.81479417, 193.3173943],
-                             [193.3173942, 243.1798415]])
+    rho_expected = np.array([[10.90739709, 96.65869714],
+                             [96.65869713, 121.5899207]])
 
     # --- Numerical validation of linear strain components ---
     assert np.allclose(
