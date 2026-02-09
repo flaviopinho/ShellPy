@@ -41,7 +41,7 @@ pip install -e .
 
 This will also install all dependencies listed in requirements.txt.
 
-### 🔎 Verify installation (optional)
+### 4️⃣ Verify installation (optional)
 ```bash
 python -c "import shellpy; print(shellpy.__version__)"
 ```
