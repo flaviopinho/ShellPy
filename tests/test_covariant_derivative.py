@@ -2,7 +2,8 @@ import sympy as sym
 import numpy as np
 
 from shellpy.expansions.eigen_function_expansion import EigenFunctionExpansion
-from shellpy import RectangularMidSurfaceDomain, displacement_first_covariant_derivatives
+from shellpy import RectangularMidSurfaceDomain
+from shellpy.displacement_covariant_derivative import displacement_first_covariant_derivatives
 from shellpy import MidSurfaceGeometry, xi1_, xi2_
 
 

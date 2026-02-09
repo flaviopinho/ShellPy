@@ -4,7 +4,8 @@ import numpy as np
 from shellpy.expansions.eigen_function_expansion import EigenFunctionExpansion
 
 from shellpy import RectangularMidSurfaceDomain, MidSurfaceGeometry, xi1_, xi2_
-from shellpy.sanders_koiter import koiter_linear_strain_components, koiter_nonlinear_strain_components_total
+from shellpy.sanders_koiter.koiter_strain_tensor import koiter_linear_strain_components, \
+    koiter_nonlinear_strain_components_total
 
 
 def test_koiter_strain_components():
