@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-from exemples.paper_results.fem_models.generate_boundary_conditions import generate_bc_lines
+from examples.paper_results.fem_models.generate_boundary_conditions import generate_bc_lines
 
 
 # === DEFINIÇÃO DA SUPERFÍCIE ===

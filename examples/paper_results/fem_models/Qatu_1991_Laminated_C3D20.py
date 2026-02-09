@@ -6,8 +6,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import sympy as sym
 
-from exemples.paper_results.fem_models.generate_boundary_conditions import generate_bc_lines
-from exemples.paper_results.fem_models.generate_boundary_transformation import generate_boundary_transformation
+from examples.paper_results.fem_models.generate_boundary_conditions import generate_bc_lines
+from examples.paper_results.fem_models.generate_boundary_transformation import generate_boundary_transformation
 from shellpy import RectangularMidSurfaceDomain, xi1_, xi2_, MidSurfaceGeometry, ConstantThickness
 from shellpy.materials.laminate_orthotropic_material import Lamina, LaminateOrthotropicMaterial
 

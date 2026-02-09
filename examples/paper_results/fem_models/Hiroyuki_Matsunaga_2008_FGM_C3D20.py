@@ -7,8 +7,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import sympy as sym
 
-from exemples.paper_results.fem_models.generate_boundary_conditions import generate_bc_lines
-from exemples.paper_results.fem_models.generate_boundary_transformation import generate_boundary_transformation
+from examples.paper_results.fem_models.generate_boundary_conditions import generate_bc_lines
+from examples.paper_results.fem_models.generate_boundary_transformation import generate_boundary_transformation
+from examples.paper_results.fem_models.generate_kinematic_constraint import generate_kinematic_constraint
 from shellpy import RectangularMidSurfaceDomain, xi1_, xi2_, simply_supported, MidSurfaceGeometry
 
 if __name__ == "__main__":
@@ -16,9 +17,8 @@ if __name__ == "__main__":
     boundary_conditions = simply_supported
 
     # === PARÂMETROS ===
-
     aRx = 1
-    aRy = -1
+    aRy = 9.99
     p = 4
     ah = 10
 
@@ -29,20 +29,20 @@ if __name__ == "__main__":
 
     h = a / ah
 
-    number_of_layers = 20
+    number_of_layers = 10
 
     rectangular_domain = RectangularMidSurfaceDomain(0, a, 0, b)
 
     R_ = sym.Matrix([
         xi1_,  # x
         xi2_,  # y
-        1 / (2 * Rx) * (xi1_ - a / 2) ** 2 + 1 / (2 * Ry) * (xi2_ - b / 2) ** 2  # z
+        1 / (2 * Rx) * (xi1_ - a / 2) ** 2 # + 1 / (2 * Ry) * (xi2_ - b / 2) ** 2  # z
     ])
     mid_surface_geometry = MidSurfaceGeometry(R_)
 
     u1, u2 = rectangular_domain.edges["xi1"]
     v1, v2 = rectangular_domain.edges["xi2"]
-    n_u, n_v, n_w = 40, 40, number_of_layers
+    n_u, n_v, n_w = 50, 50, number_of_layers
 
     periodic_u = False
     periodic_v = False
@@ -63,9 +63,9 @@ if __name__ == "__main__":
     rho = lambda z: (rho_C - rho_M) * Vc(z) + rho_M
 
     # === GERAÇÃO DA MALHA ===
-    num_u_nodes = n_u if periodic_u else n_u + 1
-    num_v_nodes = n_v if periodic_v else n_v + 1
-    num_w_nodes = n_w + 1
+    num_u_nodes = n_u * 2 if periodic_u else n_u * 2 + 1
+    num_v_nodes = n_v * 2 if periodic_v else n_v * 2 + 1
+    num_w_nodes = n_w * 2 + 1
 
     u_vals = np.linspace(u1, u2, num_u_nodes, endpoint=not periodic_u)
     v_vals = np.linspace(v1, v2, num_v_nodes, endpoint=not periodic_v)
@@ -77,6 +77,15 @@ if __name__ == "__main__":
     for k, w in enumerate(w_vals):
         for j, v in enumerate(v_vals):
             for i, u in enumerate(u_vals):
+                if (i % 2 == 1) and (j % 2 == 1):
+                    continue
+
+                if (k % 2 == 1) and (i % 2 == 1) and (i % 2 == 0):
+                    continue
+
+                if (k % 2 == 1) and (i % 2 == 0) and (i % 2 == 1):
+                    continue
+
                 R = mid_surface_geometry(u, v).squeeze()
                 MR1, MR2, MR3 = mid_surface_geometry.reciprocal_base(u, v)
 
@@ -89,7 +98,15 @@ if __name__ == "__main__":
     node_ids2 = {}
     for j, v in enumerate(v_vals):
         for i, u in enumerate(u_vals):
-            node_ids2[(i, j)] = node_ids[(i, j, n_w // 2)]
+            if (i % 2 == 1) and (j % 2 == 1):
+                continue
+
+            if (k % 2 == 1) and (i % 2 == 1) and (i % 2 == 0):
+                continue
+
+            if (k % 2 == 1) and (i % 2 == 0) and (i % 2 == 1):
+                continue
+            node_ids2[(i, j)] = node_ids[(i, j, (n_w // 2) * 2)]
 
     elements = []
     elem_id = 1
@@ -99,36 +116,58 @@ if __name__ == "__main__":
     iv_max = num_v_nodes if periodic_v else num_v_nodes - 1
 
     for k in range(n_w):
-        for j in range(iv_max):
-            for i in range(iu_max):
+        for j in range(n_v):
+            for i in range(n_u):
 
-                i_next = (i + 1)
-                if i_next >= num_u_nodes:
-                    i_next = 0
+                i0 = i * 2
+                i1 = i * 2 + 1
+                i2 = i * 2 + 2
+                if i2 >= num_u_nodes:
+                    i2 = 0
 
-                j_next = (j + 1)
-                if j_next >= num_v_nodes:
-                    j_next = 0
+                j0 = j * 2
+                j1 = j * 2 + 1
+                j2 = j * 2 + 2
+                if j2 >= num_v_nodes:
+                    j2 = 0
 
-                k_next = k + 1
+                k0 = k * 2
+                k1 = k * 2 + 1
+                k2 = k * 2 + 2
 
-                n1 = node_ids[(i, j, k)]
-                n2 = node_ids[(i_next, j, k)]
-                n3 = node_ids[(i_next, j_next, k)]
-                n4 = node_ids[(i, j_next, k)]
+                n1 = node_ids[(i0, j0, k0)]
+                n2 = node_ids[(i2, j0, k0)]
+                n3 = node_ids[(i2, j2, k0)]
+                n4 = node_ids[(i0, j2, k0)]
 
-                n5 = node_ids[(i, j, k_next)]
-                n6 = node_ids[(i_next, j, k_next)]
-                n7 = node_ids[(i_next, j_next, k_next)]
-                n8 = node_ids[(i, j_next, k_next)]
-                elements.append((elem_id, n1, n2, n3, n4, n5, n6, n7, n8))
+                n5 = node_ids[(i0, j0, k2)]
+                n6 = node_ids[(i2, j0, k2)]
+                n7 = node_ids[(i2, j2, k2)]
+                n8 = node_ids[(i0, j2, k2)]
+
+                n9 = node_ids[(i1, j0, k0)]
+                n10 = node_ids[(i2, j1, k0)]
+                n11 = node_ids[(i1, j2, k0)]
+                n12 = node_ids[(i0, j1, k0)]
+
+                n13 = node_ids[(i1, j0, k2)]
+                n14 = node_ids[(i2, j1, k2)]
+                n15 = node_ids[(i1, j2, k2)]
+                n16 = node_ids[(i0, j1, k2)]
+
+                n17 = node_ids[(i0, j0, k1)]
+                n18 = node_ids[(i2, j0, k1)]
+                n19 = node_ids[(i2, j2, k1)]
+                n20 = node_ids[(i0, j2, k1)]
+
+                elements.append((elem_id, n1, n2, n3, n4, n5, n6, n7, n8, n9, n10, n11, n12, n13, n14, n15, n16, n17, n18, n19, n20))
                 elem_id += 1
 
     # === VISUALIZAÇÃO 3D ===
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
     for elem in elements:
-        _, n1, n2, n3, n4, n5, n6, n7, n8 = elem
+        _, n1, n2, n3, n4, n5, n6, n7, n8, n9, n10, n11, n12, n13, n14, n15, n16, n17, n18, n19, n20 = elem
         coords = np.array([
             nodes[n1 - 1][1:4], nodes[n2 - 1][1:4], nodes[n3 - 1][1:4], nodes[n4 - 1][1:4], nodes[n1 - 1][1:4]
         ])
@@ -138,8 +177,12 @@ if __name__ == "__main__":
         ])
         ax.plot(coords[:, 0], coords[:, 1], coords[:, 2], color='black', linewidth=0.5)
 
+    base = f"Hiroyuki_Matsunaga_2008_FGM_C3D20_{ah:.2f}_{aRx:.2f}_{aRy:.2f}_{p:.2f}"
+    safe_base = base.replace('.', 'p')
+    filename = f"{safe_base}.inp"
+
     # === ESCRITA DO ARQUIVO ABAQUS .inp ===
-    with open("Hiroyuki_Matsunaga_2008_FGM_SC_05_H_10_04.inp", "w") as f:
+    with open(filename, "w") as f:
         f.write("*HEADING\n")
         f.write("Modelo de Casca Gerado Automaticamente\n")
         f.write("Sistema de Unidades: SI (m, kg, s)\n")
@@ -156,21 +199,33 @@ if __name__ == "__main__":
         nx = u_vals.size
         ny = v_vals.size
 
-        f.write("*NSET, NSET=X0, GENERATE\n")
-        f.write(f"{node_ids2[(0, 0)]} , {node_ids2[(0, ny - 1)]}, {nx}\n")
-        f.write("*NSET, NSET=X1, GENERATE\n")
-        f.write(f"{node_ids2[(nx - 1, 0)]} , {node_ids2[(nx - 1, ny - 1)]}, {nx}\n")
+        f.write("*NSET, NSET=X0\n")
+        for i in range(ny):
+            f.write(f"{node_ids2[(0, i)]} , ")
+        f.write("\n")
 
-        f.write("*NSET, NSET=Y0, GENERATE\n")
-        f.write(f"{node_ids2[(0, 0)]} , {node_ids2[(nx - 1, 0)]}, 1\n")
-        f.write("*NSET, NSET=Y1, GENERATE\n")
-        f.write(f"{node_ids2[(0, ny - 1)]} , {node_ids2[(nx - 1, ny - 1)]}, 1\n")
+        f.write("*NSET, NSET=X1\n")
+        for i in range(ny):
+            f.write(f"{node_ids2[(nx-1, i)]} , ")
+        f.write("\n")
+
+        f.write("*NSET, NSET=Y0\n")
+        for i in range(nx):
+            f.write(f"{node_ids2[(i, 0)]} , ")
+        f.write("\n")
+
+        f.write("*NSET, NSET=Y1\n")
+        for i in range(nx):
+            f.write(f"{node_ids2[(i, ny-1)]} , ")
+        f.write("\n")
 
         # Elementos
-        f.write("*ELEMENT, TYPE=SC8R, ELSET=ALLELEMENTS\n")
+        f.write("*ELEMENT, TYPE=C3D20, ELSET=ALLELEMENTS\n")
         for elem in elements:
             f.write(
-                f"{elem[0]}, {elem[1]}, {elem[2]}, {elem[3]}, {elem[4]}, {elem[5]}, {elem[6]}, {elem[7]}, {elem[8]}\n")
+                f"{elem[0]}, {elem[1]}, {elem[2]}, {elem[3]}, {elem[4]}, {elem[5]}, {elem[6]}, {elem[7]}, {elem[8]}, {elem[9]}, {elem[10]}, {elem[11]}, {elem[12]}, {elem[13]}, {elem[14]}, {elem[15]}, {elem[16]}, {elem[17]}, {elem[18]}, {elem[19]}, {elem[20]}\n")
+
+        generate_kinematic_constraint(f, node_ids, num_u_nodes, num_v_nodes, num_w_nodes)
 
         for k in range(n_w):
             f.write(f"*ELSET, ELSET=EL_{k}, GENERATE\n")

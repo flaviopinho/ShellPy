@@ -1,58 +1,72 @@
+# Example based on the shell with step-wise thickness variation from
+# the article: https://doi.org/10.1016/j.tws.2025.113160
+# Natural frequencies are reported in Table 4 and vibration modes in Figure 2.
+# Abaqus: 644.04 644.05 658.03 658.03 703.57 703.57 738.56 738.56 840.58 840.58
+
 import numpy as np
 import matplotlib.pyplot as plt
 import sympy as sym
 
-from exemples.paper_results.fem_models.generate_boundary_conditions import generate_bc_lines
-from exemples.paper_results.fem_models.generate_boundary_transformation import generate_boundary_transformation
-from shellpy import RectangularMidSurfaceDomain, xi1_, xi2_, simply_supported, MidSurfaceGeometry
+from examples.paper_results.fem_models.generate_boundary_conditions import generate_bc_lines
+from shellpy import RectangularMidSurfaceDomain, xi1_, xi2_, MidSurfaceGeometry
 
 if __name__ == "__main__":
     # Define boundary conditions
-    boundary_conditions = simply_supported
+    boundary_conditions_u1 = {"xi1": ("S", "S"),
+                              "xi2": ("R", "R")}
+    boundary_conditions_u2 = {"xi1": ("S", "S"),
+                              "xi2": ("R", "R")}
+    boundary_conditions_u3 = {"xi1": ("C", "C"),
+                              "xi2": ("R", "R")}
+
+    boundary_conditions = {"u1": boundary_conditions_u1,
+                           "u2": boundary_conditions_u2,
+                           "u3": boundary_conditions_u3}
 
     # === PARÂMETROS ===
 
-    a = 1
-    b = 1
-    Rx = a / 2
-    Ry = -a / 2
+    factor = 0.5
+    alpha = np.deg2rad(30)
+    R2 = 0.4
+    L = R2 * factor / np.sin(alpha)
+    L2 = R2 / np.sin(alpha)
+    L1 = L2 - L
+    R1 = L1 * np.sin(alpha)
 
-    h = a / 5
-
-    rectangular_domain = RectangularMidSurfaceDomain(0, a, 0, b)
+    rectangular_domain = RectangularMidSurfaceDomain(L1, L2, 0, 2 * np.pi)
 
     R_ = sym.Matrix([
-        xi1_,  # x
-        xi2_,  # y
-        1 / (2 * Rx) * (xi1_ - a / 2) ** 2 + 1 / (2 * Ry) * (xi2_ - b / 2) ** 2  # z
+        xi1_ * sym.sin(alpha) * sym.cos(xi2_),  # x
+        xi1_ * sym.sin(alpha) * sym.sin(xi2_),  # y
+        xi1_ * sym.cos(alpha)  # z
     ])
     mid_surface_geometry = MidSurfaceGeometry(R_)
 
+    H = 0.01 * R2
+
+    def thickness(xi1, xi2):
+        s1 = 0.5
+        s2 = 1
+        qi0 = 0.5
+
+        if xi1 <= L1 or xi1 <= L1 + qi0 * L:
+            h = s1 * H
+        else:
+            h = s2 * H
+        return h
 
     u1, u2 = rectangular_domain.edges["xi1"]
     v1, v2 = rectangular_domain.edges["xi2"]
-    n_u, n_v = 100, 100
+    n_u, n_v = 100, 200
 
     periodic_u = False
-    periodic_v = False
+    periodic_v = True
 
     # === PROPRIEDADES DO MATERIAL ===
 
-    E_M = 70E9
-    nu_M = 0.3
-    rho_M = 2710
-
-    E_C = 380E9
-    nu_C = 0.3
-    rho_C = 3800
-
-    p = 4
-    Vc = lambda z: (0.5+z/h)**p
-    E = lambda z: (E_C - E_M) * Vc(z) + E_M
-    nu = lambda z: (nu_C - nu_M) * Vc(z) + nu_M
-    rho = lambda z: (rho_C - rho_M) * Vc(z) + rho_M
-
-    number_of_layers = 20
+    rho = 2710
+    E = 70E9
+    nu = 0.3
 
     # === GERAÇÃO DA MALHA ===
     num_u_nodes = n_u if periodic_u else n_u + 1
@@ -109,7 +123,7 @@ if __name__ == "__main__":
         ax.plot(coords[:, 0], coords[:, 1], coords[:, 2], color='black', linewidth=0.5)
 
     # === ESCRITA DO ARQUIVO ABAQUS .inp ===
-    with open("malha_abaqus_casca_FGM.inp", "w") as f:
+    with open("Dayuan_Zheng_2025_2.inp", "w") as f:
         f.write("*HEADING\n")
         f.write("Modelo de Casca Gerado Automaticamente\n")
         f.write("Sistema de Unidades: SI (m, kg, s)\n")
@@ -141,20 +155,22 @@ if __name__ == "__main__":
             f.write(f"{elem[0]}, {elem[1]}, {elem[2]}, {elem[3]}, {elem[4]}\n")
 
         # Propriedades do Material
-        for l in range(number_of_layers):
-            z = -h / 2 + h / number_of_layers * (l + 1 / 2)
-            f.write(f"*MATERIAL, NAME=MATERIAL_ELASTICO_{l}\n")
-            f.write("*ELASTIC\n")
-            f.write(f"{E(z)}, {nu(z)}\n")
-            f.write("*DENSITY\n")
-            f.write(f"{rho(z)}\n")
+        f.write(f"*MATERIAL, NAME=MATERIAL_ELASTICO\n")
+        f.write("*ELASTIC\n")
+        f.write(f"{E}, {nu}\n")
+        f.write("*DENSITY\n")
+        f.write(f"{rho}\n")
+
+        f.write(f"*NODAL THICKNESS\n")
+        for j, v in enumerate(v_vals):
+            for i, u in enumerate(u_vals):
+                f.write(f"{node_ids[(i, j)]}, {thickness(u, v)}\n")
 
         # Seção da Casca
-        f.write(f"*SHELL SECTION, ELSET=ALLELEMENTS, COMPOSITE\n")
-        for l in range(number_of_layers):
-            f.write(f"{h/number_of_layers}, 3, MATERIAL_ELASTICO_{l}, 0\n")
+        f.write(f"*SHELL SECTION, ELSET=ALLELEMENTS, MATERIAL=MATERIAL_ELASTICO, NODAL THICKNESS\n")
+        f.write("1, 3\n")
 
-        generate_boundary_transformation(node_ids, u_vals, v_vals, nx, ny, mid_surface_geometry, f)
+        # generate_boundary_transformation(node_ids, u_vals, v_vals, nx, ny, mid_surface_geometry, f)
 
         lines = generate_bc_lines(boundary_conditions)
         for line in lines:
@@ -163,7 +179,7 @@ if __name__ == "__main__":
         # Passo de análise
         f.write("*STEP\n")
         f.write("*FREQUENCY\n")
-        f.write("10, 100, 100000\n")
+        f.write("40, 100, 100000\n")
         f.write("*END STEP\n")
 
     ax.set_title("Visualização da malha 3D")

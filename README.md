@@ -91,7 +91,7 @@ pytest -v
 
 ```
 ShellPy/
-├───exemples
+├───examples
 │   ├───linear_normal_modes
 │   ├───linear_static_analysis
 │   ├───nonlinear_static_analysis
@@ -109,13 +109,13 @@ ShellPy/
 │   ├───sanders_koiter
 │   ├───shell_loads
 │   └───utils
-└───tests
-├── .gitignore
-├── README.md 
-├── LICENSE 
-├── setup.py 
-├── pyproject.toml 
-└── requirements.txt 
+├───tests
+├───.gitignore
+├───README.md 
+├───LICENSE 
+├───setup.py 
+├───pyproject.toml 
+└───requirements.txt 
 ```
 
 ## 📝 License

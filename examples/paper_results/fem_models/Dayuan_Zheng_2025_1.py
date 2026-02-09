@@ -1,13 +1,13 @@
-# Example based on the shell with step-wise thickness variation from
+# Example based on the shell with linear thickness variation from
 # the article: https://doi.org/10.1016/j.tws.2025.113160
-# Natural frequencies are reported in Table 4 and vibration modes in Figure 2.
-# Abaqus: 644.04 644.05 658.03 658.03 703.57 703.57 738.56 738.56 840.58 840.58
+# Natural frequency reported is 1893.48 Hz with author's formulation and 1894.01Hz by FEM.
+# Abaqus: 1901.1 (Hz)
 
 import numpy as np
 import matplotlib.pyplot as plt
 import sympy as sym
 
-from exemples.paper_results.fem_models.generate_boundary_conditions import generate_bc_lines
+from examples.paper_results.fem_models.generate_boundary_conditions import generate_bc_lines
 from shellpy import RectangularMidSurfaceDomain, xi1_, xi2_, MidSurfaceGeometry
 
 if __name__ == "__main__":
@@ -43,17 +43,14 @@ if __name__ == "__main__":
     mid_surface_geometry = MidSurfaceGeometry(R_)
 
     H = 0.01 * R2
+    p = 1
+    q = 1
 
     def thickness(xi1, xi2):
-        s1 = 0.5
-        s2 = 1
-        qi0 = 0.5
+        p = 1
+        q = 1
+        return H * (p + q * xi1)
 
-        if xi1 <= L1 or xi1 <= L1 + qi0 * L:
-            h = s1 * H
-        else:
-            h = s2 * H
-        return h
 
     u1, u2 = rectangular_domain.edges["xi1"]
     v1, v2 = rectangular_domain.edges["xi2"]
@@ -123,7 +120,7 @@ if __name__ == "__main__":
         ax.plot(coords[:, 0], coords[:, 1], coords[:, 2], color='black', linewidth=0.5)
 
     # === ESCRITA DO ARQUIVO ABAQUS .inp ===
-    with open("Dayuan_Zheng_2025_2.inp", "w") as f:
+    with open("Dayuan_Zheng_2025_1.inp", "w") as f:
         f.write("*HEADING\n")
         f.write("Modelo de Casca Gerado Automaticamente\n")
         f.write("Sistema de Unidades: SI (m, kg, s)\n")
@@ -170,7 +167,7 @@ if __name__ == "__main__":
         f.write(f"*SHELL SECTION, ELSET=ALLELEMENTS, MATERIAL=MATERIAL_ELASTICO, NODAL THICKNESS\n")
         f.write("1, 3\n")
 
-        # generate_boundary_transformation(node_ids, u_vals, v_vals, nx, ny, mid_surface_geometry, f)
+        #generate_boundary_transformation(node_ids, u_vals, v_vals, nx, ny, mid_surface_geometry, f)
 
         lines = generate_bc_lines(boundary_conditions)
         for line in lines:

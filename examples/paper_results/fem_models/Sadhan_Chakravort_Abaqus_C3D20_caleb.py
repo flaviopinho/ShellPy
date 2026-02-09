@@ -12,8 +12,8 @@ root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if root_dir not in sys.path:
     sys.path.insert(0, root_dir)
 
-from exemples.paper_results.fem_models.generate_boundary_conditions import generate_bc_lines
-from exemples.paper_results.fem_models.generate_boundary_transformation import generate_boundary_transformation
+from examples.paper_results.fem_models.generate_boundary_conditions import generate_bc_lines
+from examples.paper_results.fem_models.generate_boundary_transformation import generate_boundary_transformation
 from shellpy import RectangularMidSurfaceDomain, xi1_, xi2_, MidSurfaceGeometry, ConstantThickness
 from shellpy.materials.laminate_orthotropic_material import Lamina, LaminateOrthotropicMaterial
 from shellpy.displacement_expansion import (FCFC)
