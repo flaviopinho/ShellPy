@@ -2,9 +2,12 @@
 
 **ShellPy** is a Python library for shell analysis using the Ritz method and associated numerical techniques.
 
-## 🚀 Installation
+![Python Version](https://img.shields.io/badge/python-3.12-blue)
 
-It is strongly recommended to use a virtual environment to avoid dependency conflicts.
+This library is currently tested and verified on Python 3.12. Compatibility with other versions is expected but not yet fully verified.
+
+
+## 🚀 Installation
 
 ### 1️⃣ Clone the repository
 
@@ -13,7 +16,9 @@ git clone https://github.com/flaviopinho/ShellPy.git
 cd ShellPy
 ```
 
-### 2️⃣ Create and activate a virtual environment
+### 2️⃣ Create and activate a virtual environment (Optional)
+
+It is strongly recommended to use a virtual environment to avoid dependency conflicts.
 
 #### On Linux / macOS
 ```bash
@@ -69,7 +74,7 @@ ShellPy requires the following Python packages:
 Here is a simple example of using ShellPy:
 
 ```python
-from shellpy.numeric_integration.numeric_integration import simple_integral, double_integral
+from shellpy.numeric_integration import simple_integral
 
 # Example function
 result = simple_integral(lambda x: x**2, (0, 1), 4)
