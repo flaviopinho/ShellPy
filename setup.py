@@ -20,7 +20,7 @@ setup(
     long_description_content_type="text/markdown",
     url="https://github.com/flaviopinho/ShellPy",
     packages=find_packages(),
-    python_requires=">=3.8",
+    python_requires="==3.12.*",
     install_requires=install_requires,
     classifiers=[
         "Programming Language :: Python :: 3",

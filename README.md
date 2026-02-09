@@ -2,12 +2,13 @@
 
 **ShellPy** is a Python library for shell analysis using the Ritz method and associated numerical techniques.
 
-![Python Version](https://img.shields.io/badge/python-3.12-blue)
-
-This library is currently tested and verified on Python 3.12. Compatibility with other versions is expected but not yet fully verified.
-
+![Python Version](https://img.shields.io/badge/python-3.12-blue?logo=python&logoColor=white)
 
 ## 🚀 Installation
+
+> ⚠️
+> **ShellPy requires Python 3.12.** 
+> Compatibility with other versions (older or newer) is not yet guaranteed.
 
 ### 1️⃣ Clone the repository
 
@@ -18,7 +19,8 @@ cd ShellPy
 
 ### 2️⃣ Create and activate a virtual environment (Optional)
 
-It is strongly recommended to use a virtual environment to avoid dependency conflicts.
+> ⚠️
+> It is strongly recommended to use a virtual environment to avoid dependency conflicts.
 
 #### On Linux / macOS
 ```bash
