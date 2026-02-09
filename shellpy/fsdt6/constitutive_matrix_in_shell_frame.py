@@ -1,6 +1,6 @@
 import numpy as np
 
-from shellpy.fsdt6.transformation_matrix import transformation_matrix
+from ..fsdt6.transformation_matrix import transformation_matrix
 
 
 def constitutive_matrix_in_shell_frame(mid_surface_geometry, C_local, position):

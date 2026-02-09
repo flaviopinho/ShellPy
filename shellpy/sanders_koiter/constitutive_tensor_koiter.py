@@ -1,8 +1,9 @@
 import numpy as np
 from multipledispatch import dispatch
 
-from shellpy import cache_function, MidSurfaceGeometry
-from shellpy.materials.isotropic_homogeneous_linear_elastic_material import IsotropicHomogeneousLinearElasticMaterial
+from ..cache_decorator import cache_function
+from ..midsurface_geometry import MidSurfaceGeometry
+from ..materials.isotropic_homogeneous_linear_elastic_material import IsotropicHomogeneousLinearElasticMaterial
 
 
 @dispatch(MidSurfaceGeometry, IsotropicHomogeneousLinearElasticMaterial, object, object, object)

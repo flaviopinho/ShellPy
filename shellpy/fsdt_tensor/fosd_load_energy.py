@@ -1,8 +1,8 @@
 import numpy as np
 from multipledispatch import dispatch
 
-from shellpy import Shell
-from shellpy.shell_loads import ConcentratedForce, PressureLoad
+from ..shell import Shell
+from ..shell_loads import ConcentratedForce, PressureLoad
 
 
 # Function to compute the energy functional for the applied loads on the shell using Koiter's theory

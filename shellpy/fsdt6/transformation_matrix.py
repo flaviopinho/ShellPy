@@ -1,5 +1,6 @@
 import numpy as np
-from shellpy import MidSurfaceGeometry
+
+from ..midsurface_geometry import MidSurfaceGeometry
 
 
 def transformation_matrix(mid_surface_geometry: MidSurfaceGeometry, position):

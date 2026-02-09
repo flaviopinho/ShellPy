@@ -3,15 +3,14 @@ import sympy as sym
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import colors
-from shellpy.expansions.eigen_function_expansion import EigenFunctionExpansion
+
 from shellpy.expansions.polinomial_expansion import GenericPolynomialSeries
 from shellpy import RectangularMidSurfaceDomain
 from shellpy.materials.isotropic_homogeneous_linear_elastic_material import IsotropicHomogeneousLinearElasticMaterial
 from shellpy.sanders_koiter import koiter_load_energy, fast_koiter_quadratic_strain_energy
 from shellpy.tensor_derivatives import tensor_derivative
 
-from shellpy.shell_loads.shell_conservative_load import PressureLoad, ConcentratedForce
-from shellpy import simply_supported
+from shellpy.shell_loads.shell_conservative_load import PressureLoad
 from shellpy import Shell
 from shellpy import ConstantThickness
 from shellpy import MidSurfaceGeometry, xi1_, xi2_

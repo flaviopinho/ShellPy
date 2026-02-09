@@ -2,12 +2,12 @@ from typing import Any
 import numpy as np
 from multipledispatch import dispatch
 
-from shellpy import Shell
-from shellpy.numeric_integration.boole_integral import boole_weights_simple_integral
-from shellpy.numeric_integration.default_integral_division import n_integral_default_x, n_integral_default_y, \
+from ..shell import Shell
+from ..numeric_integration.boole_integral import boole_weights_simple_integral
+from ..numeric_integration.default_integral_division import n_integral_default_x, n_integral_default_y, \
     n_integral_default_z
-from shellpy.numeric_integration.integral_weights import double_integral_weights
-from shellpy.shell_loads import ConcentratedForce, PressureLoad
+from ..numeric_integration.integral_weights import double_integral_weights
+from ..shell_loads import ConcentratedForce, PressureLoad
 
 
 # Function to compute the energy functional for the applied loads on the shell using Koiter's theory

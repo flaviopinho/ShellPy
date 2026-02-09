@@ -1,12 +1,12 @@
 import numpy as np
 
-from shellpy import Shell, displacement_first_covariant_derivatives
-from shellpy.materials.shell_density import shell_density
-from shellpy.numeric_integration.boole_integral import boole_weights_simple_integral
-from shellpy.numeric_integration.default_integral_division import n_integral_default_x, n_integral_default_y, \
+from ..shell import Shell
+from ..displacement_covariant_derivative import displacement_first_covariant_derivatives
+from ..materials.shell_density import shell_density
+from ..numeric_integration.default_integral_division import n_integral_default_x, n_integral_default_y, \
     n_integral_default_z
-from shellpy.numeric_integration.gauss_integral import gauss_weights_simple_integral
-from shellpy.numeric_integration.integral_weights import double_integral_weights
+from ..numeric_integration.gauss_integral import gauss_weights_simple_integral
+from ..numeric_integration.integral_weights import double_integral_weights
 
 
 def fast_koiter_kinetic_energy(shell: Shell,

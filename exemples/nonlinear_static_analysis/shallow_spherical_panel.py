@@ -12,7 +12,7 @@ import sympy as sym
 import numpy as np
 
 from shellpy.continuationpy.continuation import Continuation
-from exemples.nonlinear_static_analysis.residue_jacobian_stability import shell_residue, shell_jacobian, shell_stability
+from shellpy.utils.residue_jacobian_stability import shell_residue, shell_jacobian, shell_stability
 # Import custom modules related to shell analysis
 from shellpy.displacement_expansion import simply_supported  # Defines simply supported boundary conditions
 from shellpy.expansions.eigen_function_expansion import EigenFunctionExpansion # Eigenfunction expansion for displacements

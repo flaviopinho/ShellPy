@@ -10,10 +10,10 @@ import sympy as sym
 import numpy as np
 
 from shellpy.continuationpy.continuation import Continuation
-from exemples.nonlinear_static_analysis.residue_jacobian_stability import shell_stability, shell_jacobian, shell_residue
-from shellpy import pinned
+from shellpy.utils.residue_jacobian_stability import shell_stability, shell_jacobian, shell_residue
 from shellpy.expansions.eigen_function_expansion import EigenFunctionExpansion
 from shellpy import RectangularMidSurfaceDomain
+from shellpy.displacement_expansion import pinned
 
 from shellpy.materials.isotropic_homogeneous_linear_elastic_material import IsotropicHomogeneousLinearElasticMaterial
 from shellpy.sanders_koiter import koiter_load_energy, fast_koiter_strain_energy

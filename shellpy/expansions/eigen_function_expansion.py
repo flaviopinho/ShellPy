@@ -1,9 +1,9 @@
 import numpy as np
 
-from shellpy import DisplacementExpansion, displacement_field_index, cache_method
+from ..displacement_expansion import DisplacementExpansion, displacement_field_index
 from shellpy import RectangularMidSurfaceDomain
-from shellpy.expansions import determine_eigenfunctions
-from shellpy.expansions.simple_expansions import constant_value_expansion, fourier_expansion_for_periodic_solutions
+from .determine_eigen_functions import determine_eigenfunctions
+from .simple_expansions import constant_value_expansion, fourier_expansion_for_periodic_solutions
 
 
 class EigenFunctionExpansion(DisplacementExpansion):

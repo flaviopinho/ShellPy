@@ -36,8 +36,8 @@ from shellpy import (
     RectangularMidSurfaceDomain,
     MidSurfaceGeometry,
     xi1_, xi2_,
-    simply_supported_fsdt5,
 )
+from shellpy.displacement_expansion import simply_supported_fsdt5
 from shellpy.cache_decorator import clear_cache
 
 # Kinematic expansions
@@ -54,7 +54,7 @@ from shellpy.materials.functionally_graded_material import FunctionallyGradedMat
 from shellpy.tensor_derivatives import tensor_derivative
 
 # Plot
-from exemples.paper_results.shell_mode import shell_mode
+from shellpy.utils.shell_mode import shell_mode
 
 
 # ======================================================================

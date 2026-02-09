@@ -27,9 +27,9 @@ from shellpy import (
     RectangularMidSurfaceDomain,
     MidSurfaceGeometry,
     xi1_, xi2_,
-    simply_supported_fsdt6,
 )
 from shellpy.cache_decorator import clear_cache
+from shellpy.displacement_expansion import simply_supported_fsdt6
 
 from shellpy.expansions.enriched_cosine_expansion import EnrichedCosineExpansion
 
@@ -40,7 +40,7 @@ from shellpy.fsdt6.strain_energy import quadratic_strain_energy
 from shellpy.materials.functionally_graded_material import FunctionallyGradedMaterial
 from shellpy.tensor_derivatives import tensor_derivative
 
-from exemples.paper_results.shell_mode import shell_mode
+from shellpy.utils.shell_mode import shell_mode
 
 
 # ======================================================================

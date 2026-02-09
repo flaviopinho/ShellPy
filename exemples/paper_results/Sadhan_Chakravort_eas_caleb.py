@@ -14,12 +14,11 @@
 #  - Evaluate multiple boundary conditions within a single loop
 # ============================================================================
 
-import matplotlib.pyplot as plt
 import sympy as sym
 import numpy as np
 from scipy.linalg import eigh
 
-from exemples.paper_results.shell_mode import shell_mode
+from shellpy.utils.shell_mode import shell_mode
 from shellpy.cache_decorator import clear_cache
 # --- ShellPy: expansions, materials, and operators ---
 from shellpy.expansions.enriched_cosine_expansion import EnrichedCosineExpansion

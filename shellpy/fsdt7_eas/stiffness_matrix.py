@@ -1,13 +1,13 @@
 from time import time
 import numpy as np
-from shellpy import Shell
-from shellpy.fsdt7_eas.enhanced_assumed_strain import enhanced_assumed_strain
-from shellpy.fsdt6.shear_correction_factor import shear_correction_factor
-from shellpy.fsdt6.constitutive_matrix_in_shell_frame import constitutive_matrix_in_shell_frame
-from shellpy.fsdt7_eas.constitutive_matriz_in_material_frame import constitutive_matrix_in_material_frame
-from shellpy.fsdt6.strain_vector import linear_strain_vector
-from shellpy.numeric_integration.gauss_integral import gauss_weights_simple_integral
-from shellpy.numeric_integration.integral_weights import double_integral_weights
+from ..shell import Shell
+from ..fsdt7_eas.enhanced_assumed_strain import enhanced_assumed_strain
+from ..fsdt6.shear_correction_factor import shear_correction_factor
+from ..fsdt6.constitutive_matrix_in_shell_frame import constitutive_matrix_in_shell_frame
+from ..fsdt7_eas.constitutive_matriz_in_material_frame import constitutive_matrix_in_material_frame
+from ..fsdt6.strain_vector import linear_strain_vector
+from ..numeric_integration.gauss_integral import gauss_weights_simple_integral
+from ..numeric_integration.integral_weights import double_integral_weights
 
 
 def stiffness_matrix(shell: Shell, eas_field, n_x=20, n_y=20, n_z=10, integral_method=gauss_weights_simple_integral):

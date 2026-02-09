@@ -4,13 +4,47 @@
 
 ## 🚀 Installation
 
-Clone the repository and install in editable mode:
+It is strongly recommended to use a virtual environment to avoid dependency conflicts.
+
+### 1️⃣ Clone the repository
 
 ```bash
 git clone https://github.com/flaviopinho/ShellPy.git
 cd ShellPy
+```
+
+### 2️⃣ Create and activate a virtual environment
+
+#### On Linux / macOS
+```bash
+python3 -m venv venv
+source venv/bin/activate
+```
+
+#### On Windows
+```bash
+python -m venv venv
+venv\Scripts\activate
+```
+
+After activation, you should see (venv) in your terminal prompt.
+
+### 3️⃣ Install ShellPy using pip
+```bash
 pip install -e .
 ```
+
+This will also install all dependencies listed in requirements.txt.
+
+### 🔎 Verify installation (optional)
+```bash
+python -c "import shellpy; print(shellpy.__version__)"
+```
+
+
+If no error is raised, the installation was successful.
+
+
 
 This will also install all dependencies listed in `requirements.txt`.
 
@@ -57,8 +91,6 @@ pytest -v
 
 ```
 ShellPy/
-├───continuationpy
-│   └───predator_pray
 ├───exemples
 │   ├───linear_normal_modes
 │   ├───linear_static_analysis
@@ -66,6 +98,7 @@ ShellPy/
 │   └───paper_results
 │       └───fem_models
 ├───shellpy
+│   ├───continuationpy
 │   ├───expansions
 │   ├───fsdt5
 │   ├───fsdt6
@@ -74,7 +107,8 @@ ShellPy/
 │   ├───materials
 │   ├───numeric_integration
 │   ├───sanders_koiter
-│   └───shell_loads
+│   ├───shell_loads
+│   └───utils
 └───tests
 ├── .gitignore
 ├── README.md 

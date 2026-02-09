@@ -2,11 +2,11 @@ from time import time
 
 import numpy as np
 
-from shellpy import Shell
-from shellpy.fsdt_tensor.fosd_strain_tensor import fosd_linear_strain_components, fosd_nonlinear_strain_components
-from shellpy.fsdt_tensor.constitutive_tensor_fosd import constitutive_tensor_for_fosd
-from shellpy.numeric_integration.gauss_integral import gauss_weights_simple_integral
-from shellpy.numeric_integration.integral_weights import double_integral_weights
+from ..shell import Shell
+from ..fsdt_tensor.fosd_strain_tensor import fosd_linear_strain_components, fosd_nonlinear_strain_components
+from ..fsdt_tensor.constitutive_tensor_fosd import constitutive_tensor_for_fosd
+from ..numeric_integration.gauss_integral import gauss_weights_simple_integral
+from ..numeric_integration.integral_weights import double_integral_weights
 
 
 def fosd_strain_energy(shell: Shell, n_x, n_y, n_z, integral_method=gauss_weights_simple_integral):

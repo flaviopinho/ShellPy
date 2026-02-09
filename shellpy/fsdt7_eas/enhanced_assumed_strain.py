@@ -1,7 +1,6 @@
 import numpy as np
-from numpy.polynomial.legendre import Legendre
 
-from shellpy import DisplacementExpansion
+from ..displacement_expansion import DisplacementExpansion
 
 
 def enhanced_assumed_strain(eas_field: DisplacementExpansion, integration_points, W_xy):

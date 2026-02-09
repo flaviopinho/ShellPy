@@ -1,6 +1,8 @@
 import numpy as np
 
-from shellpy import MidSurfaceGeometry, DisplacementExpansion, displacement_first_covariant_derivatives
+from ..midsurface_geometry import MidSurfaceGeometry
+from ..displacement_expansion import DisplacementExpansion
+from ..displacement_covariant_derivative import displacement_first_covariant_derivatives
 
 
 def fosd_linear_strain_components(mid_surface_geometry: MidSurfaceGeometry,

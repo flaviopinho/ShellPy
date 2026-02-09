@@ -29,7 +29,7 @@ import sympy as sym
 import numpy as np
 from scipy.linalg import eig
 
-from exemples.paper_results.shell_mode import shell_mode
+from shellpy.utils.shell_mode import shell_mode
 from shellpy import (
     Shell,
     ConstantThickness,
@@ -40,7 +40,6 @@ from shellpy import (
 from shellpy.cache_decorator import clear_cache
 
 from shellpy.expansions.enriched_cosine_expansion import EnrichedCosineExpansion
-from shellpy.expansions.polinomial_expansion import LegendreSeries
 from shellpy.fsdt7_eas.EAS_expansion import EasExpansion
 from shellpy.fsdt7_eas.mass_matrix import mass_matrix
 from shellpy.fsdt7_eas.stiffness_matrix import stiffness_matrix

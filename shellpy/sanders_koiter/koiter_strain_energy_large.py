@@ -1,8 +1,8 @@
 from time import time
 import numpy as np
 
-from shellpy import Shell
-from . import plane_stress_constitutive_tensor_for_koiter_theory
+from ..shell import Shell
+from .constitutive_tensor_koiter import plane_stress_constitutive_tensor_for_koiter_theory
 from .koiter_strain_tensor import koiter_linear_strain_components
 from .koiter_strain_tensor_large import koiter_nonlinear_strain_components_quadratic
 from ..numeric_integration.default_integral_division import n_integral_default_x, n_integral_default_z, \

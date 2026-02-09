@@ -28,8 +28,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.linalg import eig
 
-from shellpy import pinned, fully_clamped
-from shellpy.expansions.eigen_function_expansion import EigenFunctionExpansion
 from shellpy.expansions.enriched_cosine_expansion import EnrichedCosineExpansion
 from shellpy import RectangularMidSurfaceDomain
 from shellpy import xi1_, xi2_, MidSurfaceGeometry

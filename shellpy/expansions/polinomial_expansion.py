@@ -1,8 +1,8 @@
 import numpy as np
 from numpy import polynomial as P
 
-from shellpy import DisplacementExpansion, displacement_field_index, cache_method
-from shellpy import RectangularMidSurfaceDomain
+from ..displacement_expansion import DisplacementExpansion, displacement_field_index
+from ..mid_surface_domain import RectangularMidSurfaceDomain
 
 
 class GenericPolynomialSeries(DisplacementExpansion):

@@ -2,11 +2,10 @@ from time import time
 
 import numpy as np
 
-from shellpy import Shell
-from shellpy.materials.shell_density import shell_density
-from shellpy.numeric_integration.boole_integral import boole_weights_simple_integral
-from shellpy.numeric_integration.gauss_integral import gauss_weights_simple_integral
-from shellpy.numeric_integration.integral_weights import double_integral_weights
+from ..shell import Shell
+from ..materials.shell_density import shell_density
+from ..numeric_integration.gauss_integral import gauss_weights_simple_integral
+from ..numeric_integration.integral_weights import double_integral_weights
 
 
 def fosd_kinetic_energy(shell: Shell, n_x, n_y, n_z, integral_method=gauss_weights_simple_integral):

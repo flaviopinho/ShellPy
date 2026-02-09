@@ -1,8 +1,8 @@
 import numpy as np
 
-from shellpy import displacement_first_covariant_derivatives, displacement_second_covariant_derivatives
-from shellpy import DisplacementExpansion
-from shellpy import MidSurfaceGeometry
+from ..displacement_covariant_derivative import displacement_first_covariant_derivatives, displacement_second_covariant_derivatives
+from ..displacement_expansion import DisplacementExpansion
+from ..midsurface_geometry import MidSurfaceGeometry
 
 
 # @cache_function

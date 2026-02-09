@@ -4,12 +4,11 @@ import matplotlib.pyplot as plt
 from scipy.linalg import eig, eigh
 
 from shellpy.expansions.eigen_function_expansion import EigenFunctionExpansion
-from shellpy.expansions.enriched_cosine_expansion import EnrichedCosineExpansion
 
 from shellpy import RectangularMidSurfaceDomain
 from shellpy import xi1_, xi2_, MidSurfaceGeometry
 from shellpy import Shell
-from shellpy.materials.isotropic_homogeneous_linear_elastic_material import IsotropicHomogeneousLinearElasticMaterial
+from shellpy.materials import IsotropicHomogeneousLinearElasticMaterial
 from shellpy.sanders_koiter import fast_koiter_kinetic_energy, fast_koiter_quadratic_strain_energy
 from shellpy.tensor_derivatives import tensor_derivative
 from shellpy import ConstantThickness

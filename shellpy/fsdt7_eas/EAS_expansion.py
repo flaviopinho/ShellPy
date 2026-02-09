@@ -1,6 +1,7 @@
 import numpy as np
 from numpy.polynomial.legendre import Legendre
-from shellpy.expansions.simple_expansions import fourier_expansion_for_periodic_solutions
+
+from ..expansions.simple_expansions import fourier_expansion_for_periodic_solutions
 
 
 # ==================================================

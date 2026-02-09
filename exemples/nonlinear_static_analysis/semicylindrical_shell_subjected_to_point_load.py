@@ -7,7 +7,7 @@ import sympy as sym
 import numpy as np
 
 from shellpy.continuationpy.continuation import Continuation
-from exemples.nonlinear_static_analysis.residue_jacobian_stability import shell_jacobian, shell_residue, shell_stability
+from shellpy.utils.residue_jacobian_stability import shell_jacobian, shell_residue, shell_stability
 from shellpy.cache_decorator import clear_cache
 from shellpy.expansions.eigen_function_expansion import EigenFunctionExpansion
 from shellpy import RectangularMidSurfaceDomain

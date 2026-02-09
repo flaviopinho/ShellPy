@@ -1,9 +1,10 @@
 import numpy as np
 from multipledispatch import dispatch
 
-from shellpy import MidSurfaceGeometry, cache_function
-from shellpy.materials.functionally_graded_material import FunctionallyGradedMaterial
-from shellpy.materials.isotropic_homogeneous_linear_elastic_material import IsotropicHomogeneousLinearElasticMaterial
+from ..midsurface_geometry import MidSurfaceGeometry
+from ..cache_decorator import cache_function
+from ..materials.functionally_graded_material import FunctionallyGradedMaterial
+from ..materials.isotropic_homogeneous_linear_elastic_material import IsotropicHomogeneousLinearElasticMaterial
 
 
 @dispatch(MidSurfaceGeometry, IsotropicHomogeneousLinearElasticMaterial, np.ndarray, np.ndarray, np.ndarray)

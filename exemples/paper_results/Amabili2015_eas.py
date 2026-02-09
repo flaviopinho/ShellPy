@@ -22,8 +22,6 @@ Main steps:
 import numpy as np
 import sympy as sym
 from scipy.linalg import eig
-import matplotlib.pyplot as plt
-import pyvista as pv
 
 # ShellPy core imports
 from shellpy import (
@@ -48,7 +46,7 @@ from shellpy.materials.isotropic_homogeneous_linear_elastic_material import (
 )
 
 # Post-processing
-from exemples.paper_results.shell_mode import shell_mode
+from shellpy.utils.shell_mode import shell_mode
 
 
 # ======================================================================

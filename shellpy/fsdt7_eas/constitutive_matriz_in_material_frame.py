@@ -1,11 +1,12 @@
 import numpy as np
 from multipledispatch import dispatch
 
-from shellpy import MidSurfaceGeometry, cache_function
-from shellpy.fsdt6.transformation_matrix import transformation_matrix_rotation
-from shellpy.materials.functionally_graded_material import FunctionallyGradedMaterial
-from shellpy.materials.isotropic_homogeneous_linear_elastic_material import IsotropicHomogeneousLinearElasticMaterial
-from shellpy.materials.laminate_orthotropic_material import LaminateOrthotropicMaterial
+from ..midsurface_geometry import MidSurfaceGeometry
+from ..cache_decorator import cache_function
+from ..fsdt6.transformation_matrix import transformation_matrix_rotation
+from ..materials.functionally_graded_material import FunctionallyGradedMaterial
+from ..materials.isotropic_homogeneous_linear_elastic_material import IsotropicHomogeneousLinearElasticMaterial
+from ..materials.laminate_orthotropic_material import LaminateOrthotropicMaterial
 
 
 @dispatch(MidSurfaceGeometry, IsotropicHomogeneousLinearElasticMaterial, object)

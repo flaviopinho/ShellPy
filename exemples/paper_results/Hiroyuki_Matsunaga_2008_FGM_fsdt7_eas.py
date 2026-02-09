@@ -38,13 +38,12 @@ from shellpy import (
     RectangularMidSurfaceDomain,
     MidSurfaceGeometry,
     xi1_, xi2_,
-    simply_supported_fsdt6,
 )
+from shellpy.displacement_expansion import simply_supported_fsdt6
 from shellpy.cache_decorator import clear_cache
 
 # Expansions
 from shellpy.expansions.enriched_cosine_expansion import EnrichedCosineExpansion
-from shellpy.expansions.polinomial_expansion import LegendreSeries
 from shellpy.fsdt7_eas.EAS_expansion import EasExpansion
 
 # Matrices
@@ -55,7 +54,7 @@ from shellpy.fsdt7_eas.stiffness_matrix import stiffness_matrix
 from shellpy.materials.functionally_graded_material import FunctionallyGradedMaterial
 
 # Plot utility
-from exemples.paper_results.shell_mode import shell_mode
+from shellpy.utils.shell_mode import shell_mode
 
 
 # ======================================================================

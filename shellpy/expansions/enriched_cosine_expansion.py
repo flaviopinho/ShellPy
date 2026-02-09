@@ -1,9 +1,9 @@
 import sympy as sym
 import numpy as np
 
-from shellpy import DisplacementExpansion, displacement_field_index, cache_method
-from shellpy import RectangularMidSurfaceDomain
-from shellpy.expansions.simple_expansions import constant_value_expansion, fourier_expansion_for_periodic_solutions
+from ..displacement_expansion import DisplacementExpansion, displacement_field_index
+from ..mid_surface_domain import RectangularMidSurfaceDomain
+from .simple_expansions import constant_value_expansion, fourier_expansion_for_periodic_solutions
 
 
 class EnrichedCosineExpansion(DisplacementExpansion):
