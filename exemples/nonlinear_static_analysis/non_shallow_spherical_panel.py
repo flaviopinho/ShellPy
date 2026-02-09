@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import sympy as sym
 import numpy as np
 
-from continuationpy.continuation import Continuation
+from shellpy.continuationpy.continuation import Continuation
 from exemples.nonlinear_static_analysis.residue_jacobian_stability import shell_stability, shell_jacobian, shell_residue
 from shellpy import pinned
 from shellpy.expansions.eigen_function_expansion import EigenFunctionExpansion

@@ -1,0 +1,2 @@
+from .numeric_integration import simple_integral
+from .numeric_integration import double_integral

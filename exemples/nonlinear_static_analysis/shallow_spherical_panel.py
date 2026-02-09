@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 import sympy as sym
 import numpy as np
 
-from continuationpy.continuation import Continuation
+from shellpy.continuationpy.continuation import Continuation
 from exemples.nonlinear_static_analysis.residue_jacobian_stability import shell_residue, shell_jacobian, shell_stability
 # Import custom modules related to shell analysis
 from shellpy.displacement_expansion import simply_supported  # Defines simply supported boundary conditions

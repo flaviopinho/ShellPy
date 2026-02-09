@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import sympy as sym
 import numpy as np
 
-from continuationpy.continuation import Continuation
+from shellpy.continuationpy.continuation import Continuation
 from exemples.nonlinear_static_analysis.residue_jacobian_stability import shell_jacobian, shell_residue, shell_stability
 from shellpy.expansions.enriched_cosine_expansion import EnrichedCosineExpansion
 from shellpy import RectangularMidSurfaceDomain
