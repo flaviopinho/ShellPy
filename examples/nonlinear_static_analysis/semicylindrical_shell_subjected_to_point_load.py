@@ -7,12 +7,11 @@ import sympy as sym
 import numpy as np
 
 from shellpy.continuationpy.continuation import Continuation
+from shellpy.fsdt6 import load_energy, strain_energy
 from shellpy.utils.residue_jacobian_stability import shell_jacobian, shell_residue, shell_stability
 from shellpy.cache_decorator import clear_cache
 from shellpy.expansions.eigen_function_expansion import EigenFunctionExpansion
 from shellpy import RectangularMidSurfaceDomain
-from shellpy.fsdt_tensor.fosd_load_energy import fosd_load_energy
-from shellpy.fsdt_tensor.fosd_strain_energy import fosd_strain_energy
 from shellpy.materials.isotropic_homogeneous_linear_elastic_material import IsotropicHomogeneousLinearElasticMaterial
 from shellpy.tensor_derivatives import tensor_derivative
 from shellpy.shell_loads.shell_conservative_load import ConcentratedForce
@@ -160,9 +159,9 @@ def create_shell():
     material = IsotropicHomogeneousLinearElasticMaterial(E, nu, density)
     shell = Shell(mid_surface_geometry, thickness, rectangular_domain, material, displacement_field, load)
 
-    U_ext = fosd_load_energy(shell)
+    U_ext = load_energy(shell)
 
-    U2_int, U3_int, U4_int = fosd_strain_energy(shell, integral_x, integral_y, integral_z)
+    U2_int, U3_int, U4_int = strain_energy(shell, integral_x, integral_y, integral_z)
 
     clear_cache(shell)
 

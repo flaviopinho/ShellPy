@@ -7,19 +7,25 @@ cache_global = {}
 
 
 def generate_hash(value):
-    """Generates a unique hash for a given input value.
 
-    - If the value is a number (int, float) or a NumPy array, a hash is generated based on its content.
-    - For NumPy arrays, the content is converted to bytes before hashing to ensure uniqueness.
-    - For other data types, the hash is based only on the type of the object.
-    """
-    if isinstance(value, (int, float, np.ndarray, tuple)):
-        if isinstance(value, np.ndarray):
-            value = value.tobytes()  # Convert arrays to bytes for hashing
-        return hashlib.sha256(str(value).encode("utf-8")).hexdigest()
+    if isinstance(value, np.ndarray):
 
-    # For other types, return a hash based only on the object's type
-    return hashlib.sha256(str(type(value)).encode("utf-8")).hexdigest()
+        value = np.ascontiguousarray(value)
+
+        return hashlib.sha256(value.view(np.uint8)).hexdigest()
+
+    elif isinstance(value, (int, float, str, bool)):
+
+        return hashlib.sha256(str(value).encode()).hexdigest()
+
+    elif isinstance(value, tuple):
+
+        return hashlib.sha256(
+            "".join(generate_hash(v) for v in value).encode()
+        ).hexdigest()
+
+    else:
+        return hashlib.sha256(str(type(value)).encode()).hexdigest()
 
 
 def make_cache_key(func_name, *args, **kwargs):
