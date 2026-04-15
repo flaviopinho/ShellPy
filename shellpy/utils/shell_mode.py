@@ -1,5 +1,6 @@
 import numpy as np
 import pyvista as pv
+import matplotlib.colors as mcolors
 
 from shellpy import Shell, RectangularMidSurfaceDomain
 
@@ -157,18 +158,33 @@ def shell_mode(
         off_screen=True,
     )
 
+    colors = [
+        (0, 0, 1),  # azul
+        (0, 1, 1),  # ciano
+        (0, 1, 0),  # verde
+        (1, 1, 0),  # amarelo
+        (1, 0, 0)  # vermelho
+    ]
+
+    cmap = mcolors.LinearSegmentedColormap.from_list("my_jet", colors, N=500)
+
     plotter.add_mesh(
         grid,
         scalars="displacement",
-        cmap="turbo",
+        cmap=cmap,
         opacity=1.0,
-        lighting=False,
+        lighting=True,
+        ambient=1,
+        diffuse=0,
+        specular=0,
         show_edges=True,
         show_scalar_bar=False,
     )
 
     # Isometric view with parallel projection
     plotter.view_isometric()
+    #plotter.camera.azimuth = 120.0
+
     plotter.enable_parallel_projection()
 
     # Clean visualization

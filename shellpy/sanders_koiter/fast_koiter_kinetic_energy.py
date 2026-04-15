@@ -87,6 +87,8 @@ def fast_koiter_kinetic_energy(shell: Shell,
         # Convert covariant derivatives to contravariant form using the metric tensor
         dcu_contra = np.einsum('mi...,i...->m...', G, dcu)
 
+        print(f'Calculating kinect energy components {i} of {n_dof}')
+
         # Compute components of the linearized curvature term mu
         mu[i, 0] = -dcu_contra[2, 0]  # First component
         mu[i, 1] = -dcu_contra[2, 1]  # Second component

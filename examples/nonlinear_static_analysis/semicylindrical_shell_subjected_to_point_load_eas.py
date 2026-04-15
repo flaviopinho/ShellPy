@@ -1,17 +1,17 @@
 """
 
 """
-import os
 import matplotlib.pyplot as plt
 import sympy as sym
 import numpy as np
 
 from shellpy.continuationpy.continuation import Continuation
-from shellpy.fsdt6 import load_energy, strain_energy
+from shellpy.expansions import EnrichedCosineExpansion
+from shellpy.fsdt6 import load_energy
 from shellpy.fsdt7_eas.EAS_expansion import EasExpansion
 from shellpy.fsdt7_eas.internal_force_vector import internal_force_vector
-from shellpy.utils.residue_jacobian_stability import shell_jacobian, shell_residue, shell_stability
-from shellpy.cache_decorator import clear_cache
+from shellpy.fsdt7_eas.tangent_stiffness_matrix import tangent_stiffness_matrix
+from shellpy.utils.residue_jacobian_stability import shell_stability
 from shellpy.expansions.eigen_function_expansion import EigenFunctionExpansion
 from shellpy import RectangularMidSurfaceDomain
 from shellpy.materials.isotropic_homogeneous_linear_elastic_material import IsotropicHomogeneousLinearElasticMaterial
@@ -20,8 +20,15 @@ from shellpy.shell_loads.shell_conservative_load import ConcentratedForce
 from shellpy import Shell
 from shellpy import ConstantThickness
 from shellpy import MidSurfaceGeometry, xi1_, xi2_
-import dill
 
+
+def residuo1(u, shell, eas_field, F_ext, nx, ny, nz):
+    return internal_force_vector(u[0:-1], shell, eas_field, nx, ny, nz) + F_ext * u[-1]
+
+
+def jacobian1(u, shell, eas_field, F_ext, nx, ny, nz):
+    J_int = tangent_stiffness_matrix(u[0:-1], shell, eas_field, nx, ny, nz)
+    return np.hstack((J_int, F_ext[:, np.newaxis]))
 
 
 def output_results(shell, xi1, xi2, x, *args):
@@ -33,7 +40,7 @@ def output_results(shell, xi1, xi2, x, *args):
 
     plot_shell_arc(shell, u)
 
-    return -U[2], p/2, "u_z", "P"
+    return -U[2], p, "u_z", "P"
 
 
 def plot_shell_arc(shell, u):
@@ -52,7 +59,7 @@ def plot_shell_arc(shell, u):
     reciprocal_base = shell.mid_surface_geometry.reciprocal_base(x, y)
 
     # Calculate the deformed shape (mode) using the displacement expansion.
-    mode1 = shell.displacement_expansion(u, x, y)   # Compute mode shape
+    mode1 = shell.displacement_expansion(u, x, y)  # Compute mode shape
     mode1 = mode1[0:3]
     mode = reciprocal_base[0] * mode1[0] + reciprocal_base[1] * mode1[1] + reciprocal_base[2] * mode1[2]
 
@@ -100,9 +107,10 @@ def plot_shell_arc(shell, u):
 
     plt.pause(0.01)  # Pause briefly to allow the plot to update. This is important for animations.
 
-def create_shell():
-    integral_x = 6
-    integral_y = 6
+
+if __name__ == "__main__":
+    integral_x = 5
+    integral_y = 5
     integral_z = 4
 
     R = 1.016
@@ -115,12 +123,12 @@ def create_shell():
     E = 1
     nu = 0.3
 
-    load = ConcentratedForce(0, 0, -1000 / E1, 1, 0)
+    load = ConcentratedForce(0, 0, -500 / E1, 1, 0)
 
     rectangular_domain = RectangularMidSurfaceDomain(0, 1, 0, np.pi / 2)
 
-    n_modos = 3
-    n_modos1 = 3
+    n_modos = 6
+    n_modos1 = 6
 
     expansion_size = {"u1": (n_modos1, n_modos),
                       "u2": (n_modos1, n_modos),
@@ -140,7 +148,7 @@ def create_shell():
                               "xi2": ("F", "F")}
     boundary_conditions_v2 = {"xi1": ("S", "F"),
                               "xi2": ("S", "S")}
-    boundary_conditions_v3 = {"xi1": ("S", "F"),
+    boundary_conditions_v3 = {"xi1": ("F", "F"),
                               "xi2": ("F", "F")}
 
     boundary_conditions = {"u1": boundary_conditions_u1,
@@ -150,14 +158,12 @@ def create_shell():
                            "v2": boundary_conditions_v2,
                            "v3": boundary_conditions_v3}
 
-
-    #displacement_field = EnrichedCosineExpansion(expansion_size, rectangular_domain, boundary_conditions)
+    # displacement_field = EnrichedCosineExpansion(expansion_size, rectangular_domain, boundary_conditions)
     displacement_field = EigenFunctionExpansion(expansion_size, rectangular_domain, boundary_conditions)
-    #displacement_field = GenericPolynomialSeries(np.polynomial.Legendre, expansion_size, rectangular_domain, boundary_conditions)
+    # displacement_field = GenericPolynomialSeries(np.polynomial.Legendre, expansion_size, rectangular_domain, boundary_conditions)
 
-    eas_field = EasExpansion({"eas": (10, 10)}, rectangular_domain,
-                               {"eas": {"xi1": ("F", "F"), "xi2": ("F", "F")}})
-
+    eas_field = EasExpansion({"eas": (n_modos1, n_modos)}, rectangular_domain,
+                             {"eas": {"xi1": ("F", "F"), "xi2": ("F", "F")}})
 
     R_ = sym.Matrix([xi1_ * L, R * sym.sin(xi2_), R * sym.cos(xi2_)])
     mid_surface_geometry = MidSurfaceGeometry(R_)
@@ -165,41 +171,20 @@ def create_shell():
     material = IsotropicHomogeneousLinearElasticMaterial(E, nu, density)
     shell = Shell(mid_surface_geometry, thickness, rectangular_domain, material, displacement_field, load)
 
-    K, G, H = internal_force_vector(shell, eas_field, integral_x, integral_y, integral_z)
-
     U_ext = load_energy(shell)
-
-    clear_cache(shell)
-
-    dill.settings['recurse'] = True
-
-    with open("semicylindrical_shell_subjected_to_point_load_eas.dill", "wb") as f:
-        dill.dump((shell, U_ext, K, G, H), f)
-
-
-if __name__ == "__main__":
-    filename = "semicylindrical_shell_subjected_to_point_load_eas.dill"
-    if not os.path.exists(filename):
-        print("Calculating shell")
-        create_shell()
-
-    with open(filename, "rb") as f:
-        shell, U_ext, K, G, H = dill.load(f)
-
-    # Numero de variaveis
-    n = shell.displacement_expansion.number_of_degrees_of_freedom()
-    # Numero de parametros
-    p = 1
-
-    div = 1
     F_ext = tensor_derivative(U_ext, 0)
 
-    K_diff = tensor_derivative(K, 1)
-    G_diff = tensor_derivative(G, 1)
-    H_diff = tensor_derivative(H, 1)
+    # Number of degrees of freedom
+    n_dof = shell.displacement_expansion.number_of_degrees_of_freedom()
 
-    residue = lambda u, *args: shell_residue((K, G, H), F_ext, u, *args)
-    jacobian = lambda u, *args: shell_jacobian((K_diff, G_diff, H_diff), F_ext, u, *args)
+    # Number of variables (degrees of freedom)
+    n = displacement_field.number_of_degrees_of_freedom()
+    # Number of parameters (external loading factor)
+    p = 1
+
+    # Define functions for residual, Jacobian, stability, and output
+    residue = lambda u, *args: residuo1(u, shell, eas_field, F_ext, integral_x, integral_y, integral_z)
+    jacobian = lambda u, *args: jacobian1(u, shell, eas_field, F_ext, integral_x, integral_y, integral_z)
     stability = shell_stability
     output = lambda u, *args: output_results(shell, 1, 0, u, *args)
 
@@ -207,8 +192,8 @@ if __name__ == "__main__":
     continuation_boundary = np.zeros((n + p, 2))
     continuation_boundary[:-1, 0] = -100000
     continuation_boundary[:-1, 1] = 100000
-    continuation_boundary[-1, 0] = -2
-    continuation_boundary[-1, 1] = 10
+    continuation_boundary[-1, 0] = -0.1
+    continuation_boundary[-1, 1] = 1.6
 
     # Definindo continuation_model
     continuation_model = {'n': n,
@@ -220,13 +205,16 @@ if __name__ == "__main__":
                           'output_function': output}
 
     continuation = Continuation(continuation_model)
-    continuation.parameters['tol2'] = 1E-9
-    continuation.parameters['tol1'] = 1E-9
+    continuation.parameters['tol2'] = 1E-7
+    continuation.parameters['tol1'] = 1E-7
     continuation.parameters['index1'] = -1
     continuation.parameters['index2'] = 0
     continuation.parameters['cont_max'] = 10000
 
-    continuation.parameters['h_max'] = 100
+    continuation.parameters['h_max'] = 10000
+    continuation.parameters['h0'] = 0.01
+    continuation.parameters['jacobian_correction'] = True
+    continuation.parameters['solver_pinv'] = True
 
     # Determinacao de um ponto regular inicial
     u0 = np.zeros(continuation_model['n'] + continuation_model['p'])

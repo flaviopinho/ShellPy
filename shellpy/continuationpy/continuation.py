@@ -18,7 +18,11 @@ class Continuation:
             'tol2': 1e-9,  # Tolerância 2 para o erro da correção
             'tol_rank': 1e-5,
             'index1': 0,
-            'index2': -1
+            'index2': -1,
+            'jacobian_corrector': True,
+            'solver_pinv': True,
+            # Alteração: parâmetro para evitar que o vetor tangente fique com componente do parâmetro de continuação ~0
+            'min_param_component': 1e-3,
         }
 
         self.branches = {}  # Dicionário para armazenar os ramos com seus pontos
@@ -26,7 +30,6 @@ class Continuation:
         # Inicializa o gráfico
         self.fig = plt.figure(1)
         self.fig.add_subplot(111)
-
 
     def continue_branch(self, u0, t0, w0, branch_name=None):
 
@@ -51,9 +54,15 @@ class Continuation:
             for i in range(1, self.parameters['i_max'] + 1):
                 # Corretor
                 residue = self.model['residue'](v, self.model)
-                jacobian_v = self.model['jacobian'](v, self.model)
-                dv = np.linalg.pinv(jacobian_v) @ residue
-                # dv = np.linalg.lstsq(jacobian_v, residue, rcond=None)[0]
+                if self.parameters['jacobian_corrector']:
+                    jacobian_v = self.model['jacobian'](v, self.model)
+                else:
+                    jacobian_v = jacobian_u
+
+                if self.parameters['solver_pinv']:
+                    dv = np.linalg.pinv(jacobian_v) @ residue
+                else:
+                    dv = np.linalg.lstsq(jacobian_v, residue, rcond=None)[0]
 
                 v = v - dv
 
@@ -114,6 +123,10 @@ class Continuation:
         det_R = np.linalg.det(R[:n, :])
         f = det_Q * det_R
         t = np.sign(f) * Q[:, -1]
+
+        if m == n + 1:
+            # Alteração: garantir que a componente do parâmetro de continuação no tangente não seja pequena demais.
+            t = self._ensure_parameter_progress(jacobian, t)
 
         if determine_f:
             return t, f
@@ -249,8 +262,6 @@ class Continuation:
             tipo = 'BPC'
             stability_um = 0
 
-
-
         self.save_results(branch_name, um, t1, stability_um, tipo)
 
     def save_results(self, branch_name, u, t_u, stability_u, point_type):
@@ -274,7 +285,6 @@ class Continuation:
             label2 = f'u{self.parameters['index2']}'
 
         # Gráfico da evolução de u
-
 
         # Se for um ponto de bifurcação ou de ramificação, fazer o ponto vermelho
         if point_type == "PR":
@@ -343,3 +353,28 @@ class Continuation:
 
     def branch_switching_via_perturbation(self, u, tol=None, num_tests=10):
         pass
+
+    def _ensure_parameter_progress(self, jacobian, tangent):
+        # Estratégia: se |t_p| for pequeno, reconstruímos um tangente equivalente
+        # impondo avanço em p (t_p = 1) e resolvendo o restante por mínimos quadrados.
+        min_param_component = self.parameters.get('min_param_component', 1e-3)
+        if abs(tangent[-1]) >= min_param_component:
+            return tangent
+
+        J_u = jacobian[:, :-1]
+        J_p = jacobian[:, -1]
+        try:
+            # Reconstrói um tangente equivalente impondo avanço em p.
+            du = np.linalg.lstsq(J_u, -J_p, rcond=None)[0]
+            tangent_alt = np.hstack((du, np.array([1.0])))
+            tangent_alt_norm = np.linalg.norm(tangent_alt, 2)
+            if tangent_alt_norm > 0:
+                tangent_alt /= tangent_alt_norm
+                if np.dot(tangent_alt, tangent) < 0:
+                    tangent_alt = -tangent_alt
+                return tangent_alt
+        except Exception:
+            pass
+
+        return tangent
+
