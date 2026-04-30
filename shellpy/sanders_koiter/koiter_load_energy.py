@@ -7,7 +7,7 @@ from ..numeric_integration.boole_integral import boole_weights_simple_integral
 from ..numeric_integration.default_integral_division import n_integral_default_x, n_integral_default_y, \
     n_integral_default_z
 from ..numeric_integration.integral_weights import double_integral_weights
-from ..shell_loads import ConcentratedForceGlobal, PressureLoad
+from ..shell_loads import ConcentratedForceGlobal, PressureLoad, LineLoadGlobal, LoadCollection
 from ..shell_loads import ConcentratedForceLocal
 
 
@@ -120,4 +120,72 @@ def koiter_load_energy_density(i: int, load, shell, n_x, n_y, n_z, integral_meth
         :param xi1, xi2: Integration point coordinates.
         :return: Computed energy density at the given point.
         """
-        # Get the displacement shape function 
+        # Get the displacement shape function
+
+
+@dispatch(int, LineLoadGlobal, Shell, object, object, object, object)
+def koiter_load_energy_density(i: int, load, shell, n_x, n_y, n_z, integral_method):
+    """
+    Computes the energy density contribution due to a line load.
+    The integration is 1D, multiplied by the appropriate geometric arc length ds.
+    """
+    # 1. Definir o domínio de integração 1D
+    n_pts = n_x if load.line_along == 'xi1' else n_y
+    xi_var, W_var = integral_method((load.start_coord, load.end_coord), n_pts)
+
+    # 2. Construir os vetores 1D de xi1 e xi2
+    if load.line_along == 'xi1':
+        xi1 = xi_var
+        xi2 = np.full_like(xi1, load.constant_coord)
+    else:
+        xi2 = xi_var
+        xi1 = np.full_like(xi2, load.constant_coord)
+
+    # 3. Avaliar as componentes da carga (suporta constante ou função)
+    qx_val = load.qx(xi1, xi2) if callable(load.qx) else load.qx * np.ones_like(xi1)
+    qy_val = load.qy(xi1, xi2) if callable(load.qy) else load.qy * np.ones_like(xi1)
+    qz_val = load.qz(xi1, xi2) if callable(load.qz) else load.qz * np.ones_like(xi1)
+
+    # 4. Obter o tensor métrico para extrair o diferencial de comprimento de arco (ds)
+    G = shell.mid_surface_geometry.metric_tensor_covariant_components(xi1, xi2)
+
+    if load.line_along == 'xi1':
+        # ds = sqrt(G_11) * d_xi1
+        ds_multiplier = np.sqrt(G[0, 0])
+    else:
+        # ds = sqrt(G_22) * d_xi2
+        ds_multiplier = np.sqrt(G[1, 1])
+
+    # Elementos de peso da integral já multiplicados pela geometria da curva
+    W_arc = W_var * ds_multiplier
+
+    # 5. Obter deslocamentos e base recíproca
+    U_contra = shell.displacement_expansion.shape_function(i, xi1, xi2)
+    N1, N2, N3 = shell.mid_surface_geometry.reciprocal_base(xi1, xi2)
+
+    # Projetar deslocamentos contravariantes no sistema cartesiano global
+    U_cart_x = U_contra[0] * N1[0] + U_contra[1] * N2[0] + U_contra[2] * N3[0]
+    U_cart_y = U_contra[0] * N1[1] + U_contra[1] * N2[1] + U_contra[2] * N3[1]
+    U_cart_z = U_contra[0] * N1[2] + U_contra[1] * N2[2] + U_contra[2] * N3[2]
+
+    # 6. Calcular a energia de trabalho (q . U * ds)
+    dot_product = qx_val * U_cart_x + qy_val * U_cart_y + qz_val * U_cart_z
+
+    energy = -np.sum(dot_product * W_arc)
+
+    return energy
+
+
+@dispatch(int, LoadCollection, Shell, object, object, object, object)
+def koiter_load_energy_density(i: int, load_collection, shell, n_x, n_y, n_z, integral_method):
+    """
+    Computes the total energy density contribution for a collection of loads.
+    It sums the energy contributions of each individual load in the collection
+    using the multipledispatch resolution.
+    """
+    total_energy = 0.0
+
+    for load in load_collection.loads:
+        total_energy += koiter_load_energy_density(i, load, shell, n_x, n_y, n_z, integral_method)
+
+    return total_energy

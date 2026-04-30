@@ -39,6 +39,7 @@ class PressureLoad:
         # Store the pressure magnitude as a single value
         self.pressure = pressure
 
+
 class ConcentratedForceLocal:
     """
     This class represents a concentrated force applied at a specific location on the shell.
@@ -60,3 +61,33 @@ class ConcentratedForceLocal:
 
         # Store the position of the force application point as a 2x1 numpy array (xi1, xi2)
         self.position = np.array([[xi1], [xi2]])
+
+
+class LineLoadGlobal:
+    """
+    Represents a distributed line load applied along a specific parametric curve
+    (either xi1 = constant or xi2 = constant) on the shell.
+    The magnitude is force per unit length (e.g., N/m).
+    """
+
+    def __init__(self, qx, qy, qz, line_along: str, constant_coord: float, start_coord: float, end_coord: float):
+        """
+        :param qx: The load component in the global x-direction (scalar or callable).
+        :param qy: The load component in the global y-direction (scalar or callable).
+        :param qz: The load component in the global z-direction (scalar or callable).
+        :param line_along: 'xi1' if the line runs parallel to the xi1 axis, 'xi2' if parallel to xi2.
+        :param constant_coord: The value of the fixed coordinate (e.g., if line_along='xi1', this is the value of xi2).
+        :param start_coord: The starting boundary of the line.
+        :param end_coord: The ending boundary of the line.
+        """
+        self.qx = qx
+        self.qy = qy
+        self.qz = qz
+
+        if line_along not in ['xi1', 'xi2']:
+            raise ValueError("line_along must be either 'xi1' or 'xi2'")
+
+        self.line_along = line_along
+        self.constant_coord = constant_coord
+        self.start_coord = start_coord
+        self.end_coord = end_coord
