@@ -7,7 +7,8 @@ from ..numeric_integration.boole_integral import boole_weights_simple_integral
 from ..numeric_integration.default_integral_division import n_integral_default_x, n_integral_default_y, \
     n_integral_default_z
 from ..numeric_integration.integral_weights import double_integral_weights
-from ..shell_loads import ConcentratedForce, PressureLoad
+from ..shell_loads import ConcentratedForceGlobal, PressureLoad
+from ..shell_loads import ConcentratedForceLocal
 
 
 # Function to compute the energy functional for the applied loads on the shell using Koiter's theory
@@ -39,7 +40,7 @@ def koiter_load_energy(shell: Shell,
 
 
 # Function to calculate the load energy density for a concentrated force load
-@dispatch(int, ConcentratedForce, Shell, object, object, object, object)
+@dispatch(int, ConcentratedForceGlobal, Shell, object, object, object, object)
 def koiter_load_energy_density(i: int, load, shell, *args):
     """
     Computes the energy density contribution due to a concentrated force applied to the shell.
@@ -63,6 +64,34 @@ def koiter_load_energy_density(i: int, load, shell, *args):
 
     # Calculate the load energy density as the negative dot product of the load vector and the displacement field
     return -np.dot(np.ravel(load.load_vector), (np.ravel(U)))
+
+
+# Function to calculate the load energy density for a concentrated force load
+@dispatch(int, ConcentratedForceLocal, Shell, object, object, object, object)
+def koiter_load_energy_density(i: int, load, shell, *args):
+    """
+    Computes the energy density contribution due to a concentrated force applied to the shell.
+
+    :param i: Index of the displacement degree of freedom.
+    :param load: The concentrated force load applied to the shell.
+    :param shell: The shell object containing displacement expansion and geometry.
+    :return: The computed energy density value.
+    """
+    # Get the position where the concentrated force is applied
+    position = load.position
+
+    # Get the displacement shape function for the given DOF and position
+    U = shell.displacement_expansion.shape_function(i, position[0], position[1])
+
+    G = shell.mid_surface_geometry.metric_tensor_covariant_components(position[0], position[1])
+
+    P = np.zeros(np.shape(load.load_vector))
+    P[0] = load.load_vector[0] / np.sqrt(G[0, 0])
+    P[1] = load.load_vector[1] / np.sqrt(G[1, 1])
+    P[2] = load.load_vector[2]
+
+    # Calculate the load energy density as the negative dot product of the load vector and the displacement field
+    return -np.dot(np.ravel(P), (np.ravel(U)))
 
 
 # Function to calculate the load energy density for a pressure load using numerical integration
@@ -91,30 +120,4 @@ def koiter_load_energy_density(i: int, load, shell, n_x, n_y, n_z, integral_meth
         :param xi1, xi2: Integration point coordinates.
         :return: Computed energy density at the given point.
         """
-        # Get the displacement shape function at the current integration points
-        U = displacement_expansion1.shape_function(i, xi1, xi2)
-
-        # Compute the reciprocal base vectors at the current integration points
-        N1, N2, N3 = midsurface_geometry1.reciprocal_base(xi1, xi2)
-
-        # Compute the displacement field by combining the shape functions and the reciprocal base vectors
-        U = U[0] * N1 + U[1] * N2 + U[2] * N3
-
-        # Compute the force due to the pressure (assuming pressure acts along the N3 direction)
-        F = pressure * N3
-
-        # Compute the square root of the metric determinant for the mid-surface geometry
-        sqrtG = midsurface_geometry1.sqrtG(xi1, xi2)
-
-        # Return the integrand for the energy density using the Einstein summation convention
-        return np.einsum('ixy,ixy,xy->xy', F, U, sqrtG)
-
-    # Define the lambda function to be used in the integration
-    func = lambda xi1, xi2: energy_density(load.pressure, shell.mid_surface_geometry, shell.displacement_expansion, xi1,
-                                           xi2)
-
-    # Get the integration points and weights for the numerical integration
-    xi1, xi2, Wxy = double_integral_weights(shell.mid_surface_domain, n_x, n_y, integral_method)
-
-    # Perform the numerical integration and return the negative of the result
-    return -np.einsum('xy, xy->', func(xi1, xi2), Wxy)
+        # Get the displacement shape function 

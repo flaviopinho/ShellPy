@@ -1,7 +1,7 @@
 import numpy as np
 
 
-class ConcentratedForce:
+class ConcentratedForceGlobal:
     """
     This class represents a concentrated force applied at a specific location on the shell.
     The force is defined by its components in the x, y, and z directions, as well as its position in the xi1 and xi2 coordinates.
@@ -38,3 +38,25 @@ class PressureLoad:
         """
         # Store the pressure magnitude as a single value
         self.pressure = pressure
+
+class ConcentratedForceLocal:
+    """
+    This class represents a concentrated force applied at a specific location on the shell.
+    The force is defined by its components in the M1, M2, and M3 directions, as well as its position in the xi1 and xi2 coordinates.
+    """
+
+    def __init__(self, F1, F2, F3, xi1, xi2):
+        """
+        Initializes the concentrated force with its components and application position.
+
+        :param F1: The force component in the M1-direction.
+        :param F2: The force component in the M2-direction.
+        :param F3: The force component in the M3-direction.
+        :param xi1: The xi1 coordinate of the application point.
+        :param xi2: The xi2 coordinate of the application point.
+        """
+        # Store the force components as a 3x1 numpy array (F1, F2, F3)
+        self.load_vector = np.array([[F1], [F2], [F3]])
+
+        # Store the position of the force application point as a 2x1 numpy array (xi1, xi2)
+        self.position = np.array([[xi1], [xi2]])

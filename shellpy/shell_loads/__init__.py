@@ -1,6 +1,7 @@
-from .shell_conservative_load import ConcentratedForce, PressureLoad
+from .shell_conservative_load import ConcentratedForceGlobal, PressureLoad, ConcentratedForceLocal
 
 __all__ = [
-    "ConcentratedForce",
-    "PressureLoad"
+    "ConcentratedForceGlobal",
+    "PressureLoad",
+    "ConcentratedForceLocal"
 ]
