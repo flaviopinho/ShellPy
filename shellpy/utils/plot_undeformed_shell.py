@@ -161,5 +161,5 @@ def plot_undeformed_shell(
     plotter.camera.zoom(zoom)
 
     # Salva com super-resolução (Scale 4 = 6000x4000 pixels baseados na janela)
-    plotter.screenshot(file_name, scale=4)
+    plotter.screenshot(file_name, transparent_background=True, scale=4)
     plotter.close()

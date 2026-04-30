@@ -10,16 +10,17 @@ if __name__ == "__main__":
     # --------------------------------------------------------------
     # Discretization and geometry parameters
     # --------------------------------------------------------------
-    n1 = 100  # Radial points for plotting
-    n2 = 1000  # Circumferential points for plotting
-    n3 = 4  # Through-thickness points for plotting
 
-    n = 10  # Number of circumferential waves
+    n = 30  # Number of circumferential waves
     p = 5  # Radial growth power exponent
     L = 1.0  # Radial length of the domain
     R_in = 0.3  # Inner radius
 
-    H = 0.3  # Maximum corrugation amplitude
+    n1 = 10*n  # Radial points for plotting
+    n2 = 1000  # Circumferential points for plotting
+    n3 = 4  # Through-thickness points for plotting
+
+    H = 0.4  # Maximum corrugation amplitude
 
     # --------------------------------------------------------------
     # Shell properties
@@ -45,16 +46,19 @@ if __name__ == "__main__":
     # --------------------------------------------------------------
     shell = Shell(mid_surface_geometry, thickness, rectangular_domain, None, None, None)
 
-    print("Generating 3D plot. Saving to 'shell_plot_test.png'...")
+    print("Generating 3D plot. Saving .png...")
+
+    base_name = f"figura_casca_n{n}_p{p}_L{L:g}_Rin{R_in:g}_H{H:g}".replace('.', 'p')
+    file_name = f"{base_name}.png"
 
     # Using the refined plot function with keyword arguments
     plot_undeformed_shell(
         shell=shell,
-        file_name="shell_plot_test.png",
+        file_name=file_name,
         n_1=n1,
         n_2=n2,
         n_3=n3,
-        color=(0.55, 0.62, 0.70),
+        color="silver",
         wireframe_step_1=10,  # 1 a cada 10 pontos ao longo do raio L
         wireframe_step_2=50,  # 1 a cada 50 pontos ao longo da circunferência
         window_size=(1500, 1000),

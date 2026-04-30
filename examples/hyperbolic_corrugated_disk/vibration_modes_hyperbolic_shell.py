@@ -5,7 +5,8 @@ import matplotlib.pyplot as plt
 from scipy.linalg import eig, eigh
 import seaborn as sns
 
-from examples.hyperbolic_corrugated_disk.radial_localization_factor import radial_localization_factor
+from examples.hyperbolic_corrugated_disk.radial_localization_factor import radial_localization_factor, \
+    simplified_radial_localization_factor
 from shellpy.expansions.enriched_cosine_expansion import EnrichedCosineExpansion
 from shellpy import RectangularMidSurfaceDomain
 from shellpy import xi1_, xi2_, MidSurfaceGeometry
@@ -18,8 +19,8 @@ from shellpy import ConstantThickness
 
 if __name__ == "__main__":
     # Mantendo seus parâmetros originais
-    n = 20
-    p = 1
+    n = 10
+    p = 10
     L = 1.0
     R_in = 0.3
     H = 0.3
@@ -28,15 +29,16 @@ if __name__ == "__main__":
     E = 1
     nu = 0.3
 
-    mode_theta = max(20, n * 4)
+    mode_r = max(10, p * 3)
+    mode_theta = max(10, n * 3)
 
-    n_int_x = 10
-    n_int_y = mode_theta
+    n_int_x = mode_r * 2
+    n_int_y = mode_theta * 2
     n_int_z = 4
 
     rectangular_domain = RectangularMidSurfaceDomain(R_in, R_in + L, 0, 2 * np.pi)
 
-    expansion_size = {"u1": (20, mode_theta), "u2": (20, mode_theta), "u3": (20, mode_theta)}
+    expansion_size = {"u1": (mode_r, mode_theta), "u2": (mode_r, mode_theta), "u3": (mode_r, mode_theta)}
 
     boundary_conditions = {
         "u1": {"xi1": ("S", "F"), "xi2": ("R", "R")},
@@ -75,7 +77,7 @@ if __name__ == "__main__":
 
     # --- CÁLCULO DOS FATORES DE LOCALIZAÇÃO ---
     print("Calculando fatores de localização radial...")
-    rlf_values = radial_localization_factor(shell, eigen_vectors, n_int_x, n_int_y)
+    rlf_values = simplified_radial_localization_factor(shell, eigen_vectors, n_int_x, n_int_y)
 
     # --------------------------------------------------------------
     # EXPORTAÇÃO DOS DADOS PARA ARQUIVO
@@ -91,7 +93,7 @@ if __name__ == "__main__":
 
     # Construindo o nome do arquivo com os parâmetros geométricos
     # O arquivo gerado terá um nome como: resultados_modais_n20_p10_L1.0_Rin0.3_H0.3_h0.01.csv
-    filename = f"resultados_modais_n{n}_p{p}_L{L}_Rin{R_in}_H{H}_h{h}.csv"
+    filename = f"resultados_modais_shellpy_n{n}_p{p}_L{L}_Rin{R_in}_H{H}_h{h}.csv"
 
     # Salvando em CSV (usando ponto e vírgula como separador para facilitar abertura no Excel em pt-BR)
     df_results.to_csv(filename, index=False, sep=";", decimal=",")
