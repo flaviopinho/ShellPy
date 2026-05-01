@@ -1,10 +1,13 @@
-from .shell_conservative_load import ConcentratedForceGlobal, PressureLoad, ConcentratedForceLocal, LineLoadGlobal
+from .shell_conservative_load import (ConcentratedForce,
+                                      PressureLoad,
+                                      LineLoad,
+                                      ArbitraryLineLoad)
 from .load_collection import LoadCollection
 
 __all__ = [
-    "ConcentratedForceGlobal",
+    "ConcentratedForce",
     "PressureLoad",
-    "ConcentratedForceLocal",
-    "LineLoadGlobal",
+    "LineLoad",
+    "ArbitraryLineLoad",
     "LoadCollection"
 ]

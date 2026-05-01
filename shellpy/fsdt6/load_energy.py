@@ -37,4 +37,4 @@ def load_energy_density(i: int, load, shell):
     U = u[0] * N1 + u[1] * N2 + u[2] * N3
 
     # Calculate the load energy density as the negative dot product of the load vector and the displacement field
-    return -np.dot(np.ravel(load.load_vector), (np.ravel(U)))
+    return -np.dot(np.ravel(load.load_vector), (np.

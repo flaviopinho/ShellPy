@@ -16,7 +16,7 @@ from shellpy.expansions.eigen_function_expansion import EigenFunctionExpansion
 from shellpy import RectangularMidSurfaceDomain
 from shellpy.materials.isotropic_homogeneous_linear_elastic_material import IsotropicHomogeneousLinearElasticMaterial
 from shellpy.tensor_derivatives import tensor_derivative
-from shellpy.shell_loads.shell_conservative_load import ConcentratedForceGlobal
+from shellpy.shell_loads.shell_conservative_load import ConcentratedForce
 from shellpy import Shell
 from shellpy import ConstantThickness
 from shellpy import MidSurfaceGeometry, xi1_, xi2_
@@ -123,7 +123,7 @@ if __name__ == "__main__":
     E = 1
     nu = 0.3
 
-    load = ConcentratedForceGlobal(0, 0, -500 / E1, 1, 0)
+    load = ConcentratedForce(0, 0, -500 / E1, 1, 0)
 
     rectangular_domain = RectangularMidSurfaceDomain(0, 1, 0, np.pi / 2)
 

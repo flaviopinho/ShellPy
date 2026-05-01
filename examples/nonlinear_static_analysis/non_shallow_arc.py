@@ -209,4 +209,4 @@ if __name__ == "__main__":
 
     continuation.continue_branch(u0, t0, w0, 'Branch1')
 
-    plt.show()
+    

@@ -12,7 +12,7 @@ from shellpy.materials import IsotropicHomogeneousLinearElasticMaterial
 from shellpy.sanders_koiter import koiter_load_energy, fast_koiter_quadratic_strain_energy
 from shellpy.sanders_koiter.koiter_geometric_stiffness_matrix import koiter_geometric_stiffness_matrix
 from shellpy.tensor_derivatives import tensor_derivative
-from shellpy.shell_loads import LineLoadGlobal, LoadCollection
+from shellpy.shell_loads import LineLoad, LoadCollection
 
 if __name__ == "__main__":
     plot_scale = 10
@@ -29,9 +29,9 @@ if __name__ == "__main__":
     R_ = sym.Matrix([xi1_, xi2_, 0])
 
     # Carga de compressão unitária (-1 N/m) aplicada nas duas bordas opostas
-    load_right = LineLoadGlobal(qx=-1.0, qy=0.0, qz=0.0, line_along='xi2', constant_coord=a, start_coord=0.0,
+    load_right = LineLoad(q1=-1.0, q2=0.0, q3=0.0, line_along='xi2', constant_coord=a, start_coord=0.0,
                                 end_coord=b)
-    load_left = LineLoadGlobal(qx=1.0, qy=0.0, qz=0.0, line_along='xi2', constant_coord=0.0, start_coord=0.0,
+    load_left = LineLoad(q1=1.0, q2=0.0, q3=0.0, line_along='xi2', constant_coord=0.0, start_coord=0.0,
                                end_coord=b)
     load = LoadCollection([load_left, load_right])
 

@@ -39,4 +39,4 @@ def fosd_load_energy_density(i: int, load, shell):
     U = U[0] * N1 + U[1] * N2 + U[2] * N3
 
     # Calculate the load energy density as the negative dot product of the load vector and the displacement field
-    return -np.dot(np.ravel(load.load_vector), (np.ravel(U)))
+    return -np.dot(np.ravel(load.load_vector), (np.

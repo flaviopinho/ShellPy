@@ -10,7 +10,7 @@ class LoadCollection:
         """
         Initializes the load collection.
 
-        :param loads: A list of load objects (e.g., ConcentratedForceGlobal, PressureLoad, etc.).
+        :param loads: A list of load objects (e.g., ConcentratedForce, PressureLoad, etc.).
         """
         if loads is None:
             self.loads = []

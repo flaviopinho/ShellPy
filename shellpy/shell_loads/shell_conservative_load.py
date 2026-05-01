@@ -1,88 +1,52 @@
 import numpy as np
 
 
-class ConcentratedForceGlobal:
+class ConcentratedForce:
     """
-    This class represents a concentrated force applied at a specific location on the shell.
-    The force is defined by its components in the x, y, and z directions, as well as its position in the xi1 and xi2 coordinates.
+    Represents a concentrated force applied at a specific location on the shell.
+    Can be defined in either Global (x, y, z) or Local (M1, M2, M3) coordinates.
     """
 
-    def __init__(self, Fx, Fy, Fz, xi1, xi2):
+    def __init__(self, f1, f2, f3, xi1, xi2, is_local: bool = True):
         """
-        Initializes the concentrated force with its components and application position.
-
-        :param Fx: The force component in the x-direction.
-        :param Fy: The force component in the y-direction.
-        :param Fz: The force component in the z-direction.
-        :param xi1: The xi1 coordinate of the application point.
-        :param xi2: The xi2 coordinate of the application point.
+        :param f1, f2, f3: Force components. (x,y,z if global | M1,M2,M3 if local).
+        :param xi1, xi2: Coordinates of the application point.
+        :param is_local: True for Local basis, False for Global (Cartesian) basis.
         """
-        # Store the force components as a 3x1 numpy array (Fx, Fy, Fz)
-        self.load_vector = np.array([[Fx], [Fy], [Fz]])
-
-        # Store the position of the force application point as a 2x1 numpy array (xi1, xi2)
+        self.load_vector = np.array([[f1], [f2], [f3]])
         self.position = np.array([[xi1], [xi2]])
+        self.is_local = is_local
 
 
 class PressureLoad:
     """
-    This class represents a pressure load applied uniformly over an area.
-    The load is defined by its magnitude (pressure) applied to the surface.
+    Represents a pressure load applied uniformly over an area.
+    (Pressure is typically local/normal to the surface).
     """
 
     def __init__(self, pressure):
-        """
-        Initializes the pressure load with its magnitude.
-
-        :param pressure: The pressure magnitude applied uniformly over the surface.
-        """
-        # Store the pressure magnitude as a single value
         self.pressure = pressure
 
 
-class ConcentratedForceLocal:
+class LineLoad:
     """
-    This class represents a concentrated force applied at a specific location on the shell.
-    The force is defined by its components in the M1, M2, and M3 directions, as well as its position in the xi1 and xi2 coordinates.
-    """
-
-    def __init__(self, F1, F2, F3, xi1, xi2):
-        """
-        Initializes the concentrated force with its components and application position.
-
-        :param F1: The force component in the M1-direction.
-        :param F2: The force component in the M2-direction.
-        :param F3: The force component in the M3-direction.
-        :param xi1: The xi1 coordinate of the application point.
-        :param xi2: The xi2 coordinate of the application point.
-        """
-        # Store the force components as a 3x1 numpy array (F1, F2, F3)
-        self.load_vector = np.array([[F1], [F2], [F3]])
-
-        # Store the position of the force application point as a 2x1 numpy array (xi1, xi2)
-        self.position = np.array([[xi1], [xi2]])
-
-
-class LineLoadGlobal:
-    """
-    Represents a distributed line load applied along a specific parametric curve
-    (either xi1 = constant or xi2 = constant) on the shell.
-    The magnitude is force per unit length (e.g., N/m).
+    Represents a distributed line load applied along a parametric curve
+    (xi1 = const or xi2 = const).
     """
 
-    def __init__(self, qx, qy, qz, line_along: str, constant_coord: float, start_coord: float, end_coord: float):
+    def __init__(self, q1, q2, q3, line_along: str, constant_coord: float,
+                 start_coord: float, end_coord: float, is_local: bool = False):
         """
-        :param qx: The load component in the global x-direction (scalar or callable).
-        :param qy: The load component in the global y-direction (scalar or callable).
-        :param qz: The load component in the global z-direction (scalar or callable).
-        :param line_along: 'xi1' if the line runs parallel to the xi1 axis, 'xi2' if parallel to xi2.
-        :param constant_coord: The value of the fixed coordinate (e.g., if line_along='xi1', this is the value of xi2).
-        :param start_coord: The starting boundary of the line.
-        :param end_coord: The ending boundary of the line.
+        :param q1, q2, q3: Load components (Force/Length).
+        :param line_along: 'xi1' (runs parallel to xi1) or 'xi2' (parallel to xi2).
+        :param constant_coord: Fixed coordinate value.
+        :param start_coord: Starting boundary.
+        :param end_coord: Ending boundary.
+        :param is_local: True for Local basis, False for Global basis.
         """
-        self.qx = qx
-        self.qy = qy
-        self.qz = qz
+        self.q1 = q1
+        self.q2 = q2
+        self.q3 = q3
 
         if line_along not in ['xi1', 'xi2']:
             raise ValueError("line_along must be either 'xi1' or 'xi2'")
@@ -91,3 +55,42 @@ class LineLoadGlobal:
         self.constant_coord = constant_coord
         self.start_coord = start_coord
         self.end_coord = end_coord
+        self.is_local = is_local
+
+
+class ArbitraryLineLoad:
+    """
+    Represents a line load applied over an arbitrary parametric path xi1(t), xi2(t).
+    """
+
+    def __init__(self, q1, q2, q3, xi1_func, xi2_func, dxi1_dt, dxi2_dt,
+                 t_start, t_end, is_local: bool = True):
+        """
+        :param q1, q2, q3: Load components (Force/Length).
+        :param xi1_func, xi2_func: Functions defining the path (t).
+        :param dxi1_dt, dxi2_dt: Derivatives of the path functions.
+        :param t_start, t_end: Parametric interval.
+        :param is_local: True for Local basis, False for Global basis.
+        """
+        self.q1 = q1
+        self.q2 = q2
+        self.q3 = q3
+        self.xi1_func = xi1_func
+        self.xi2_func = xi2_func
+        self.dxi1_dt = dxi1_dt
+        self.dxi2_dt = dxi2_dt
+        self.t_start = t_start
+        self.t_end = t_end
+        self.is_local = is_local
+
+
+class LoadCollection:
+    """
+    A container to handle multiple loads simultaneously.
+    """
+
+    def __init__(self, loads=None):
+        self.loads = loads if loads is not None else []
+
+    def add_load(self, load):
+        self.loads.append(load)
