@@ -9,8 +9,8 @@ from shellpy import RectangularMidSurfaceDomain, xi1_, xi2_, MidSurfaceGeometry,
 from shellpy.displacement_expansion import simply_supported
 from shellpy.expansions import EigenFunctionExpansion
 from shellpy.materials import IsotropicHomogeneousLinearElasticMaterial
-from shellpy.sanders_koiter import koiter_load_energy, fast_koiter_quadratic_strain_energy
-from shellpy.sanders_koiter.koiter_geometric_stiffness_matrix import koiter_geometric_stiffness_matrix
+from shellpy.koiter_tensor import koiter_load_energy, fast_koiter_quadratic_strain_energy
+from shellpy.koiter_tensor.koiter_geometric_stiffness_matrix import koiter_geometric_stiffness_matrix
 from shellpy.tensor_derivatives import tensor_derivative
 from shellpy.shell_loads import LineLoad, LoadCollection
 

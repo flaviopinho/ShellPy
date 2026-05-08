@@ -2,7 +2,7 @@ from shellpy.displacement_expansion import pinned
 from shellpy.expansions.eigen_function_expansion import EigenFunctionExpansion
 from shellpy import RectangularMidSurfaceDomain
 import sympy as sym
-from shellpy.sanders_koiter import fast_koiter_quadratic_strain_energy, fast_koiter_strain_energy
+from shellpy.koiter_tensor import fast_koiter_quadratic_strain_energy, fast_koiter_strain_energy
 
 from shellpy import MidSurfaceGeometry, xi1_, xi2_
 from shellpy import Shell

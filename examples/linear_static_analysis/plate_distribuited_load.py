@@ -6,8 +6,8 @@ from matplotlib import colors
 
 from shellpy.expansions.polinomial_expansion import GenericPolynomialSeries
 from shellpy import RectangularMidSurfaceDomain
+from shellpy.koiter_tensor import koiter_load_energy, fast_koiter_quadratic_strain_energy
 from shellpy.materials.isotropic_homogeneous_linear_elastic_material import IsotropicHomogeneousLinearElasticMaterial
-from shellpy.sanders_koiter import koiter_load_energy, fast_koiter_quadratic_strain_energy
 from shellpy.tensor_derivatives import tensor_derivative
 
 from shellpy.shell_loads.shell_conservative_load import PressureLoad
@@ -141,4 +141,4 @@ if __name__ == "__main__":
     ax.set_ylim(mid_y - max_range, mid_y + max_range)
     ax.set_zlim(mid_z - max_range, mid_z + max_range)
 
-    plt.sh
+    plt.show()

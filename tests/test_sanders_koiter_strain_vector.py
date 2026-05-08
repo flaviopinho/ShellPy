@@ -1,17 +1,18 @@
 import sympy as sym
 import numpy as np
 
+from shellpy import RectangularMidSurfaceDomain, xi1_, xi2_, MidSurfaceGeometry
 from shellpy.expansions.eigen_function_expansion import EigenFunctionExpansion
-
-from shellpy import RectangularMidSurfaceDomain, MidSurfaceGeometry, xi1_, xi2_
 from shellpy.koiter_tensor.koiter_strain_tensor import koiter_linear_strain_components, \
     koiter_nonlinear_strain_components_total
+from shellpy.sanders_koiter.strain_vector import linear_sanders_koiter_strain_vector, \
+    nonlinear_koiter_strain_components_quadratic_vector, to_voigt_2d
 
 
 def test_koiter_strain_components():
     """
     Test for the linear and nonlinear strain components
-    from Koiter’s shell theory applied to a spherical mid-surface.
+    from Sanders-Koiter’s shell theory applied to a spherical mid-surface.
     """
 
     # --- Geometric and mechanical parameters ---
@@ -55,7 +56,7 @@ def test_koiter_strain_components():
     #                     LINEAR STRAIN COMPONENTS
     # ===============================================================
     print("\nLinear strain components")
-    gamma, rho = koiter_linear_strain_components(
+    gamma, rho = linear_sanders_koiter_strain_vector(
         mid_surface_geometry, displacement_field, 1, a / 4, b / 3
     )
 
@@ -64,10 +65,10 @@ def test_koiter_strain_components():
     print("rho_lin = \n", rho)
 
     # Expected reference values (analytical or benchmark)
-    gamma_expected = np.array([[1.090739709, 9.665869714],
-                               [9.665869714, 12.15899207]])
-    rho_expected = np.array([[10.90739709, 96.65869714],
-                             [96.65869713, 121.5899207]])
+    gamma_expected = to_voigt_2d(np.array([[1.090739709, 9.665869714],
+                               [9.665869714, 12.15899207]]))
+    rho_expected = to_voigt_2d(np.array([[10.90739709, 96.65869714],
+                             [96.65869713, 121.5899207]]))
 
     # --- Numerical validation of linear strain components ---
     assert np.allclose(
@@ -82,7 +83,7 @@ def test_koiter_strain_components():
     #                     NONLINEAR STRAIN COMPONENTS
     # ===============================================================
     print("\nNonlinear strain components")
-    gamma_nl = koiter_nonlinear_strain_components_total(
+    gamma_nl, _ = nonlinear_koiter_strain_components_quadratic_vector(
         mid_surface_geometry, displacement_field, 1, 0, a / 4, b / 3
     )
 
@@ -90,8 +91,8 @@ def test_koiter_strain_components():
     print("gamma_nonlin = \n", gamma_nl)
 
     # Expected reference values for nonlinear case
-    gamma_nl_expected = np.array([[2.941772279, 15.97838764],
-                                  [14.33404904, 6.737080007]])
+    gamma_nl_expected = to_voigt_2d(np.array([[2.941772279, 15.97838764],
+                                  [14.33404904, 6.737080007]]))
 
     # --- Numerical validation of nonlinear strain components ---
     assert np.allclose(

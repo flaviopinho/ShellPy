@@ -12,13 +12,13 @@ import sympy as sym
 import numpy as np
 
 from shellpy.continuationpy.continuation import Continuation
+from shellpy.koiter_tensor import koiter_load_energy, fast_koiter_strain_energy
 from shellpy.utils.residue_jacobian_stability import shell_residue, shell_jacobian, shell_stability
 # Import custom modules related to shell analysis
 from shellpy.displacement_expansion import simply_supported  # Defines simply supported boundary conditions
 from shellpy.expansions.eigen_function_expansion import EigenFunctionExpansion # Eigenfunction expansion for displacements
 from shellpy.materials.isotropic_homogeneous_linear_elastic_material import IsotropicHomogeneousLinearElasticMaterial
 from shellpy.mid_surface_domain import RectangularMidSurfaceDomain # Defines the geometry of the mid-surface
-from shellpy.sanders_koiter import koiter_load_energy, fast_koiter_strain_energy
 from shellpy.tensor_derivatives import tensor_derivative # For calculating tensor derivatives (likely for strain)
 from shellpy.shell_loads.shell_conservative_load import ConcentratedForce # Defines a concentrated force
 from shellpy.shell import Shell # Represents the shell structure
@@ -253,4 +253,4 @@ if __name__ == "__main__":
     continuation.continue_branch(u0, t0, w0, 'Branch1')
 
     # Show the final plot
-    pl
+    plt.show()

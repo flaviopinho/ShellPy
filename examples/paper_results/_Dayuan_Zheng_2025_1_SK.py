@@ -8,8 +8,8 @@ import matplotlib.pyplot as plt
 from scipy.linalg import eig, eigh
 
 from shellpy.expansions.enriched_cosine_expansion import EnrichedCosineExpansion
-from shellpy.sanders_koiter import fast_koiter_quadratic_strain_energy
-from shellpy.sanders_koiter.fast_koiter_kinetic_energy import fast_koiter_kinetic_energy
+from shellpy.koiter_tensor import fast_koiter_quadratic_strain_energy
+from shellpy.koiter_tensor.fast_koiter_kinetic_energy import fast_koiter_kinetic_energy
 from shellpy import RectangularMidSurfaceDomain
 from shellpy import xi1_, xi2_, MidSurfaceGeometry
 from shellpy import Shell

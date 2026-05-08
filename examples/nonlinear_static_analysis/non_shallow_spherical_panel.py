@@ -16,7 +16,7 @@ from shellpy import RectangularMidSurfaceDomain
 from shellpy.displacement_expansion import pinned
 
 from shellpy.materials.isotropic_homogeneous_linear_elastic_material import IsotropicHomogeneousLinearElasticMaterial
-from shellpy.sanders_koiter import koiter_load_energy, fast_koiter_strain_energy
+from shellpy.koiter_tensor import koiter_load_energy, fast_koiter_strain_energy
 from shellpy.tensor_derivatives import tensor_derivative
 
 from shellpy.shell_loads.shell_conservative_load import PressureLoad

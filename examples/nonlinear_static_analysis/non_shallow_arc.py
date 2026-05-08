@@ -15,8 +15,8 @@ from shellpy.expansions.enriched_cosine_expansion import EnrichedCosineExpansion
 from shellpy import RectangularMidSurfaceDomain
 
 from shellpy.materials.isotropic_homogeneous_linear_elastic_material import IsotropicHomogeneousLinearElasticMaterial
-from shellpy.sanders_koiter import koiter_load_energy
-from shellpy.sanders_koiter.koiter_strain_energy_large import koiter_strain_energy_large_rotations
+from shellpy.koiter_tensor import koiter_load_energy
+from shellpy.koiter_tensor.koiter_strain_energy_large import koiter_strain_energy_large_rotations
 from shellpy.tensor_derivatives import tensor_derivative
 from shellpy.shell_loads.shell_conservative_load import ConcentratedForce
 from shellpy import Shell

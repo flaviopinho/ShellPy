@@ -13,3 +13,6 @@ pytest~=9.0.2
 shellpy~=0.2.0
 numba~=0.63.1
 seaborn~=0.13.2
+jax~=0.4.28
+jaxlib~=0.4.28
+psutil~=7.2.2

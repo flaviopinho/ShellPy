@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-from ..continuation import Continuation
+from shellpy import Continuation
 
 
 def predator_pray_residue(u, *args):
