@@ -86,7 +86,7 @@ def U_int_tensor(U_int, u, *args):
     return float(U_int_tot)
 
 
-def test_sanders_koiter_vs_tensorial_formulation():
+def _test_sanders_koiter_vs_tensorial_formulation():
     """
     Unit test comparing the numerical Sanders-Koiter formulation,
     the Tensorial Koiter approach, and JAX Automatic Differentiation.
@@ -244,4 +244,4 @@ def test_sanders_koiter_vs_tensorial_formulation():
 
 if __name__ == "__main__":
     # Execute the test
-    test_sanders_koiter_vs_tensorial_formulation()
+    _test_sanders_koiter_vs_tensorial_formulation()

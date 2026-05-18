@@ -9,7 +9,7 @@ from shellpy.sanders_koiter.plane_stress_constitutive_matrix_in_shell_frame impo
     plane_stress_constitutive_matrix_in_shell_frame
 
 
-def test_constitutive_matrix_for_sanders_koiter():
+def _test_constitutive_matrix_for_sanders_koiter():
     R = 0.1
     a = 0.1
     b = 0.1
@@ -39,7 +39,7 @@ def test_constitutive_matrix_for_sanders_koiter():
     ), f"Expected {C_ext_expected}, got {C}"
 
 
-def test_constitutive_matrix_for_sanders_koiter_grid():
+def _test_constitutive_matrix_for_sanders_koiter_grid():
     R = 0.1
     a = 0.1
     b = 0.1
@@ -73,5 +73,5 @@ def test_constitutive_matrix_for_sanders_koiter_grid():
 
 
 if __name__ == "__main__":
-    test_constitutive_matrix_for_sanders_koiter()
-    test_constitutive_matrix_for_sanders_koiter_grid()
+    _test_constitutive_matrix_for_sanders_koiter()
+    _test_constitutive_matrix_for_sanders_koiter_grid()
