@@ -1,11 +1,11 @@
 import numpy as np
-from shellpy import Shell, cache_function
-from shellpy.fsdt7_eas.enhanced_assumed_strain import enhanced_assumed_strain_full
-from shellpy.fsdt6.shear_correction_factor import shear_correction_factor
-from shellpy.fsdt6.constitutive_matrix_in_shell_frame import constitutive_matrix_in_shell_frame
-from shellpy.fsdt7_eas.constitutive_matriz_in_material_frame import constitutive_matrix_in_material_frame
-from shellpy.fsdt6.strain_vector import linear_strain_vector, nonlinear_strain_vector
-from shellpy.numeric_integration.integral_weights import double_integral_weights
+from ..cache_decorator import cache_function
+from ..fsdt7_eas.enhanced_assumed_strain import enhanced_assumed_strain_full
+from ..fsdt6.shear_correction_factor import shear_correction_factor
+from ..fsdt6.constitutive_matrix_in_shell_frame import constitutive_matrix_in_shell_frame
+from ..fsdt7_eas.constitutive_matriz_in_material_frame import constitutive_matrix_in_material_frame
+from ..fsdt6.strain_vector import linear_strain_vector, nonlinear_strain_vector
+from ..numeric_integration.integral_weights import double_integral_weights
 
 
 @cache_function
@@ -51,7 +51,7 @@ def compute_constant_shell_matrices(shell, eas_field, n_x, n_y, n_z, integral_me
     C4 = np.einsum('ijxyz, xyz->ijxy', C, xi3 ** 4 * detWz, optimize=True)
 
     # --------------------------------------------------------------------------------
-    # 3. KINEMÁTICA: DEFORMAÇÕES LINEARES E NÃO LINEARES (Malha Cheia)
+    # 3. CINEMÁTICA: DEFORMAÇÕES LINEARES E NÃO LINEARES
     # --------------------------------------------------------------------------------
     print('Calculando componentes da deformação linear...')
     epsilon0_lin = np.zeros((n_dof, 6) + n_xy)
@@ -74,7 +74,7 @@ def compute_constant_shell_matrices(shell, eas_field, n_x, n_y, n_z, integral_me
             epsilon0_nl[j, i], epsilon1_nl[j, i], epsilon2_nl[j, i] = res
 
     # ================================================================================
-    # Transforma matrizes 2D espaciais em 1D apenas com os pontos ativos.
+    # Transforma matrizes 2D espaciais em 1D apenas
     # ================================================================================
 
     def prune(tensor_xy):
@@ -84,13 +84,13 @@ def compute_constant_shell_matrices(shell, eas_field, n_x, n_y, n_z, integral_me
 
     Wxy1_flat = prune(Wxy1)
 
-    # Constitutivas Reduzidas (6, 6, n_ativos)
+    # Constitutivas Reduzidas (6, 6, n_xy)
     C0_p, C1_p, C2_p, C3_p, C4_p = prune(C0), prune(C1), prune(C2), prune(C3), prune(C4)
 
-    # Deformações Lineares Reduzidas (n_dof, 6, n_ativos)
+    # Deformações Lineares Reduzidas (n_dof, 6, n_xy)
     e0_l_p, e1_l_p, e2_l_p = prune(epsilon0_lin), prune(epsilon1_lin), prune(epsilon2_lin)
 
-    # Deformações Não-Lineares Reduzidas (n_dof, n_dof, 6, n_ativos)
+    # Deformações Não-Lineares Reduzidas (n_dof, n_dof, 6, n_xy)
     e0_nl_p, e1_nl_p, e2_nl_p = prune(epsilon0_nl), prune(epsilon1_nl), prune(epsilon2_nl)
 
     # --------------------------------------------------------------------------------
@@ -104,7 +104,6 @@ def compute_constant_shell_matrices(shell, eas_field, n_x, n_y, n_z, integral_me
     L1_alpha = np.einsum('ijxy, njxy->nixy', C2[:, [2]], mu, optimize=True)
     L2_alpha = np.einsum('ijxy, njxy->nixy', C3[:, [2]], mu, optimize=True)
 
-    # Trocamos para 's' para evitar colisões
     mu_p = prune(mu)
     K_alpha_alpha = np.einsum('ijs, mis, njs, s->mn', C2_p[np.ix_([2], [2])], mu_p, mu_p, Wxy1_flat, optimize=True)
     K_alpha_alpha_inv = np.linalg.inv(K_alpha_alpha)
@@ -135,13 +134,12 @@ def compute_constant_shell_matrices(shell, eas_field, n_x, n_y, n_z, integral_me
                np.einsum('abs, imbs->imas', C3_p, e1_nl_p, optimize=True) +
                np.einsum('abs, imbs->imas', C4_p, e2_nl_p, optimize=True))
 
-    # Sem colisão: 'k' e 'm' são DOFs, 'p' é o EAS, 's' é o espaço.
     diff_K_u_alpha_x_x = (np.einsum('kmas, pas, s->kmp', diff_B0, L0_alpha_p, Wxy1_flat, optimize=True) +
                           np.einsum('kmas, pas, s->kmp', diff_B1, L1_alpha_p, Wxy1_flat, optimize=True) +
                           np.einsum('kmas, pas, s->kmp', diff_B2, L2_alpha_p, Wxy1_flat, optimize=True))
 
     # --------------------------------------------------------------------------------
-    # 6. FLATTENING FINAL PARA OTIMIZAÇÃO BLAS
+    # 6. FLATTENING FINAL PARA OTIMIZAÇÃO DOS CÁLCULOS
     # --------------------------------------------------------------------------------
     # Matrizes Constitutivas
     C0_T = np.ascontiguousarray(C0_p.transpose(2, 0, 1))
@@ -168,38 +166,12 @@ def compute_constant_shell_matrices(shell, eas_field, n_x, n_y, n_z, integral_me
     diff_L1_flat = np.ascontiguousarray(diff_L1)
     diff_L2_flat = np.ascontiguousarray(diff_L2)
 
-    # EAS Flattening (Multiplicando pelo Wxy1_flat esparso)
+    # EAS Flattening (Multiplicando pelo Wxy1_flat)
     n_alpha = L0_alpha.shape[0]
     L0_alpha_W_flat = np.ascontiguousarray((L0_alpha_p * Wxy1_flat).reshape(n_alpha, -1))
     L1_alpha_W_flat = np.ascontiguousarray((L1_alpha_p * Wxy1_flat).reshape(n_alpha, -1))
     L2_alpha_W_flat = np.ascontiguousarray((L2_alpha_p * Wxy1_flat).reshape(n_alpha, -1))
     mu_flat = np.ascontiguousarray(mu_p.reshape(n_alpha, -1))
-
-    def log_mem_mb(name, tensor, factor=1):
-        """
-        Calcula o tamanho em MB de um tensor.
-        O 'factor' multiplica pelo número de tensores similares (ex: C0 a C4 = 5).
-        """
-        mb = (tensor.nbytes * factor) / (1024 ** 2)
-        print(f"{name:<35} | {mb:>12.4f} MB")
-        return tensor.nbytes * factor
-
-    total_b = 0
-    # Agrupando tensores similares usando o 'factor' para estimar o peso total do bloco
-    total_b += log_mem_mb("Matrizes NL (eps0,1,2_nl_matrix)", eps0_nl_matrix, 3)
-    total_b += log_mem_mb("Tensores Tangente (diff_L_flat)", diff_L0_flat, 3)
-    total_b += log_mem_mb("Tensores Cinemática (diff_B_flat)", diff_B0_flat, 3)
-    total_b += log_mem_mb("Matrizes Constitutivas (C0-C4_T)", C0_T, 5)
-    total_b += log_mem_mb("Componentes Lineares (eps_lin_flat)", eps0_lin_flat, 3)
-
-    # Se quiser rastrear o EAS também, descomente as linhas abaixo:
-    total_b += log_mem_mb("Matrizes EAS (L_alpha_W_flat)", L0_alpha_W_flat, 3)
-    total_b += log_mem_mb("Acoplamento EAS (diff_K_u_alpha)", diff_K_u_alpha_x_x, 1)
-
-    total_mb = total_b / (1024 ** 2)
-    print("-" * 70)
-    print(f"{'TOTAL ACUMULADO EM RAM':<35} | {total_mb:>12.4f} MB")
-    print("=" * 70 + "\n")
 
     return (Wxy1_flat, C0_T, C1_T, C2_T, C3_T, C4_T,
             eps0_lin_flat, eps1_lin_flat, eps2_lin_flat,

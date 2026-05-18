@@ -106,7 +106,7 @@ def plot_shell(shell, u):
         ax = fig.add_subplot(1, 2, 1)  # First subplot (not used)
         ax = fig.add_subplot(1, 2, 2, projection='3d')  # Second subplot (3D plot)
 
-        data = np.loadtxt("shallow_sphere_abaqus.txt", delimiter=";")
+        data = np.loadtxt("../EngineeringStructures113674/shallow_sphere_abaqus.txt", delimiter=";")
 
         xx = -data[:, 0]
         yy = data[:, 1] / 0.001

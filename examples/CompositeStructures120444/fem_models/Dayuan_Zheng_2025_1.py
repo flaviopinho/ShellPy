@@ -1,14 +1,14 @@
+# Example based on the shell with linear thickness variation from
+# the article: https://doi.org/10.1016/j.tws.2025.113160
+# Natural frequency reported is 1893.48 Hz with author's formulation and 1894.01Hz by FEM.
+# Abaqus: 1901.1 (Hz)
+
 import numpy as np
 import matplotlib.pyplot as plt
+import sympy as sym
 
-from examples.paper_results.fem_models.generate_boundary_conditions import generate_bc_lines
-
-
-# === DEFINIÇÃO DA SUPERFÍCIE ===
-def R(xi1_, xi2_):
-    alpha = np.deg2rad(45)
-    return xi1_ * np.sin(alpha) * np.cos(xi2_), xi1_ * np.sin(alpha) * np.sin(xi2_), xi1_ * np.cos(alpha)
-
+from examples.CompositeStructures120444.fem_models.generate_boundary_conditions import generate_bc_lines
+from shellpy import RectangularMidSurfaceDomain, xi1_, xi2_, MidSurfaceGeometry
 
 if __name__ == "__main__":
     # Define boundary conditions
@@ -26,34 +26,48 @@ if __name__ == "__main__":
     # === PARÂMETROS ===
 
     factor = 0.5
-    alpha = np.deg2rad(45)
-    L = 1
-    R2 = L * np.sin(alpha) / factor
+    alpha = np.deg2rad(30)
+    R2 = 0.4
+    L = R2 * factor / np.sin(alpha)
     L2 = R2 / np.sin(alpha)
     L1 = L2 - L
     R1 = L1 * np.sin(alpha)
 
-    h = 0.01 * R2
+    rectangular_domain = RectangularMidSurfaceDomain(L1, L2, 0, 2 * np.pi)
 
-    b = 2 * np.pi
+    R_ = sym.Matrix([
+        xi1_ * sym.sin(alpha) * sym.cos(xi2_),  # x
+        xi1_ * sym.sin(alpha) * sym.sin(xi2_),  # y
+        xi1_ * sym.cos(alpha)  # z
+    ])
+    mid_surface_geometry = MidSurfaceGeometry(R_)
 
-    u1, u2 = L1, L2
-    v1, v2 = 0, b
-    nu, nv = 100, 100
+    H = 0.01 * R2
+    p = 1
+    q = 1
+
+    def thickness(xi1, xi2):
+        p = 1
+        q = 1
+        return H * (p + q * xi1)
+
+
+    u1, u2 = rectangular_domain.edges["xi1"]
+    v1, v2 = rectangular_domain.edges["xi2"]
+    n_u, n_v = 100, 200
 
     periodic_u = False
     periodic_v = True
 
     # === PROPRIEDADES DO MATERIAL ===
+
     rho = 2710
     E = 70E9
-    nu_mat = 0.3
-
-    thickness = h  # Espessura da casca [m]
+    nu = 0.3
 
     # === GERAÇÃO DA MALHA ===
-    num_u_nodes = nu if periodic_u else nu + 1
-    num_v_nodes = nv if periodic_v else nv + 1
+    num_u_nodes = n_u if periodic_u else n_u + 1
+    num_v_nodes = n_v if periodic_v else n_v + 1
 
     u_vals = np.linspace(u1, u2, num_u_nodes, endpoint=not periodic_u)
     v_vals = np.linspace(v1, v2, num_v_nodes, endpoint=not periodic_v)
@@ -64,8 +78,10 @@ if __name__ == "__main__":
 
     for j, v in enumerate(v_vals):
         for i, u in enumerate(u_vals):
-            x, y, z = R(u, v)
-            nodes.append((node_id, x, y, z))
+            x, y, z = mid_surface_geometry(u, v).flatten()
+            MR1, MR2, MR3 = mid_surface_geometry.reciprocal_base(u, v)
+
+            nodes.append((node_id, x, y, z, MR1, MR2, MR3))
             node_ids[(i, j)] = node_id
             node_id += 1
 
@@ -99,16 +115,12 @@ if __name__ == "__main__":
     for elem in elements:
         _, n1, n2, n3, n4 = elem
         coords = np.array([
-            nodes[n1 - 1][1:], nodes[n2 - 1][1:], nodes[n3 - 1][1:], nodes[n4 - 1][1:], nodes[n1 - 1][1:]
+            nodes[n1 - 1][1:4], nodes[n2 - 1][1:4], nodes[n3 - 1][1:4], nodes[n4 - 1][1:4], nodes[n1 - 1][1:4]
         ])
         ax.plot(coords[:, 0], coords[:, 1], coords[:, 2], color='black', linewidth=0.5)
 
-    ax.set_title("Visualização da malha 3D")
-    ax.set_box_aspect([ub - lb for lb, ub in (getattr(ax, f'get_{a}lim')() for a in 'xyz')])
-    plt.show()
-
     # === ESCRITA DO ARQUIVO ABAQUS .inp ===
-    with open("malha_abaqus_casca_SR4.inp", "w") as f:
+    with open("Dayuan_Zheng_2025_1.inp", "w") as f:
         f.write("*HEADING\n")
         f.write("Modelo de Casca Gerado Automaticamente\n")
         f.write("Sistema de Unidades: SI (m, kg, s)\n")
@@ -116,10 +128,14 @@ if __name__ == "__main__":
         # Nós
         f.write("*NODE, NSET=ALLNODES\n")
         for node in nodes:
-            f.write(f"{node[0]}, {node[1]:.6f}, {node[2]:.6f}, {node[3]:.6f}\n")
+            f.write(f"{node[0]}, {node[1]:.6f}, {node[2]:.6f}, {node[3]:.6f}, ")
+            f.write(f"{node[4][0]:.6f}, {node[4][1]:.6f}, {node[4][2]:.6f}, ")
+            f.write(f"{node[5][0]:.6f}, {node[5][1]:.6f}, {node[5][2]:.6f}, ")
+            f.write(f"{node[6][0]:.6f}, {node[6][1]:.6f}, {node[6][2]:.6f}\n")
 
         nx = u_vals.size
         ny = v_vals.size
+
         f.write("*NSET, NSET=X0, GENERATE\n")
         f.write(f"{node_ids[(0, 0)]} , {node_ids[(0, ny - 1)]}, {nx}\n")
         f.write("*NSET, NSET=X1, GENERATE\n")
@@ -136,15 +152,22 @@ if __name__ == "__main__":
             f.write(f"{elem[0]}, {elem[1]}, {elem[2]}, {elem[3]}, {elem[4]}\n")
 
         # Propriedades do Material
-        f.write("*MATERIAL, NAME=MATERIAL_ELASTICO\n")
+        f.write(f"*MATERIAL, NAME=MATERIAL_ELASTICO\n")
         f.write("*ELASTIC\n")
-        f.write(f"{E}, {nu_mat}\n")
+        f.write(f"{E}, {nu}\n")
         f.write("*DENSITY\n")
         f.write(f"{rho}\n")
 
+        f.write(f"*NODAL THICKNESS\n")
+        for j, v in enumerate(v_vals):
+            for i, u in enumerate(u_vals):
+                f.write(f"{node_ids[(i, j)]}, {thickness(u, v)}\n")
+
         # Seção da Casca
-        f.write(f"*SHELL SECTION, ELSET=ALLELEMENTS, MATERIAL=MATERIAL_ELASTICO\n")
-        f.write(f"{thickness}\n")
+        f.write(f"*SHELL SECTION, ELSET=ALLELEMENTS, MATERIAL=MATERIAL_ELASTICO, NODAL THICKNESS\n")
+        f.write("1, 3\n")
+
+        #generate_boundary_transformation(node_ids, u_vals, v_vals, nx, ny, mid_surface_geometry, f)
 
         lines = generate_bc_lines(boundary_conditions)
         for line in lines:
@@ -153,5 +176,9 @@ if __name__ == "__main__":
         # Passo de análise
         f.write("*STEP\n")
         f.write("*FREQUENCY\n")
-        f.write("10, 100, 100000\n")
+        f.write("40, 100, 100000\n")
         f.write("*END STEP\n")
+
+    ax.set_title("Visualização da malha 3D")
+    ax.set_box_aspect([ub - lb for lb, ub in (getattr(ax, f'get_{a}lim')() for a in 'xyz')])
+    plt.show()

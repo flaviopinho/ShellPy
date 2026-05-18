@@ -377,4 +377,3 @@ class Continuation:
             pass
 
         return tangent
-

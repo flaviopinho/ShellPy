@@ -38,10 +38,13 @@ def legendre_expansion_on_interval(boundary, maximum_derivative, maximum_mode):
 
 class EasExpansion:
 
-    def __init__(self, expansion_size, rectangular_domain, boundary_conditions):
+    def __init__(self, expansion_size, rectangular_domain, boundary_conditions, remove_constant_mode=True):
         self._expansion_size = expansion_size
         self._edges = rectangular_domain.edges
         self._boundary_conditions = boundary_conditions
+
+        # Flag para controle da função puramente constante (modo 0, 0)
+        self._remove_constant_mode = remove_constant_mode
 
         self._mapping = self._set_mapping()
         self._number_of_fields = len(expansion_size)
@@ -73,13 +76,19 @@ class EasExpansion:
 
     def _set_mapping(self):
         """
-        Mapping now INCLUDES mode 0 (constant mode)
+        Mapping conditionally INCLUDES mode 0 (constant mode).
+        Se remove_constant_mode for True, a combinação (0, 0) é ignorada.
         """
         mapping = []
 
         for field, (m, n) in self._expansion_size.items():
             for i in range(0, m):
                 for j in range(0, n):
+
+                    # Ignora a função de base espacial constante para evitar redundância na casca
+                    if self._remove_constant_mode and i == 0 and j == 0:
+                        continue
+
                     mapping.append((field, i, j))
 
         return mapping

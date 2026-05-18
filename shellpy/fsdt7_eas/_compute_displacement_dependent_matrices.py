@@ -45,16 +45,14 @@ def compute_displacement_dependent_matrices(
     Calcula as matrizes e vetores que dependem do estado atual de deslocamento (u).
     Esta função é o 'hot loop' do método de Newton-Raphson, sendo executada em cada iteração.
     """
-    t_inicio = time.perf_counter()
     u = np.ascontiguousarray(u)
 
     # --------------------------------------------------------------------------------
     # 1. CINEMÁTICA: DEFORMAÇÕES REAIS (E) E OPERADOR TANGENTE (B)
     # --------------------------------------------------------------------------------
-    t0 = time.perf_counter()
     n_dof, n_stress, n_points = eps0_lin_flat.shape
 
-    # Cálculo da contribuição não linear via contração (Otimizado via BLAS @)
+    # Cálculo da contribuição não linear via contração
     # Transforma o tensor de deformação não linear em um vetor de estado baseado em u
     E0_nl = (eps0_nl_matrix @ u).reshape(n_dof, n_stress, n_points)
     E1_nl = (eps1_nl_matrix @ u).reshape(n_dof, n_stress, n_points)
@@ -70,12 +68,9 @@ def compute_displacement_dependent_matrices(
     B1 = eps1_lin_flat + 2.0 * E1_nl
     B2 = eps2_lin_flat + 2.0 * E2_nl
 
-    t_cinematica = time.perf_counter() - t0
-
     # --------------------------------------------------------------------------------
-    # 2. ESFORÇOS INTERNOS E RESULTANTES DE TENSÃO (L)
+    # 2. ESFORÇOS INTERNOS (L)
     # --------------------------------------------------------------------------------
-    t1 = time.perf_counter()
 
     # Cálculo dos esforços resultantes (L0, L1, L2) através da espessura integrada
     # Utiliza einsum para contração entre os tensores constitutivos (C) e as deformações (E)
@@ -91,12 +86,9 @@ def compute_displacement_dependent_matrices(
          np.einsum('kab, dbk -> dak', C3_T, E1) + \
          np.einsum('kab, dbk -> dak', C4_T, E2)
 
-    t_esforcos_L = time.perf_counter() - t1
-
     # --------------------------------------------------------------------------------
     # 3. MATRIZES DE RIGIDEZ ELÁSTICA (K)
     # --------------------------------------------------------------------------------
-    t2 = time.perf_counter()
 
     # Preparações e Achatamento (Reshaping) para multiplicação de matrizes 2D
     B0_flat = B0.reshape(n_dof, -1)
@@ -115,24 +107,8 @@ def compute_displacement_dependent_matrices(
     K_u_alpha = B0_flat @ L0_alpha_W_flat.T + B1_flat @ L1_alpha_W_flat.T + B2_flat @ L2_alpha_W_flat.T
 
     # Componente da matriz de rigidez Alpha-U (EAS-Deslocamento)
-    # Focada na componente de cisalhamento/estiramento específica (slice 2:3)
     L1_slice_W_flat = (L1[:, 2:3, :] * Wxy1_flat).reshape(n_dof, -1)
     K_alpha_u = mu_flat @ L1_slice_W_flat.T
 
-    t_rigidez_K = time.perf_counter() - t2
-
-    # --------------------------------------------------------------------------------
-    # 4. LOG DE PERFORMANCE E RETORNO
-    # --------------------------------------------------------------------------------
-    t_total = time.perf_counter() - t_inicio
-
-    print(f"\n" + "-" * 40)
-    print(f"PERFORMANCE LOOP (Iteração)")
-    print(f"-" * 40)
-    print(f"1. Cinemática (E & B)      : {t_cinematica:.6f} s")
-    print(f"2. Esforços Internos (L)   : {t_esforcos_L:.6f} s")
-    print(f"3. Matrizes de Rigidez (K) : {t_rigidez_K:.6f} s")
-    print(f"TOTAL DO CICLO             : {t_total:.6f} s")
-    print("-" * 40 + "\n")
 
     return E0, E1, E2, B0, B1, B2, L0, L1, L2, K_u_u, K_u_alpha, K_alpha_u

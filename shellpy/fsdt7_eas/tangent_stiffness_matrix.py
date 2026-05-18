@@ -1,9 +1,9 @@
 import time
 import numpy as np
-from shellpy import Shell
-from shellpy.numeric_integration.gauss_integral import gauss_weights_simple_integral
-from shellpy.fsdt7_eas._compute_constant_shell_matrices import compute_constant_shell_matrices
-from shellpy.fsdt7_eas._compute_displacement_dependent_matrices import compute_displacement_dependent_matrices
+from ..shell import Shell
+from ..numeric_integration.gauss_integral import gauss_weights_simple_integral
+from ..fsdt7_eas._compute_constant_shell_matrices import compute_constant_shell_matrices
+from ..fsdt7_eas._compute_displacement_dependent_matrices import compute_displacement_dependent_matrices
 
 
 def tangent_stiffness_matrix(u, shell: Shell, eas_field, n_x=20, n_y=20, n_z=10,
@@ -12,7 +12,6 @@ def tangent_stiffness_matrix(u, shell: Shell, eas_field, n_x=20, n_y=20, n_z=10,
     Calcula a Matriz de Rigidez Tangente (Jacobiana) exata para o método de Newton-Raphson.
     Totalmente otimizada via BLAS (Matrix-Vector e Matrix-Matrix products).
     """
-    t_total_start = time.perf_counter()
 
     # --------------------------------------------------------------------------------
     # 1. RECUPERAÇÃO DE DADOS (ESTÁTICOS E DEPENDENTES DE U)
@@ -35,7 +34,6 @@ def tangent_stiffness_matrix(u, shell: Shell, eas_field, n_x=20, n_y=20, n_z=10,
         eps0_nl_matrix, eps1_nl_matrix, eps2_nl_matrix,
         mu_flat, L0_alpha_W_flat, L1_alpha_W_flat, L2_alpha_W_flat, n_xy
     )
-    t_hotloop_end = time.perf_counter()
 
     n_dof = u.shape[0]
     n_points = Wxy1_flat.size
@@ -45,7 +43,6 @@ def tangent_stiffness_matrix(u, shell: Shell, eas_field, n_x=20, n_y=20, n_z=10,
     # --------------------------------------------------------------------------------
     # Condensação estática dos parâmetros Alpha no nível da tangente
     K_secant_condensed = K_u_u - K_u_alpha @ K_alpha_alpha_inv @ K_alpha_u
-    t_secante_end = time.perf_counter()
 
     # --------------------------------------------------------------------------------
     # 3. RIGIDEZ GEOMÉTRICA (K_geo + K_mat_tangent) - OTIMIZAÇÃO BLAS
@@ -74,7 +71,6 @@ def tangent_stiffness_matrix(u, shell: Shell, eas_field, n_x=20, n_y=20, n_z=10,
                      B2.reshape(n_dof, -1) @ (duL2 * Wxy1_flat).reshape(n_dof, -1).T)
 
     diff_K_u_u = K_geo + K_mat_tangent
-    t_geometrica_end = time.perf_counter()
 
     # --------------------------------------------------------------------------------
     # 4. TERMOS TANGENTES DO CAMPO EAS (CORREÇÃO)
@@ -90,23 +86,11 @@ def tangent_stiffness_matrix(u, shell: Shell, eas_field, n_x=20, n_y=20, n_z=10,
     mu_W = mu_flat * Wxy1_flat  # n_alpha, k
     diff_K_alpha_u = mu_W @ dL1_u.T
 
-    t_eas_end = time.perf_counter()
-
     # --------------------------------------------------------------------------------
     # 5. MONTAGEM FINAL DA JACOBIANA
     # --------------------------------------------------------------------------------
     Jacobian = K_secant_condensed + diff_K_u_u - dk_u_a_x - (K_u_alpha @ K_alpha_alpha_inv @ diff_K_alpha_u)
     t_total_end = time.perf_counter()
 
-    # --------------------------------------------------------------------------------
-    # 6. RELATÓRIO DE PERFORMANCE
-    # --------------------------------------------------------------------------------
-    print(f"\n--- [TANGENT STIFFNESS MATRIX DIAGNOSTICS] ---")
-    print(f"Estado/HotLoop     : {t_hotloop_end - t_total_start:.6f} s")
-    print(f"Secante Condensada : {t_secante_end - t_hotloop_end:.6f} s")
-    print(f"Rigidez Geométrica : {t_geometrica_end - t_secante_end:.6f} s (Otimizada BLAS)")
-    print(f"Correção EAS       : {t_eas_end - t_geometrica_end:.6f} s")
-    print(f"TOTAL JACOBIANA    : {t_total_end - t_total_start:.6f} s")
-    print(f"----------------------------------------------\n")
 
     return Jacobian

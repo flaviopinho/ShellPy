@@ -1,81 +1,8 @@
-import numpy as np
-
-from ..displacement_covariant_derivative import displacement_first_covariant_derivatives, \
-    displacement_second_covariant_derivatives
-from ..displacement_expansion import DisplacementExpansion
+import jax.numpy as jnp
 from ..midsurface_geometry import MidSurfaceGeometry
 
 
-def to_voigt_2d(eps):
-    """
-    Converts a 2x2 strain tensor to a 3-element Voigt notation vector.
-    Order: [e11, e22, gamma12]
-    Note: gamma12 is the engineering shear strain (eps12 + eps21).
-    """
-    return np.stack([
-        eps[0, 0],  # Normal strain xi1
-        eps[1, 1],  # Normal strain xi2
-        (eps[0, 1] + eps[1, 0])  # Engineering shear strain
-    ], axis=0)
-
-
-def linear_sanders_koiter_strain_vector(mid_surface_geometry: MidSurfaceGeometry,
-                                        displacement_expansion: DisplacementExpansion,
-                                        i: int, xi1, xi2):
-    """
-    Calculates the linear components of the membrane strain (epsilon0) and
-    curvature change (epsilon1) for the i-th degree of freedom (DOF).
-
-    This follows the Sanders-Koiter shell theory, which ensures zero strain
-    under rigid body motions.
-    """
-    # --- 1. Shape Functions and Covariant Derivatives ---
-    # Get modal shapes and their local derivatives for DOF 'i'
-    u = displacement_expansion.shape_function(i, xi1, xi2)
-    du = displacement_expansion.shape_function_first_derivatives(i, xi1, xi2)
-    ddu = displacement_expansion.shape_function_second_derivatives(i, xi1, xi2)
-
-    # Compute first and second covariant derivatives (u_{i|alpha} and u_{i|alpha beta})
-    dcu = displacement_first_covariant_derivatives(mid_surface_geometry, u, du, xi1, xi2)
-    ddcu = displacement_second_covariant_derivatives(mid_surface_geometry, u, du, ddu, xi1, xi2)
-
-    # Component extraction: u3 (out-of-plane) and u_alpha (in-plane components 1, 2)
-    dcu3 = dcu[2]
-    dcu_inplane = dcu[0:2]
-    ddcu3 = ddcu[2]
-
-    # --- 2. Membrane Linear Strain (epsilon0 / gamma_alpha_beta) ---
-    # Symmetric part of the in-plane covariant derivative
-    aux = np.swapaxes(dcu_inplane, 0, 1)
-    gamma = 0.5 * (dcu_inplane + aux)
-
-    # --- 3. Curvature Change (epsilon1 / rho_alpha_beta) ---
-    # Retrieve Christoffel symbols and mixed curvature tensor components
-    C = mid_surface_geometry.christoffel_symbols(xi1, xi2)
-    C_reduced = C[0:2, 0:2]  # Surface-only connections
-
-    # Basic curvature change: rho = C^gamma_{alpha beta} * u3|gamma - u3|alpha,beta
-    rho = np.einsum('gab...,g...->ab...', C_reduced, dcu3) - ddcu3
-
-    # Sanders Correction: Couples curvature with membrane strain to maintain
-    # invariance under rigid body rotation.
-    K = mid_surface_geometry.curvature_tensor_mixed_components(xi1, xi2)
-    f1 = np.einsum('sa...,bs...->ab...', K, gamma)
-    f2 = np.einsum('sb...,as...->ab...', K, gamma)
-
-    rho = rho - 0.5 * (f1 + f2)
-
-    # --- 4. Final Output in Voigt Notation ---
-    epsilon0 = to_voigt_2d(gamma)
-    epsilon1 = to_voigt_2d(rho)
-
-    return epsilon0, epsilon1
-
-
-import jax.numpy as jnp
-
-
-def total_strain_vector_jax(mid_surface_geometry, u_phys, du_phys, ddu_phys, xi1, xi2):
+def total_strain_vector_jax(mid_surface_geometry: MidSurfaceGeometry, u_phys, du_phys, ddu_phys, xi1, xi2):
     """
     Computes the total strain components (membrane and curvature change) for a shell
     based on the Sanders-Koiter theory, including NON-LINEAR curvature terms,

@@ -7,8 +7,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import sympy as sym
 
-from examples.paper_results.fem_models.generate_boundary_conditions import generate_bc_lines
-from examples.paper_results.fem_models.generate_boundary_transformation import generate_boundary_transformation
+from examples.CompositeStructures120444.fem_models.generate_boundary_conditions import generate_bc_lines
+from examples.CompositeStructures120444.fem_models.generate_boundary_transformation import generate_boundary_transformation
 from shellpy import RectangularMidSurfaceDomain, xi1_, xi2_, simply_supported, MidSurfaceGeometry
 
 if __name__ == "__main__":
@@ -139,7 +139,7 @@ if __name__ == "__main__":
         ax.plot(coords[:, 0], coords[:, 1], coords[:, 2], color='black', linewidth=0.5)
 
     # === ESCRITA DO ARQUIVO ABAQUS .inp ===
-    with open("Hiroyuki_Matsunaga_2008_FGM_SC_05_H_10_04.inp", "w") as f:
+    with open("Hiroyuki_Matsunaga_2008_FGM_C3D8_05_H_10_04.inp", "w") as f:
         f.write("*HEADING\n")
         f.write("Modelo de Casca Gerado Automaticamente\n")
         f.write("Sistema de Unidades: SI (m, kg, s)\n")
